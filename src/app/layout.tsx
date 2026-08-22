@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth-context';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -13,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://stashr.me'),
-  title: 'Stashr',
+  metadataBase: new URL('https://myvalut.vercel.app'),
+  title: 'Valut - AI Bookmark Vault',
   description:
-    'Stashr is the AI bookmark manager that captures every save from every platform you use — including X, Reddit, Instagram, TikTok, YouTube, and Bluesky — auto-tagged and agent-ready.',
+    'Valut is your private AI bookmark manager that captures every save from Twitter/X, Reddit, Instagram, YouTube, and the Web — auto-tagged and cloud synced.',
   icons: {
     icon: [
       { url: '/branding/icon.svg', type: 'image/svg+xml' },
@@ -24,12 +25,6 @@ export const metadata: Metadata = {
       { url: '/branding/favicon-16x16.png', sizes: '16x16', type: 'image/png' }
     ],
     apple: [{ url: '/branding/icon.svg' }]
-  },
-  openGraph: {
-    title: 'Stashr',
-    description:
-      'Stashr is the AI bookmark manager that captures every save from every platform you use — including X, Reddit, Instagram, TikTok, YouTube, and Bluesky — auto-tagged and agent-ready.',
-    images: ['/branding/og-image.jpg']
   }
 };
 
@@ -45,7 +40,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-sidebar text-foreground selection:bg-primary/20 overflow-hidden">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

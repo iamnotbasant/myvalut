@@ -19,6 +19,7 @@ interface DbBookmark {
   is_archived?: boolean | null;
   note?: string | null;
   collection_id?: string | null;
+  user_id?: string | null;
   created_at?: string;
 }
 
@@ -26,6 +27,7 @@ interface DbCollection {
   id: string;
   name: string;
   icon?: string | null;
+  user_id?: string | null;
   created_at?: string;
 }
 
@@ -33,6 +35,7 @@ interface DbTag {
   id: string;
   name: string;
   color: any;
+  user_id?: string | null;
   created_at?: string;
 }
 
@@ -59,7 +62,7 @@ function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
 }
 
 // Convert BookmarkItem to DB bookmark row
-function mapAppBookmarkToDb(item: BookmarkItem): DbBookmark {
+function mapAppBookmarkToDb(item: BookmarkItem, userId?: string | null): DbBookmark {
   return {
     id: item.id,
     platform: item.platform,
@@ -77,16 +80,20 @@ function mapAppBookmarkToDb(item: BookmarkItem): DbBookmark {
     is_archived: Boolean(item.isArchived),
     note: item.note || null,
     collection_id: item.collectionId || null,
+    user_id: userId || null,
   };
 }
 
-export async function fetchBookmarksFromDb(): Promise<BookmarkItem[] | null> {
+export async function fetchBookmarksFromDb(userId?: string | null): Promise<BookmarkItem[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
-    const { data, error } = await supabase
-      .from('bookmarks')
-      .select('*')
-      .order('created_at_ms', { ascending: false });
+    let query = supabase.from('bookmarks').select('*').order('created_at_ms', { ascending: false });
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching bookmarks from Supabase:', error);
@@ -99,13 +106,16 @@ export async function fetchBookmarksFromDb(): Promise<BookmarkItem[] | null> {
   }
 }
 
-export async function fetchCollectionsFromDb(): Promise<Collection[] | null> {
+export async function fetchCollectionsFromDb(userId?: string | null): Promise<Collection[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
-    const { data, error } = await supabase
-      .from('collections')
-      .select('*')
-      .order('name', { ascending: true });
+    let query = supabase.from('collections').select('*').order('name', { ascending: true });
+    
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching collections from Supabase:', error);
@@ -122,13 +132,16 @@ export async function fetchCollectionsFromDb(): Promise<Collection[] | null> {
   }
 }
 
-export async function fetchTagsFromDb(): Promise<Tag[] | null> {
+export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
-    const { data, error } = await supabase
-      .from('tags')
-      .select('*')
-      .order('name', { ascending: true });
+    let query = supabase.from('tags').select('*').order('name', { ascending: true });
+    
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching tags from Supabase:', error);
@@ -145,10 +158,10 @@ export async function fetchTagsFromDb(): Promise<Tag[] | null> {
   }
 }
 
-export async function insertBookmarkToDb(item: BookmarkItem): Promise<boolean> {
+export async function insertBookmarkToDb(item: BookmarkItem, userId?: string | null): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {
-    const row = mapAppBookmarkToDb(item);
+    const row = mapAppBookmarkToDb(item, userId);
     const { error } = await supabase.from('bookmarks').insert(row);
     if (error) {
       console.error('Error inserting bookmark into Supabase:', error);
@@ -241,13 +254,14 @@ export async function archiveMultipleBookmarksInDb(ids: string[]): Promise<boole
   }
 }
 
-export async function insertCollectionToDb(item: Collection): Promise<boolean> {
+export async function insertCollectionToDb(item: Collection, userId?: string | null): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {
     const { error } = await supabase.from('collections').insert({
       id: item.id,
       name: item.name,
       icon: item.icon || null,
+      user_id: userId || null,
     });
     if (error) {
       console.error('Error inserting collection into Supabase:', error);
@@ -260,13 +274,14 @@ export async function insertCollectionToDb(item: Collection): Promise<boolean> {
   }
 }
 
-export async function insertTagToDb(item: Tag): Promise<boolean> {
+export async function insertTagToDb(item: Tag, userId?: string | null): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {
     const { error } = await supabase.from('tags').upsert({
       id: item.id,
       name: item.name,
       color: item.color,
+      user_id: userId || null,
     }, { onConflict: 'name' });
     if (error) {
       console.error('Error inserting tag into Supabase:', error);
@@ -275,51 +290,6 @@ export async function insertTagToDb(item: Tag): Promise<boolean> {
     return true;
   } catch (err) {
     console.error('Failed to insert tag into Supabase:', err);
-    return false;
-  }
-}
-
-export async function seedInitialDataToDb(
-  initialBookmarks: BookmarkItem[],
-  initialCollections: Collection[],
-  initialTags: Tag[]
-): Promise<boolean> {
-  if (!isSupabaseConfigured || !supabase) return false;
-  try {
-    // Check if bookmarks table is empty
-    const { count } = await supabase.from('bookmarks').select('*', { count: 'exact', head: true });
-    if (count !== null && count > 0) {
-      return true; // Already seeded
-    }
-
-    // Insert collections
-    for (const col of initialCollections) {
-      await supabase.from('collections').upsert({
-        id: col.id,
-        name: col.name,
-        icon: col.icon || null,
-      });
-    }
-
-    // Insert tags
-    for (const tag of initialTags) {
-      await supabase.from('tags').upsert({
-        id: tag.id,
-        name: tag.name,
-        color: tag.color,
-      }, { onConflict: 'name' });
-    }
-
-    // Insert bookmarks in batch
-    const rows = initialBookmarks.map(mapAppBookmarkToDb);
-    const { error } = await supabase.from('bookmarks').insert(rows);
-    if (error) {
-      console.error('Error seeding initial bookmarks into Supabase:', error);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error('Failed to seed initial data to Supabase:', err);
     return false;
   }
 }

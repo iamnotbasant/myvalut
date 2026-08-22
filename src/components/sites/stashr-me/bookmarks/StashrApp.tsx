@@ -38,20 +38,24 @@ import {
   deleteMultipleBookmarksFromDb,
   archiveMultipleBookmarksInDb,
   insertCollectionToDb,
-  insertTagToDb,
-  seedInitialDataToDb
+  insertTagToDb
 } from '@/lib/supabase-db';
 import { isSupabaseConfigured } from '@/lib/supabase';
+
+import { AuthModal } from '@/components/auth/AuthModal';
+import { useAuth } from '@/lib/auth-context';
 
 interface StashrAppProps {
   initialNav?: 'bookmarks' | 'archived' | 'creators' | 'connections';
 }
 
 export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
+  const { user } = useAuth();
+
   // 1. Data States with LocalStorage & Supabase Hydration
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(INITIAL_BOOKMARKS);
-  const [collections, setCollections] = useState<Collection[]>(INITIAL_COLLECTIONS);
-  const [tags, setTags] = useState<Tag[]>(INITIAL_TAGS);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 2. View and Filter States
@@ -73,6 +77,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   // 4. Modal States
   const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false);
   const [isAddCollectionOpen, setIsAddCollectionOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [activeNoteBookmark, setActiveNoteBookmark] = useState<BookmarkItem | null>(null);
   const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
   const [activeDetailBookmark, setActiveDetailBookmark] = useState<BookmarkItem | null>(null);
@@ -108,68 +113,68 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         }
 
         if (isSupabaseConfigured) {
-          // Attempt to load from Supabase Cloud DB
+          // Attempt to load from Supabase Cloud DB for the active user
           const [dbBookmarks, dbCollections, dbTags] = await Promise.all([
-            fetchBookmarksFromDb(),
-            fetchCollectionsFromDb(),
-            fetchTagsFromDb()
+            fetchBookmarksFromDb(user?.id),
+            fetchCollectionsFromDb(user?.id),
+            fetchTagsFromDb(user?.id)
           ]);
 
-          if (dbBookmarks && dbBookmarks.length > 0) {
+          if (dbBookmarks !== null) {
             setBookmarks(dbBookmarks);
           } else {
-            await seedInitialDataToDb(INITIAL_BOOKMARKS, INITIAL_COLLECTIONS, INITIAL_TAGS);
-            setBookmarks(INITIAL_BOOKMARKS);
+            setBookmarks([]);
           }
 
-          if (dbCollections && dbCollections.length > 0) {
+          if (dbCollections !== null) {
             setCollections(dbCollections);
           } else {
-            setCollections(INITIAL_COLLECTIONS);
+            setCollections([]);
           }
 
-          if (dbTags && dbTags.length > 0) {
+          if (dbTags !== null) {
             setTags(dbTags);
           } else {
-            setTags(INITIAL_TAGS);
+            setTags([]);
           }
         } else {
-          // Fallback to localStorage or INITIAL_BOOKMARKS
-          const localBm = localStorage.getItem('stashr_bookmarks_v3');
-          const localCol = localStorage.getItem('stashr_collections_v3');
+          // Fallback to localStorage
+          const storageKey = user ? `valut_bookmarks_${user.id}` : 'valut_bookmarks_guest';
+          const localBm = localStorage.getItem(storageKey);
           if (localBm) {
             try {
               setBookmarks(JSON.parse(localBm));
             } catch {
-              setBookmarks(INITIAL_BOOKMARKS);
+              setBookmarks([]);
             }
           } else {
-            setBookmarks(INITIAL_BOOKMARKS);
+            setBookmarks([]);
           }
 
+          const localCol = localStorage.getItem('valut_collections');
           if (localCol) {
             try {
               setCollections(JSON.parse(localCol));
             } catch {
-              setCollections(INITIAL_COLLECTIONS);
+              setCollections([]);
             }
           } else {
-            setCollections(INITIAL_COLLECTIONS);
+            setCollections([]);
           }
-          setTags(INITIAL_TAGS);
+          setTags([]);
         }
       } catch (e) {
         console.error('Error during init:', e);
-        setBookmarks(INITIAL_BOOKMARKS);
-        setCollections(INITIAL_COLLECTIONS);
-        setTags(INITIAL_TAGS);
+        setBookmarks([]);
+        setCollections([]);
+        setTags([]);
       } finally {
         setIsLoaded(true);
       }
     }
 
     loadData();
-  }, []);
+  }, [user]);
 
   // Save changes to localStorage as local offline backup
   useEffect(() => {
@@ -255,7 +260,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       createdAt: Date.now()
     };
     setBookmarks(prev => [created, ...prev]);
-    insertBookmarkToDb(created);
+    insertBookmarkToDb(created, user?.id);
 
     // Update tags list if new tags were introduced
     const newTagNames = newBm.tags.map(t => t.name);
@@ -269,7 +274,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           color: t.color,
           count: 1
         }));
-      additions.forEach(tag => insertTagToDb(tag));
+      additions.forEach(tag => insertTagToDb(tag, user?.id));
       return [...prev, ...additions];
     });
   };
@@ -282,7 +287,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       count: 0
     };
     setCollections(prev => [...prev, created]);
-    insertCollectionToDb(created);
+    insertCollectionToDb(created, user?.id);
   };
 
   const handleShuffle = () => {
@@ -388,6 +393,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onOpenAddCollection={() => setIsAddCollectionOpen(true)}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
         isMobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
       />
@@ -558,6 +564,11 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       <FeedbackModal
         isOpen={isFeedbackOpen}
         onClose={() => setIsFeedbackOpen(false)}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
       />
     </div>
   );

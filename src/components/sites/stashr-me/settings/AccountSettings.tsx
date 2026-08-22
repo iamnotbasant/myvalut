@@ -1,107 +1,96 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
-import { EditPencilIcon } from '@/components/icons';
+import { useAuth } from '@/lib/auth-context';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { LogIn, LogOut, User, Mail, Shield, Key } from 'lucide-react';
 
 export function AccountSettings() {
-  const [email, setEmail] = useState('httpbasant@gmail.com');
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [avatar, setAvatar] = useState('/stashr_files/unnamed.jpg');
+  const { user, signOut } = useAuth();
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [deletionRequested, setDeletionRequested] = useState(false);
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setAvatar(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemovePhoto = () => {
-    setAvatar('/stashr_files/unnamed.jpg');
-  };
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-10 px-6 py-8 md:px-10 md:py-10 animate-in fade-in duration-150">
       {/* 1. Profile Section */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-strong tracking-tight">Profile</h2>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Account Profile</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your profile information.
+            Manage your authenticated personal vault session.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            {/* Avatar image */}
-            <div className="relative size-12 shrink-0 overflow-hidden rounded-full ring-1 ring-border bg-neutral-800">
-              <Image
-                src={avatar}
-                alt="Profile"
-                fill
-                className="object-cover"
-                unoptimized
-              />
+        {user ? (
+          <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-4 shadow-xs">
+            <div className="flex items-center gap-4">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary text-xl font-bold border border-primary/25 shadow-xs">
+                {user.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <h3 className="font-semibold text-sm text-foreground truncate">
+                  {user.email?.split('@')[0]}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                  <Mail className="size-3" />
+                  <span>{user.email}</span>
+                </p>
+                <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">
+                  <Shield className="size-3" />
+                  <span>Cloud Database Connected (Supabase)</span>
+                </p>
+              </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer inline-flex h-8 items-center justify-center rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs">
-                <span>Change photo</span>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  className="hidden"
-                  onChange={handlePhotoChange}
-                />
-              </label>
-
+            <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+              <div className="text-[11px] text-muted-foreground">
+                User ID: <span className="font-mono text-foreground/80">{user.id.slice(0, 12)}...</span>
+              </div>
               <button
                 type="button"
-                onClick={handleRemovePhoto}
-                className="h-8 rounded-xl px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => signOut()}
+                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
               >
-                Remove
+                <LogOut className="size-3.5" />
+                <span>Sign Out</span>
               </button>
             </div>
           </div>
-
-          <p className="text-[11px] text-muted-foreground">
-            JPEG, PNG, or WebP (max 5MB)
-          </p>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card/60 p-5 text-center space-y-3 shadow-xs">
+            <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <User className="size-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-foreground">Guest Mode</h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                You are currently not signed in. Sign in or create an account to permanently sync bookmarks across all your devices.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAuthOpen(true)}
+              className="inline-flex h-8.5 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              <LogIn className="size-3.5" />
+              <span>Sign In / Create Account</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 2. Email Section */}
-      <div className="space-y-2">
-        <label className="block text-xs font-medium text-strong">
-          Email
-        </label>
-        <div className="relative max-w-md">
-          <input
-            type="email"
-            value={email}
-            readOnly={!isEditingEmail}
-            onChange={e => setEmail(e.target.value)}
-            className={`h-9 w-full rounded-xl border border-input bg-card/60 px-3.5 pr-10 text-xs text-foreground outline-none transition-all ${
-              isEditingEmail ? 'focus:border-ring focus:ring-2 focus:ring-ring/20' : 'cursor-default'
-            }`}
-          />
-          <button
-            type="button"
-            onClick={() => setIsEditingEmail(!isEditingEmail)}
-            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:text-foreground transition-colors"
-            title="Edit email"
-          >
-            <EditPencilIcon className="size-3.5" />
-          </button>
+      {/* 2. Security Section */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Cloud Security & Data</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Your data is encrypted and isolated with Supabase Row Level Security.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card/40 p-3.5 text-xs text-muted-foreground space-y-1">
+          <p>• Only your authenticated account has access to your bookmarks.</p>
+          <p>• Offline cache is automatically updated in your browser.</p>
         </div>
       </div>
 
@@ -110,7 +99,7 @@ export function AccountSettings() {
         <div>
           <h2 className="text-sm font-semibold text-strong tracking-tight">Delete account</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            If you'd like to delete your account, please get in touch and we'll take care of it.
+            Permanently remove your account and all associated bookmarks from the database.
           </p>
         </div>
 
@@ -118,7 +107,7 @@ export function AccountSettings() {
           <button
             type="button"
             onClick={() => setDeletionRequested(true)}
-            className="inline-flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs"
+            className="inline-flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 text-muted-foreground">
               <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -128,6 +117,8 @@ export function AccountSettings() {
           </button>
         </div>
       </div>
+
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 }
