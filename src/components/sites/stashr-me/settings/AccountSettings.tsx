@@ -2,109 +2,129 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { User, Check, Trash2, Camera } from '@/components/icons';
+import { EditPencilIcon } from '@/components/icons';
 
 export function AccountSettings() {
-  const [name, setName] = useState('Basant');
-  const [email, setEmail] = useState('basant@stashr.me');
-  const [saved, setSaved] = useState(false);
+  const [email, setEmail] = useState('httpbasant@gmail.com');
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [avatar, setAvatar] = useState('/stashr_files/unnamed.jpg');
+  const [deletionRequested, setDeletionRequested] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setAvatar(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setAvatar('/stashr_files/unnamed.jpg');
   };
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8 p-6 md:px-12 md:py-8 animate-in fade-in duration-150">
-      {/* Profile Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-strong tracking-tight">Account settings</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Manage your personal details, profile avatar, and account preferences.
-        </p>
-      </div>
-
-      {/* Avatar Section */}
-      <div className="flex items-center gap-6 rounded-2xl border border-border bg-card p-5 shadow-xs">
-        <div className="relative flex size-20 shrink-0 items-center justify-center rounded-full bg-linear-to-tr from-amber-500 to-violet-500 text-2xl font-bold text-white shadow-xs">
-          B
-          <div className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-card text-muted-foreground shadow-xs">
-            <Camera className="size-3" />
-          </div>
+    <div className="mx-auto w-full max-w-2xl space-y-10 px-6 py-8 md:px-10 md:py-10 animate-in fade-in duration-150">
+      {/* 1. Profile Section */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Profile</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage your profile information.
+          </p>
         </div>
-        <div className="space-y-1">
-          <h4 className="text-sm font-medium text-strong">Profile photo</h4>
-          <p className="text-xs text-muted-foreground">
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-4">
+            {/* Avatar image */}
+            <div className="relative size-12 shrink-0 overflow-hidden rounded-full ring-1 ring-border bg-neutral-800">
+              <Image
+                src={avatar}
+                alt="Profile"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer inline-flex h-8 items-center justify-center rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs">
+                <span>Change photo</span>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="h-8 rounded-xl px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
             JPEG, PNG, or WebP (max 5MB)
           </p>
-          <div className="pt-2 flex items-center gap-2">
-            <button className="h-8 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-              Change photo
-            </button>
-            <button className="h-8 rounded-lg px-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors">
-              Remove
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Profile Form */}
-      <form onSubmit={handleSave} className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-xs">
-        <h3 className="text-sm font-semibold text-strong border-b border-border pb-3">
-          Profile information
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-border pt-4">
-          <span className="text-xs text-muted-foreground">
-            {saved ? 'Changes saved successfully!' : 'Your profile is publicly visible to collaborators.'}
-          </span>
+      {/* 2. Email Section */}
+      <div className="space-y-2">
+        <label className="block text-xs font-medium text-strong">
+          Email
+        </label>
+        <div className="relative max-w-md">
+          <input
+            type="email"
+            value={email}
+            readOnly={!isEditingEmail}
+            onChange={e => setEmail(e.target.value)}
+            className={`h-9 w-full rounded-xl border border-input bg-card/60 px-3.5 pr-10 text-xs text-foreground outline-none transition-all ${
+              isEditingEmail ? 'focus:border-ring focus:ring-2 focus:ring-ring/20' : 'cursor-default'
+            }`}
+          />
           <button
-            type="submit"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+            type="button"
+            onClick={() => setIsEditingEmail(!isEditingEmail)}
+            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="Edit email"
           >
-            {saved && <Check className="size-3.5" />}
-            <span>{saved ? 'Saved' : 'Save Changes'}</span>
+            <EditPencilIcon className="size-3.5" />
           </button>
         </div>
-      </form>
+      </div>
 
-      {/* Danger Zone */}
-      <div className="space-y-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-6">
-        <h3 className="text-sm font-semibold text-destructive">Danger Zone</h3>
-        <p className="text-xs text-muted-foreground">
-          Permanently delete your Stashr account and all stored bookmarks, collections, notes, and tags. This action cannot be undone.
-        </p>
-        <div className="pt-2">
-          <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-destructive bg-destructive px-3 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 shadow-xs transition-colors">
-            <Trash2 className="size-3.5" />
-            <span>Delete Account</span>
+      {/* 3. Delete Account Section */}
+      <div className="space-y-3 pt-2">
+        <div>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Delete account</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            If you'd like to delete your account, please get in touch and we'll take care of it.
+          </p>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setDeletionRequested(true)}
+            className="inline-flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 text-muted-foreground">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            <span>{deletionRequested ? 'Request received' : 'Request account deletion'}</span>
           </button>
         </div>
       </div>

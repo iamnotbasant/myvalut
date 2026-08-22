@@ -4,6 +4,9 @@ export type PlatformType =
   | 'instagram'
   | 'tiktok'
   | 'youtube'
+  | 'pinterest'
+  | 'bluesky'
+  | 'threads'
   | 'web';
 
 export type TagColor =
@@ -41,6 +44,7 @@ export interface BookmarkItem {
   username: string;
   avatarUrl?: string;
   imageUrl?: string;
+  title?: string;
   text: string;
   url?: string;
   date: string;

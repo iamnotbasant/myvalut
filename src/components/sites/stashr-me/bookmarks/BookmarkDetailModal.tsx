@@ -1,0 +1,169 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import Image from 'next/image';
+import { BookmarkItem } from '@/types/stashr';
+import { TagDot, PlatformIcon, RedditIcon } from '@/components/icons';
+
+interface BookmarkDetailModalProps {
+  bookmark: BookmarkItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function BookmarkDetailModal({
+  bookmark,
+  isOpen,
+  onClose
+}: BookmarkDetailModalProps) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !bookmark) return null;
+
+  const isVideo =
+    bookmark.imageUrl?.includes('13_') ||
+    bookmark.imageUrl?.includes('video') ||
+    bookmark.text?.toLowerCase().includes('animation') ||
+    bookmark.text?.toLowerCase().includes('video');
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-150"
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-neutral-700/90 bg-[#1c1c1f] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-white/15 animate-in zoom-in-95 duration-150 scrollbar-none"
+      >
+        {/* Top Right Close Button (✕) */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-4 right-4 z-20 flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+
+        {/* Header with Avatar & Author */}
+        <div className="flex items-center gap-3 pr-8">
+          {bookmark.avatarUrl ? (
+            <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-muted relative shadow-md">
+              <Image
+                src={bookmark.avatarUrl}
+                alt={bookmark.displayName}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ) : bookmark.platform === 'reddit' ? (
+            <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 shadow-md">
+              <RedditIcon className="size-full" />
+            </div>
+          ) : (
+            <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-accent text-sm font-semibold text-strong shadow-md">
+              {bookmark.displayName ? bookmark.displayName.charAt(0).toUpperCase() : <PlatformIcon platform={bookmark.platform} />}
+            </div>
+          )}
+
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            <span className="truncate font-semibold text-white text-base leading-tight tracking-tight">
+              {bookmark.displayName}
+            </span>
+            {bookmark.username && (
+              <span className="truncate text-xs text-neutral-400 leading-tight mt-0.5">
+                {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        {bookmark.title && (
+          <h2 className="font-semibold text-white text-base leading-snug">
+            {bookmark.title}
+          </h2>
+        )}
+
+        {/* Post Text */}
+        {bookmark.text && (
+          <div className="space-y-3 whitespace-pre-line text-[14.5px] leading-relaxed text-neutral-100 font-normal">
+            <p>{bookmark.text}</p>
+          </div>
+        )}
+
+        {/* Media / Video Preview */}
+        {bookmark.imageUrl && (
+          <div className="relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] w-full group/media shadow-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={bookmark.imageUrl}
+              alt={bookmark.displayName}
+              className="h-auto w-full object-cover max-h-[32rem]"
+            />
+            {/* Video Play Button Overlay */}
+            {isVideo && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex items-center justify-center rounded-full bg-black/65 ring-1 ring-white/30 backdrop-blur-md size-13 shadow-2xl transition-transform group-hover/media:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
+                    <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5"/>
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Note if available */}
+        {bookmark.note && (
+          <div className="flex items-start gap-2 rounded-lg border border-neutral-700/80 bg-white/5 p-2.5 text-xs text-neutral-300">
+            <span className="font-semibold text-primary">Note:</span>
+            <span>{bookmark.note}</span>
+          </div>
+        )}
+
+        {/* Footer with ALL Tags (untruncated) and Date / Platform Badge */}
+        <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
+          {/* Tags */}
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            {bookmark.tags && bookmark.tags.length > 0 ? (
+              bookmark.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/80 bg-[#27272a]/80 rounded-lg font-normal text-xs h-6 text-neutral-200 gap-1.5 px-2.5 py-0.5"
+                >
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-neutral-400">No tags</span>
+            )}
+          </div>
+
+          {/* Date and Centered Platform Icon */}
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
+            <div className="h-3.5 w-px bg-neutral-700"></div>
+            <PlatformIcon platform={bookmark.platform} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
