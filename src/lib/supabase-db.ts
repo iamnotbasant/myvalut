@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { BookmarkItem, Collection, Tag } from '@/types/stashr';
 
 // Row types from Supabase
-interface DbBookmark {
+export interface DbBookmark {
   id: string;
   platform: string;
   display_name: string;
@@ -14,7 +14,7 @@ interface DbBookmark {
   url?: string | null;
   date: string;
   created_at_ms?: number | null;
-  tags: { name: string; color: any }[];
+  tags: { name: string; color: string }[];
   is_favorite?: boolean | null;
   is_archived?: boolean | null;
   note?: string | null;
@@ -34,16 +34,22 @@ interface DbCollection {
 interface DbTag {
   id: string;
   name: string;
-  color: any;
+  color: string;
   user_id?: string | null;
   created_at?: string;
 }
 
+function sanitizeUuid(id?: string | null): string | null {
+  if (!id || typeof id !== 'string') return null;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id) ? id : null;
+}
+
 // Convert DB bookmark row to BookmarkItem
-function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
+export function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
   return {
     id: row.id,
-    platform: row.platform as any,
+    platform: (row.platform as BookmarkItem['platform']) || 'web',
     displayName: row.display_name,
     username: row.username,
     avatarUrl: row.avatar_url || undefined,
@@ -53,7 +59,7 @@ function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
     url: row.url || undefined,
     date: row.date,
     createdAt: row.created_at_ms ? Number(row.created_at_ms) : undefined,
-    tags: Array.isArray(row.tags) ? row.tags : [],
+    tags: Array.isArray(row.tags) ? (row.tags as Tag[]) : [],
     isFavorite: Boolean(row.is_favorite),
     isArchived: Boolean(row.is_archived),
     note: row.note || undefined,
@@ -80,7 +86,7 @@ function mapAppBookmarkToDb(item: BookmarkItem, userId?: string | null): DbBookm
     is_archived: Boolean(item.isArchived),
     note: item.note || null,
     collection_id: item.collectionId || null,
-    user_id: userId || null,
+    user_id: sanitizeUuid(userId),
   };
 }
 
@@ -89,8 +95,9 @@ export async function fetchBookmarksFromDb(userId?: string | null): Promise<Book
   try {
     let query = supabase.from('bookmarks').select('*').order('created_at_ms', { ascending: false });
     
-    if (userId) {
-      query = query.eq('user_id', userId);
+    const validUserId = sanitizeUuid(userId);
+    if (validUserId) {
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await query;
@@ -111,8 +118,9 @@ export async function fetchCollectionsFromDb(userId?: string | null): Promise<Co
   try {
     let query = supabase.from('collections').select('*').order('name', { ascending: true });
     
-    if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    const validUserId = sanitizeUuid(userId);
+    if (validUserId) {
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await query;
@@ -137,8 +145,9 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
   try {
     let query = supabase.from('tags').select('*').order('name', { ascending: true });
     
-    if (userId) {
-      query = query.or(`user_id.eq.${userId},user_id.is.null`);
+    const validUserId = sanitizeUuid(userId);
+    if (validUserId) {
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await query;
@@ -150,7 +159,7 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
     return (data as DbTag[]).map(t => ({
       id: t.id,
       name: t.name,
-      color: t.color,
+      color: t.color as Tag['color'],
     }));
   } catch (err) {
     console.error('Failed to fetch tags from Supabase:', err);
@@ -261,7 +270,7 @@ export async function insertCollectionToDb(item: Collection, userId?: string | n
       id: item.id,
       name: item.name,
       icon: item.icon || null,
-      user_id: userId || null,
+      user_id: sanitizeUuid(userId),
     });
     if (error) {
       console.error('Error inserting collection into Supabase:', error);
@@ -281,8 +290,8 @@ export async function insertTagToDb(item: Tag, userId?: string | null): Promise<
       id: item.id,
       name: item.name,
       color: item.color,
-      user_id: userId || null,
-    }, { onConflict: 'name' });
+      user_id: sanitizeUuid(userId),
+    }, { onConflict: 'id' });
     if (error) {
       console.error('Error inserting tag into Supabase:', error);
       return false;

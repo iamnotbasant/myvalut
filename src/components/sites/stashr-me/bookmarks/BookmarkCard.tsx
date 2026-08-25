@@ -9,12 +9,13 @@ import {
   TagDot,
   Star,
   FileText,
-  ExternalLink,
   Archive,
   Trash2,
   Copy,
-  Check
+  Check,
+  Sparkles
 } from '@/components/icons';
+import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkCardProps {
   bookmark: BookmarkItem;
@@ -28,6 +29,17 @@ interface BookmarkCardProps {
   onDelete: (id: string) => void;
   onOpenImage?: (url: string) => void;
   onOpenDetail?: (bookmark: BookmarkItem) => void;
+  isTagging?: boolean;
+  onAutoTag?: () => void;
+  onSelectTag?: (tagName: string) => void;
+}
+
+function getCleanImageUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.includes('hqdefault.jpg')) {
+    return url.replace('hqdefault.jpg', 'maxresdefault.jpg');
+  }
+  return url;
 }
 
 export function BookmarkCard({
@@ -41,12 +53,17 @@ export function BookmarkCard({
   onArchive,
   onDelete,
   onOpenImage,
-  onOpenDetail
+  onOpenDetail,
+  isTagging = false,
+  onAutoTag,
+  onSelectTag
 }: BookmarkCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const cleanImageUrl = getCleanImageUrl(bookmark.imageUrl);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,6 +79,7 @@ export function BookmarkCard({
     e.stopPropagation();
     if (bookmark.url) {
       navigator.clipboard.writeText(bookmark.url);
+      soundFx.playClickSound();
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -81,8 +99,10 @@ export function BookmarkCard({
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect?.();
-          } else {
-            onOpenDetail ? onOpenDetail(bookmark) : (bookmark.imageUrl && onOpenImage?.(bookmark.imageUrl));
+          } else if (onOpenDetail) {
+            onOpenDetail(bookmark);
+          } else if (bookmark.imageUrl) {
+            onOpenImage?.(bookmark.imageUrl);
           }
         }}
         className={`group/row relative flex flex-col gap-3 rounded-xl border border-neutral-700/80 bg-[#1c1c1f] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/5 transition-all hover:border-neutral-600 hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.7)] cursor-pointer ${
@@ -144,14 +164,20 @@ export function BookmarkCard({
             {bookmark.text}
           </p>
 
-          {bookmark.imageUrl && (
+          {cleanImageUrl && (
             <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-black group/thumb">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={bookmark.imageUrl}
+                src={cleanImageUrl}
                 alt={bookmark.displayName}
-                className="size-full object-cover"
+                className={`size-full object-cover ${bookmark.platform === 'youtube' ? 'aspect-video' : ''}`}
                 loading="lazy"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (target.src.includes('maxresdefault.jpg')) {
+                    target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+                  }
+                }}
               />
               {isVideo && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
@@ -169,19 +195,45 @@ export function BookmarkCard({
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.slice(0, 3).map((tag, idx) => (
-              <span
-                key={idx}
-                className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-300 gap-1.5 px-2.5 py-0.5"
+            {isTagging ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300 animate-pulse">
+                <Sparkles className="size-3 text-indigo-400 animate-spin" />
+                <span>AI Tagging...</span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+              <>
+                {bookmark.tags.slice(0, 3).map((tag, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={e => {
+                      e.stopPropagation();
+                      onSelectTag?.(tag.name);
+                    }}
+                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <TagDot color={tag.color} />
+                    <span>{tag.name}</span>
+                  </button>
+                ))}
+                {bookmark.tags.length > 3 && (
+                  <span className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-400 px-2 py-0.5">
+                    +{bookmark.tags.length - 3}
+                  </span>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onAutoTag?.();
+                }}
+                className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-0.5 cursor-pointer"
               >
-                <TagDot color={tag.color} />
-                <span>{tag.name}</span>
-              </span>
-            ))}
-            {bookmark.tags && bookmark.tags.length > 3 && (
-              <span className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-400 px-2 py-0.5">
-                +{bookmark.tags.length - 3}
-              </span>
+                <Sparkles className="size-3 text-indigo-400" />
+                <span>✦ Auto-Tag</span>
+              </button>
             )}
           </div>
 
@@ -202,8 +254,10 @@ export function BookmarkCard({
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect?.();
-          } else {
-            onOpenDetail ? onOpenDetail(bookmark) : (bookmark.imageUrl && onOpenImage?.(bookmark.imageUrl));
+          } else if (onOpenDetail) {
+            onOpenDetail(bookmark);
+          } else if (bookmark.imageUrl) {
+            onOpenImage?.(bookmark.imageUrl);
           }
         }}
         className={`group/timeline relative mx-auto w-full flex flex-col gap-3.5 rounded-2xl border border-neutral-700/80 bg-[#1c1c1f] p-5 text-foreground text-sm shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/5 transition-all hover:shadow-[0_18px_45px_-10px_rgba(0,0,0,0.7)] hover:border-neutral-600 cursor-pointer ${
@@ -241,14 +295,24 @@ export function BookmarkCard({
           {bookmark.text}
         </p>
 
-        {bookmark.imageUrl && (
-          <div className="relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] cursor-pointer group/media">
+        {cleanImageUrl && (
+          <div className={`relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] cursor-pointer group/media ${
+            bookmark.platform === 'youtube' ? 'aspect-video' : ''
+          }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={bookmark.imageUrl}
+              src={cleanImageUrl}
               alt={bookmark.displayName}
-              className="h-auto w-full object-cover max-h-[34rem] rounded-xl"
+              className={`w-full object-cover rounded-xl ${
+                bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[34rem]'
+              }`}
               loading="lazy"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src.includes('maxresdefault.jpg')) {
+                  target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+                }
+              }}
             />
             {isVideo && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -264,15 +328,39 @@ export function BookmarkCard({
 
         <footer className="flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            {bookmark.tags && bookmark.tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-300 gap-1.5 px-2.5 py-0.5"
+            {isTagging ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300 animate-pulse">
+                <Sparkles className="size-3 text-indigo-400 animate-spin" />
+                <span>AI Tagging...</span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+              bookmark.tags.map((tag, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onSelectTag?.(tag.name);
+                  }}
+                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
+                </button>
+              ))
+            ) : (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onAutoTag?.();
+                }}
+                className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-0.5 cursor-pointer"
               >
-                <TagDot color={tag.color} />
-                <span>{tag.name}</span>
-              </span>
-            ))}
+                <Sparkles className="size-3 text-indigo-400" />
+                <span>✦ Auto-Tag with AI</span>
+              </button>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
@@ -293,8 +381,10 @@ export function BookmarkCard({
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect?.();
-          } else {
-            onOpenDetail ? onOpenDetail(bookmark) : (bookmark.imageUrl && onOpenImage?.(bookmark.imageUrl));
+          } else if (onOpenDetail) {
+            onOpenDetail(bookmark);
+          } else if (bookmark.imageUrl) {
+            onOpenImage?.(bookmark.imageUrl);
           }
         }}
         className={`group/mosaic relative break-inside-avoid overflow-hidden rounded-xl border border-white/[0.08] bg-[#1c1c1f] shadow-md transition-all hover:scale-[1.01] hover:border-white/20 cursor-pointer ${
@@ -327,8 +417,10 @@ export function BookmarkCard({
       onClick={() => {
         if (isSelectionMode) {
           onToggleSelect?.();
-        } else {
-          onOpenDetail ? onOpenDetail(bookmark) : (bookmark.imageUrl && onOpenImage?.(bookmark.imageUrl));
+        } else if (onOpenDetail) {
+          onOpenDetail(bookmark);
+        } else if (bookmark.imageUrl) {
+          onOpenImage?.(bookmark.imageUrl);
         }
       }}
       className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#1c1c1f] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.7)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
@@ -377,6 +469,17 @@ export function BookmarkCard({
                 >
                   <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
                   <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    onAutoTag?.();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Sparkles className="size-3.5 text-indigo-400" />
+                  <span>Re-Tag with AI</span>
                 </button>
                 <button
                   onClick={e => {
@@ -512,22 +615,36 @@ export function BookmarkCard({
       )}
 
       {/* Image / Video Preview (Natural Sizing with max-h-[34rem]) */}
-      {bookmark.imageUrl && (
+      {cleanImageUrl && (
         <button
           type="button"
           aria-label="Open media"
           onClick={e => {
             e.stopPropagation();
-            onOpenDetail ? onOpenDetail(bookmark) : onOpenImage?.(bookmark.imageUrl!);
+            if (onOpenDetail) {
+              onOpenDetail(bookmark);
+            } else if (cleanImageUrl) {
+              onOpenImage?.(cleanImageUrl);
+            }
           }}
-          className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] relative block w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 group/media text-left"
+          className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] relative block w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 group/media text-left ${
+            bookmark.platform === 'youtube' ? 'aspect-video' : ''
+          }`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={bookmark.imageUrl}
+            src={cleanImageUrl}
             alt={bookmark.displayName}
-            className="h-auto w-full object-cover max-h-[34rem] transition-transform duration-300 group-hover/media:scale-101"
+            className={`w-full object-cover transition-transform duration-300 group-hover/media:scale-101 ${
+              bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[34rem]'
+            }`}
             loading="lazy"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src.includes('maxresdefault.jpg')) {
+                target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+              }
+            }}
           />
           {/* Circular Frosted Video Play Button Overlay */}
           {isVideo && (
@@ -559,13 +676,22 @@ export function BookmarkCard({
       {/* Footer with Tags and Date/Platform */}
       <div className="flex items-center justify-between gap-2 mt-auto pt-1">
         <div className="flex min-w-0 flex-1 items-center">
-          {bookmark.tags && bookmark.tags.length > 0 ? (
+          {isTagging ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300 animate-pulse">
+              <Sparkles className="size-3 text-indigo-400 animate-spin" />
+              <span>AI Tagging...</span>
+            </div>
+          ) : bookmark.tags && bookmark.tags.length > 0 ? (
             <div className="flex min-w-0 items-center gap-1.5">
               {bookmark.tags.slice(0, 2).map((tag, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#27272a]/60 hover:bg-[#27272a] rounded-lg font-normal text-xs h-5.5 text-neutral-300 gap-1.5 px-2 py-0.5 min-w-0 shrink transition-colors"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onSelectTag?.(tag.name);
+                  }}
+                  className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#27272a]/60 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 min-w-0 shrink transition-all cursor-pointer active:scale-95"
                 >
                   <TagDot color={tag.color} />
                   <span className="truncate">{tag.name}</span>
@@ -575,19 +701,27 @@ export function BookmarkCard({
                 <div className="relative group/tagtooltip">
                   <button
                     type="button"
-                    className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#27272a]/60 hover:bg-[#27272a] rounded-lg font-normal text-xs h-5.5 text-neutral-400 gap-1 px-2 py-0.5 shrink-0 transition-colors"
+                    className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#27272a]/60 hover:bg-[#3f3f46] rounded-lg font-normal text-xs h-5.5 text-neutral-400 gap-1 px-2 py-0.5 shrink-0 transition-colors cursor-pointer"
                   >
                     +{bookmark.tags.length - 2}
                   </button>
                   {/* Floating Tag Tooltip / Popover matching User Image 1 */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50 pointer-events-none">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50">
                     <div className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#27272a] px-2.5 py-1 text-xs text-neutral-200 shadow-2xl backdrop-blur-md whitespace-nowrap">
                       {bookmark.tags.slice(2).map((tag, idx) => (
-                        <span key={idx} className="flex items-center gap-1.5 font-medium">
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onSelectTag?.(tag.name);
+                          }}
+                          className="flex items-center gap-1.5 font-medium hover:text-white cursor-pointer"
+                        >
                           <TagDot color={tag.color} />
                           <span>{tag.name}</span>
                           {idx < bookmark.tags.length - 3 && <span className="text-neutral-400">,</span>}
-                        </span>
+                        </button>
                       ))}
                     </div>
                     <div className="size-2 -mt-1 rotate-45 border-r border-b border-white/15 bg-[#27272a]" />
@@ -601,13 +735,12 @@ export function BookmarkCard({
               type="button"
               onClick={e => {
                 e.stopPropagation();
+                onAutoTag?.();
               }}
-              className="group/addtag inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-white transition-colors py-0.5"
+              className="group/addtag inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-0.5 cursor-pointer"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3 text-neutral-400 group-hover/addtag:text-white">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              <span className="font-normal text-[11px]">Add tags</span>
+              <Sparkles className="size-3 text-indigo-400" />
+              <span className="font-medium text-[11px]">✦ Auto-Tag with AI</span>
             </button>
           )}
         </div>

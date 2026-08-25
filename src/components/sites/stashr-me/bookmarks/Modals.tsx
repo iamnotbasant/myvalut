@@ -17,6 +17,7 @@ import {
   Bookmark,
   Check
 } from '@/components/icons';
+import { soundFx } from '@/lib/sound-effects';
 
 // 1. Add Bookmark Modal
 interface AddBookmarkModalProps {
@@ -176,11 +177,38 @@ export function AddBookmarkModal({
             </div>
           </div>
 
-          {/* Tags Picker */}
+          {/* Tags Picker with AI Auto-tag */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Select Tags
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-muted-foreground">
+                Tags
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    soundFx.playClickSound();
+                    const res = await fetch('/api/ai/tag', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ url, text, platform, title: displayName }),
+                    });
+                    const data = await res.json();
+                    if (data.tags && Array.isArray(data.tags)) {
+                      soundFx.playAiSuccessSound();
+                      const newNames = (data.tags as Array<{ name: string }>).map(t => t.name);
+                      setSelectedTags(Array.from(new Set([...selectedTags, ...newNames])));
+                    }
+                  } catch (e) {
+                    console.error('AI Tag error:', e);
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer bg-primary/10 hover:bg-primary/20 px-2.5 py-0.5 rounded-full active:scale-95"
+              >
+                <Sparkles className="size-3" />
+                <span>✦ Auto-Tag with AI</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {availableTags.map(t => {
                 const isSelected = selectedTags.includes(t.name);
@@ -189,13 +217,14 @@ export function AddBookmarkModal({
                     type="button"
                     key={t.id}
                     onClick={() => {
+                      soundFx.playTagSound();
                       setSelectedTags(
                         isSelected
                           ? selectedTags.filter(x => x !== t.name)
                           : [...selectedTags, t.name]
                       );
                     }}
-                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95 ${
                       isSelected
                         ? 'border-primary/40 bg-primary/10 text-primary font-medium'
                         : 'border-border bg-background text-muted-foreground hover:bg-accent'
@@ -207,6 +236,24 @@ export function AddBookmarkModal({
                   </button>
                 );
               })}
+              {/* Also display any AI tags selected that might not be in availableTags yet */}
+              {selectedTags
+                .filter(st => !availableTags.some(at => at.name === st))
+                .map(st => (
+                  <button
+                    type="button"
+                    key={st}
+                    onClick={() => {
+                      soundFx.playTagSound();
+                      setSelectedTags(selectedTags.filter(x => x !== st));
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 font-medium px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <span className="size-1.5 rounded-full bg-indigo-400"></span>
+                    <span>{st}</span>
+                    <Check className="size-3 text-indigo-400" />
+                  </button>
+                ))}
             </div>
           </div>
 

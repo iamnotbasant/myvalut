@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   BookmarkItem,
   Collection,
@@ -8,11 +8,6 @@ import {
   FilterState,
   ViewMode
 } from '@/types/stashr';
-import {
-  INITIAL_BOOKMARKS,
-  INITIAL_COLLECTIONS,
-  INITIAL_TAGS
-} from './mock-data';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { FilterBar } from './FilterBar';
@@ -38,29 +33,62 @@ import {
   deleteMultipleBookmarksFromDb,
   archiveMultipleBookmarksInDb,
   insertCollectionToDb,
-  insertTagToDb
+  insertTagToDb,
+  mapDbBookmarkToApp,
+  DbBookmark
 } from '@/lib/supabase-db';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useAuth } from '@/lib/auth-context';
+import { soundFx } from '@/lib/sound-effects';
 
 interface StashrAppProps {
   initialNav?: 'bookmarks' | 'archived' | 'creators' | 'connections';
 }
 
+function getInitialLocalStorageData<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const { user } = useAuth();
 
-  // 1. Data States with LocalStorage & Supabase Hydration
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+  // 1. Data States with 0ms Instant Hydration
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() =>
+    getInitialLocalStorageData<BookmarkItem[]>('stashr_bookmarks_v3', [])
+  );
+  const [collections, setCollections] = useState<Collection[]>(() =>
+    getInitialLocalStorageData<Collection[]>('stashr_collections_v3', [])
+  );
+  const [tags, setTags] = useState<Tag[]>(() =>
+    getInitialLocalStorageData<Tag[]>('stashr_tags_v3', [])
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 2. View and Filter States
-  const [viewMode, setViewMode] = useState<ViewMode>('mosaic');
-  const [columns, setColumns] = useState<number>(3);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stashr_view_mode') as ViewMode;
+      if (saved) return saved;
+    }
+    return 'grid';
+  });
+
+  const [columns, setColumns] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stashr_grid_columns');
+      if (saved) return Number(saved);
+    }
+    return 3;
+  });
+
   const [filterState, setFilterState] = useState<FilterState>({
     query: '',
     platforms: [],
@@ -86,119 +114,121 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // 5. Theme State
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stashr_theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return true;
+  });
 
-  // Initialize theme and load persisted data from Supabase or localStorage
+  // Apply dark class on mount/change
   useEffect(() => {
-    async function loadData() {
-      try {
-        const savedTheme = localStorage.getItem('stashr_theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-        setIsDark(shouldUseDark);
-        if (shouldUseDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
-        const savedView = localStorage.getItem('stashr_view_mode') as ViewMode;
-        if (savedView) {
-          setViewMode(savedView);
-        }
+  // Load from Supabase in the background
+  useEffect(() => {
+    let isCancelled = false;
 
-        const savedCols = localStorage.getItem('stashr_grid_columns');
-        if (savedCols) {
-          setColumns(Number(savedCols));
-        }
-
-        if (isSupabaseConfigured) {
-          // Attempt to load from Supabase Cloud DB for the active user
-          const [dbBookmarks, dbCollections, dbTags] = await Promise.all([
-            fetchBookmarksFromDb(user?.id),
-            fetchCollectionsFromDb(user?.id),
-            fetchTagsFromDb(user?.id)
-          ]);
-
-          if (dbBookmarks !== null) {
-            setBookmarks(dbBookmarks);
-          } else {
-            setBookmarks([]);
-          }
-
-          if (dbCollections !== null) {
-            setCollections(dbCollections);
-          } else {
-            setCollections([]);
-          }
-
-          if (dbTags !== null) {
-            setTags(dbTags);
-          } else {
-            setTags([]);
-          }
-        } else {
-          // Fallback to localStorage
-          const storageKey = user ? `valut_bookmarks_${user.id}` : 'valut_bookmarks_guest';
-          const localBm = localStorage.getItem(storageKey);
-          if (localBm) {
-            try {
-              setBookmarks(JSON.parse(localBm));
-            } catch {
-              setBookmarks([]);
-            }
-          } else {
-            setBookmarks([]);
-          }
-
-          const localCol = localStorage.getItem('valut_collections');
-          if (localCol) {
-            try {
-              setCollections(JSON.parse(localCol));
-            } catch {
-              setCollections([]);
-            }
-          } else {
-            setCollections([]);
-          }
-          setTags([]);
-        }
-      } catch (e) {
-        console.error('Error during init:', e);
-        setBookmarks([]);
-        setCollections([]);
-        setTags([]);
-      } finally {
+    async function loadFromDatabase() {
+      if (!isSupabaseConfigured) {
         setIsLoaded(true);
+        return;
+      }
+
+      try {
+        const [dbBookmarks, dbCollections, dbTags] = await Promise.all([
+          fetchBookmarksFromDb(user?.id),
+          fetchCollectionsFromDb(user?.id),
+          fetchTagsFromDb(user?.id)
+        ]);
+
+        if (!isCancelled) {
+          if (dbBookmarks !== null) setBookmarks(dbBookmarks);
+          if (dbCollections !== null) setCollections(dbCollections);
+          if (dbTags !== null) setTags(dbTags);
+        }
+      } catch (err) {
+        console.error('Failed background sync with Supabase:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoaded(true);
+        }
       }
     }
 
-    loadData();
+    loadFromDatabase();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
-  // Save changes to localStorage as local offline backup
+  // 6. Supabase Realtime Live WebSocket Sync (Zero Refresh Needed!)
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('stashr_bookmarks_v3', JSON.stringify(bookmarks));
-    }
-  }, [bookmarks, isLoaded]);
+    if (!isSupabaseConfigured || !supabase) return;
 
+    const channel = supabase
+      .channel('realtime-bookmarks-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookmarks' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newBm = mapDbBookmarkToApp(payload.new as DbBookmark);
+            setBookmarks((prev) => {
+              if (prev.some((b) => b.id === newBm.id)) return prev;
+              return [newBm, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedBm = mapDbBookmarkToApp(payload.new as DbBookmark);
+            setBookmarks((prev) =>
+              prev.map((b) => (b.id === updatedBm.id ? updatedBm : b))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as { id?: string })?.id;
+            if (deletedId) {
+              setBookmarks((prev) => prev.filter((b) => b.id !== deletedId));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase?.removeChannel(channel);
+    };
+  }, []);
+
+  // Debounced LocalStorage save
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('stashr_collections_v3', JSON.stringify(collections));
-    }
-  }, [collections, isLoaded]);
+    if (!isLoaded) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem('stashr_bookmarks_v3', JSON.stringify(bookmarks));
+        localStorage.setItem('stashr_collections_v3', JSON.stringify(collections));
+        localStorage.setItem('stashr_tags_v3', JSON.stringify(tags));
+      } catch {}
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [bookmarks, collections, tags, isLoaded]);
 
   const handleToggleTheme = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
-    if (nextDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('stashr_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('stashr_theme', 'light');
-    }
+    localStorage.setItem('stashr_theme', nextDark ? 'dark' : 'light');
   };
 
   const handleViewModeChange = (mode: ViewMode) => {
@@ -219,6 +249,11 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const handleToggleFavorite = (id: string) => {
     const target = bookmarks.find(b => b.id === id);
     const nextVal = target ? !target.isFavorite : true;
+    if (nextVal) {
+      soundFx.playFavoriteSound();
+    } else {
+      soundFx.playClickSound();
+    }
     setBookmarks(prev =>
       prev.map(b => (b.id === id ? { ...b, isFavorite: nextVal } : b))
     );
@@ -226,6 +261,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleArchive = (id: string) => {
+    soundFx.playArchiveSound();
     const target = bookmarks.find(b => b.id === id);
     const nextVal = target ? !target.isArchived : true;
     setBookmarks(prev =>
@@ -235,6 +271,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleDelete = (id: string) => {
+    soundFx.playArchiveSound();
     setBookmarks(prev => prev.filter(b => b.id !== id));
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -245,6 +282,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleSaveNote = (id: string, note: string) => {
+    soundFx.playClickSound();
     const trimmed = note.trim() || undefined;
     setBookmarks(prev =>
       prev.map(b => (b.id === id ? { ...b, note: trimmed } : b))
@@ -252,7 +290,90 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     updateBookmarkInDb(id, { note: trimmed });
   };
 
+  const handleSelectTag = (tagName: string) => {
+    soundFx.playTagSound();
+    setFilterState(prev => {
+      const isAlreadySelected = prev.tags.includes(tagName);
+      return {
+        ...prev,
+        tags: isAlreadySelected
+          ? prev.tags.filter(t => t !== tagName)
+          : [...prev.tags, tagName],
+        activeNav: 'bookmarks'
+      };
+    });
+  };
+
+  // Tagging State for Individual Card Animation
+  const [taggingIds, setTaggingIds] = useState<Set<string>>(new Set());
+
+  const handleAutoTagBookmark = useCallback(async (bookmark: BookmarkItem) => {
+    if (taggingIds.has(bookmark.id)) return;
+    setTaggingIds(prev => new Set([...prev, bookmark.id]));
+
+    try {
+      const storedKey =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('valut_gemini_key') || localStorage.getItem('gemini_api_key') || undefined
+          : undefined;
+
+      const res = await fetch('/api/ai/tag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedKey ? { 'x-gemini-key': storedKey } : {}),
+        },
+        body: JSON.stringify({
+          title: bookmark.title || bookmark.displayName,
+          text: bookmark.text,
+          url: bookmark.url,
+          platform: bookmark.platform,
+          geminiApiKey: storedKey,
+        }),
+      });
+
+      if (!res.ok) throw new Error('AI tag endpoint error');
+      const data = await res.json();
+
+      if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+        soundFx.playAiSuccessSound();
+        setBookmarks(prev =>
+          prev.map(b => (b.id === bookmark.id ? { ...b, tags: data.tags } : b))
+        );
+        updateBookmarkInDb(bookmark.id, { tags: data.tags });
+
+        // Update tags list if new tags were introduced
+        setTags(prev => {
+          const existingNames = new Set(prev.map(t => t.name));
+          const newTags: Tag[] = (data.tags as Array<{ name: string; color?: string }>)
+            .filter(t => !existingNames.has(t.name))
+            .map(t => ({
+              id: `t_${Date.now()}_${t.name}`,
+              name: t.name,
+              color: (t.color as Tag['color']) || 'blue',
+              count: 1,
+            }));
+
+          if (newTags.length > 0) {
+            newTags.forEach(t => insertTagToDb(t, user?.id));
+            return [...prev, ...newTags];
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to auto-tag bookmark:', err);
+    } finally {
+      setTaggingIds(prev => {
+        const next = new Set(prev);
+        next.delete(bookmark.id);
+        return next;
+      });
+    }
+  }, [taggingIds, user?.id]);
+
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
+    soundFx.playSaveSound();
     const created: BookmarkItem = {
       ...newBm,
       id: `b_${Date.now()}`,
@@ -262,8 +383,12 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setBookmarks(prev => [created, ...prev]);
     insertBookmarkToDb(created, user?.id);
 
+    // If new bookmark has no tags, auto-tag it once
+    if (!created.tags || created.tags.length === 0) {
+      handleAutoTagBookmark(created);
+    }
+
     // Update tags list if new tags were introduced
-    const newTagNames = newBm.tags.map(t => t.name);
     setTags(prev => {
       const existingNames = new Set(prev.map(t => t.name));
       const additions: Tag[] = newBm.tags
@@ -280,6 +405,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleAddCollection = (newCol: { name: string; icon: string }) => {
+    soundFx.playClickSound();
     const created: Collection = {
       id: `c_${Date.now()}`,
       name: newCol.name,
@@ -291,6 +417,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleShuffle = () => {
+    soundFx.playClickSound();
     setBookmarks(prev => [...prev].sort(() => Math.random() - 0.5));
   };
 
@@ -349,7 +476,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         const matchesText = b.text.toLowerCase().includes(q);
         const matchesAuthor = b.displayName.toLowerCase().includes(q);
         const matchesUsername = b.username.toLowerCase().includes(q);
-        const matchesTags = b.tags.some(t => t.name.toLowerCase().includes(q));
+        const matchesTags = (b.tags || []).some(t => t.name.toLowerCase().includes(q));
         const matchesNote = b.note?.toLowerCase().includes(q);
         if (!matchesText && !matchesAuthor && !matchesUsername && !matchesTags && !matchesNote) {
           return false;
@@ -363,7 +490,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
       // 4. Tags filter
       if (filterState.tags.length > 0) {
-        const hasTag = b.tags.some(t => filterState.tags.includes(t.name));
+        const hasTag = (b.tags || []).some(t => filterState.tags.includes(t.name));
         if (!hasTag) return false;
       }
 
@@ -510,6 +637,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
                 onOpenImage={setActiveLightboxImage}
                 onOpenDetail={setActiveDetailBookmark}
+                taggingIds={taggingIds}
+                onAutoTag={handleAutoTagBookmark}
+                onSelectTag={handleSelectTag}
               />
             </div>
           </div>
@@ -521,6 +651,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         bookmark={activeDetailBookmark}
         isOpen={!!activeDetailBookmark}
         onClose={() => setActiveDetailBookmark(null)}
+        isTagging={activeDetailBookmark ? taggingIds.has(activeDetailBookmark.id) : false}
+        onAutoTag={() => activeDetailBookmark && handleAutoTagBookmark(activeDetailBookmark)}
+        onSelectTag={handleSelectTag}
       />
 
       <CommandPalette

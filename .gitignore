@@ -53,3 +53,4 @@ extract.js
 scripts/extracted-chunks/
 scripts/*.html
 scripts/*.json
+scratch/

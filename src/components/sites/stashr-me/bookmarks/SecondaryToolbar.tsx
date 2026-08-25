@@ -17,6 +17,7 @@ import {
   X,
   Shuffle
 } from '@/components/icons';
+import { soundFx } from '@/lib/sound-effects';
 
 interface SecondaryToolbarProps {
   filterState: FilterState;
@@ -62,6 +63,7 @@ export function SecondaryToolbar({
   }, []);
 
   const togglePlatform = (p: PlatformType) => {
+    soundFx.playTagSound();
     const next = filterState.platforms.includes(p)
       ? filterState.platforms.filter(x => x !== p)
       : [...filterState.platforms, p];
@@ -69,10 +71,16 @@ export function SecondaryToolbar({
   };
 
   const toggleTag = (tagName: string) => {
+    soundFx.playTagSound();
     const next = filterState.tags.includes(tagName)
       ? filterState.tags.filter(t => t !== tagName)
       : [...filterState.tags, tagName];
     onFilterChange({ tags: next });
+  };
+
+  const handleModeChange = (mode: ViewMode) => {
+    soundFx.playClickSound();
+    onViewModeChange(mode);
   };
 
   const totalActiveFilters =
@@ -88,8 +96,8 @@ export function SecondaryToolbar({
         <button
           type="button"
           aria-label="Grid"
-          onClick={() => onViewModeChange('grid')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors ${
+          onClick={() => handleModeChange('grid')}
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'grid'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -106,8 +114,8 @@ export function SecondaryToolbar({
         <button
           type="button"
           aria-label="Row"
-          onClick={() => onViewModeChange('row')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors ${
+          onClick={() => handleModeChange('row')}
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'row'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -124,8 +132,8 @@ export function SecondaryToolbar({
         <button
           type="button"
           aria-label="Timeline"
-          onClick={() => onViewModeChange('timeline')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors ${
+          onClick={() => handleModeChange('timeline')}
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'timeline'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -142,8 +150,8 @@ export function SecondaryToolbar({
         <button
           type="button"
           aria-label="Mosaic"
-          onClick={() => onViewModeChange('mosaic')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors ${
+          onClick={() => handleModeChange('mosaic')}
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'mosaic'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'

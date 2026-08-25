@@ -25,6 +25,9 @@ interface BookmarksContainerProps {
   onOpenAddBookmark: () => void;
   onOpenImage: (url: string) => void;
   onOpenDetail: (bookmark: BookmarkItem) => void;
+  taggingIds?: Set<string>;
+  onAutoTag?: (bookmark: BookmarkItem) => void;
+  onSelectTag?: (tagName: string) => void;
 }
 
 export function BookmarksContainer({
@@ -46,21 +49,25 @@ export function BookmarksContainer({
   onResetFilters,
   onOpenAddBookmark,
   onOpenImage,
-  onOpenDetail
+  onOpenDetail,
+  taggingIds,
+  onAutoTag,
+  onSelectTag
 }: BookmarksContainerProps) {
   // Empty State
   if (bookmarks.length === 0) {
+    const isArchivedView = allBookmarksCount === 0 && bookmarks.length === 0;
     return (
       <div className="flex flex-1 flex-col items-center justify-center py-20 px-4 text-center">
         <div className="flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/40 text-muted-foreground shadow-xs">
           <Bookmark className="size-6 opacity-60" />
         </div>
         <h3 className="mt-4 font-semibold text-strong text-base tracking-tight">
-          {allBookmarksCount === 0 ? 'No bookmarks saved yet' : 'No matching bookmarks'}
+          {allBookmarksCount === 0 ? 'No bookmarks found' : 'No matching bookmarks'}
         </h3>
         <p className="mt-1.5 max-w-sm text-xs text-muted-foreground leading-relaxed">
           {allBookmarksCount === 0
-            ? 'Start saving tweets, reddit threads, and web inspiration directly into your personal vault.'
+            ? 'Save tweets, reddit threads, youtube videos and inspiration directly into your personal vault.'
             : 'Try adjusting your search keywords or removing filters to see more bookmarks.'}
         </p>
         <div className="mt-5 flex items-center gap-2.5">
@@ -120,6 +127,9 @@ export function BookmarksContainer({
               onDelete={onDelete}
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
+              isTagging={taggingIds?.has(bm.id)}
+              onAutoTag={() => onAutoTag?.(bm)}
+              onSelectTag={onSelectTag}
             />
           ))}
         </div>
@@ -142,6 +152,9 @@ export function BookmarksContainer({
               onDelete={onDelete}
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
+              isTagging={taggingIds?.has(bm.id)}
+              onAutoTag={() => onAutoTag?.(bm)}
+              onSelectTag={onSelectTag}
             />
           ))}
         </div>
@@ -181,6 +194,9 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
+                  isTagging={taggingIds?.has(bm.id)}
+                  onAutoTag={() => onAutoTag?.(bm)}
+                  onSelectTag={onSelectTag}
                 />
               ))}
             </div>
@@ -201,6 +217,9 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
+                  isTagging={taggingIds?.has(bm.id)}
+                  onAutoTag={() => onAutoTag?.(bm)}
+                  onSelectTag={onSelectTag}
                 />
               ))}
             </div>
@@ -221,6 +240,9 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
+                  isTagging={taggingIds?.has(bm.id)}
+                  onAutoTag={() => onAutoTag?.(bm)}
+                  onSelectTag={onSelectTag}
                 />
               ))}
             </div>
@@ -250,6 +272,9 @@ export function BookmarksContainer({
                     onDelete={onDelete}
                     onOpenImage={onOpenImage}
                     onOpenDetail={onOpenDetail}
+                    isTagging={taggingIds?.has(bm.id)}
+                    onAutoTag={() => onAutoTag?.(bm)}
+                    onSelectTag={onSelectTag}
                   />
                 ))}
               </div>

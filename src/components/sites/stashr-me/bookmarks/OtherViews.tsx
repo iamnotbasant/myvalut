@@ -231,8 +231,42 @@ export function CreatorsView({ bookmarks, onSelectCreator }: CreatorsViewProps) 
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
   const [hoveredCreatorId, setHoveredCreatorId] = useState<string | null>(null);
 
-  // Combine default creator list with any custom bookmarks if available
-  const creators = DEFAULT_CREATORS.filter(creator => {
+  // Dynamically compute all unique creators from user's actual bookmarks
+  const dynamicCreators = React.useMemo(() => {
+    if (!bookmarks || bookmarks.length === 0) return DEFAULT_CREATORS;
+    const map = new Map<string, CreatorProfile>();
+
+    for (const b of bookmarks) {
+      const handle = b.username || b.displayName.toLowerCase().replace(/[^a-z0-9_]/g, '') || 'creator';
+      const key = `${b.platform}_${handle.toLowerCase()}`;
+      const existing = map.get(key);
+
+      if (existing) {
+        existing.bookmarkCount += 1;
+        if (!existing.avatarUrl && b.avatarUrl) existing.avatarUrl = b.avatarUrl;
+      } else {
+        let profileUrl = b.url || '#';
+        if (b.platform === 'twitter') profileUrl = `https://x.com/${handle}`;
+        else if (b.platform === 'reddit') profileUrl = `https://reddit.com/u/${handle}`;
+        else if (b.platform === 'instagram') profileUrl = `https://instagram.com/${handle}`;
+        else if (b.platform === 'youtube') profileUrl = `https://youtube.com/@${handle}`;
+
+        map.set(key, {
+          id: key,
+          displayName: b.displayName,
+          username: handle,
+          platform: b.platform,
+          avatarUrl: b.avatarUrl,
+          initials: b.displayName.slice(0, 2).toUpperCase(),
+          bookmarkCount: 1,
+          profileUrl,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.bookmarkCount - a.bookmarkCount);
+  }, [bookmarks]);
+
+  const creators = dynamicCreators.filter(creator => {
     const matchesQuery =
       creator.displayName.toLowerCase().includes(query.toLowerCase()) ||
       creator.username.toLowerCase().includes(query.toLowerCase());

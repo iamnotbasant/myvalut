@@ -1,20 +1,25 @@
-'use client';
-
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
-import { TagDot, PlatformIcon, RedditIcon } from '@/components/icons';
+import { TagDot, PlatformIcon, RedditIcon, Sparkles } from '@/components/icons';
+import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkDetailModalProps {
   bookmark: BookmarkItem | null;
   isOpen: boolean;
   onClose: () => void;
+  isTagging?: boolean;
+  onAutoTag?: () => void;
+  onSelectTag?: (tagName: string) => void;
 }
 
 export function BookmarkDetailModal({
   bookmark,
   isOpen,
-  onClose
+  onClose,
+  isTagging = false,
+  onAutoTag,
+  onSelectTag
 }: BookmarkDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -38,6 +43,10 @@ export function BookmarkDetailModal({
     bookmark.text?.toLowerCase().includes('animation') ||
     bookmark.text?.toLowerCase().includes('video');
 
+  const cleanImageUrl = bookmark.imageUrl?.includes('hqdefault.jpg')
+    ? bookmark.imageUrl.replace('hqdefault.jpg', 'maxresdefault.jpg')
+    : bookmark.imageUrl;
+
   return (
     <div
       onClick={onClose}
@@ -50,9 +59,12 @@ export function BookmarkDetailModal({
         {/* Top Right Close Button (✕) */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            soundFx.playClickSound();
+            onClose();
+          }}
           aria-label="Close"
-          className="absolute top-4 right-4 z-20 flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 z-20 flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6 6 18M6 6l12 12"/>
@@ -108,13 +120,23 @@ export function BookmarkDetailModal({
         )}
 
         {/* Media / Video Preview */}
-        {bookmark.imageUrl && (
-          <div className="relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] w-full group/media shadow-inner">
+        {cleanImageUrl && (
+          <div className={`relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] w-full group/media shadow-inner ${
+            bookmark.platform === 'youtube' ? 'aspect-video' : ''
+          }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={bookmark.imageUrl}
+              src={cleanImageUrl}
               alt={bookmark.displayName}
-              className="h-auto w-full object-cover max-h-[32rem]"
+              className={`w-full object-cover ${
+                bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[32rem]'
+              }`}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src.includes('maxresdefault.jpg')) {
+                  target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+                }
+              }}
             />
             {/* Video Play Button Overlay */}
             {isVideo && (
@@ -141,18 +163,46 @@ export function BookmarkDetailModal({
         <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
           {/* Tags */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.length > 0 ? (
-              bookmark.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/80 bg-[#27272a]/80 rounded-lg font-normal text-xs h-6 text-neutral-200 gap-1.5 px-2.5 py-0.5"
+            {isTagging ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300 animate-pulse">
+                <Sparkles className="size-3 text-indigo-400 animate-spin" />
+                <span>Generating AI Tags...</span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+              <>
+                {bookmark.tags.map((tag, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => {
+                      onSelectTag?.(tag.name);
+                      onClose();
+                    }}
+                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/80 bg-[#27272a]/80 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <TagDot color={tag.color} />
+                    <span>{tag.name}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={onAutoTag}
+                  title="Re-generate tags with AI"
+                  className="inline-flex items-center gap-1 rounded-md border border-neutral-700/60 bg-white/5 hover:bg-white/10 px-2 py-0.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer active:scale-95"
                 >
-                  <TagDot color={tag.color} />
-                  <span>{tag.name}</span>
-                </span>
-              ))
+                  <Sparkles className="size-3 text-indigo-400" />
+                  <span>Re-Tag AI</span>
+                </button>
+              </>
             ) : (
-              <span className="text-xs text-neutral-400">No tags</span>
+              <button
+                type="button"
+                onClick={onAutoTag}
+                className="inline-flex items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 text-xs text-indigo-300 transition-colors cursor-pointer active:scale-95"
+              >
+                <Sparkles className="size-3 text-indigo-400" />
+                <span>✦ Auto-Tag with AI</span>
+              </button>
             )}
           </div>
 

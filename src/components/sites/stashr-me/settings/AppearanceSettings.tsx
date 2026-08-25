@@ -3,22 +3,26 @@
 import React, { useState, useEffect } from 'react';
 
 export function AppearanceSettings() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
-  const [gridColumns, setGridColumns] = useState<number>(3);
-  const [mosaicColumns, setMosaicColumns] = useState<number>(3);
-
-  useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('stashr_theme') as 'light' | 'dark' | 'system';
-      if (savedTheme) setTheme(savedTheme);
-
-      const savedGridCols = localStorage.getItem('stashr_grid_columns');
-      if (savedGridCols) setGridColumns(Number(savedGridCols));
-
-      const savedMosaicCols = localStorage.getItem('stashr_mosaic_columns');
-      if (savedMosaicCols) setMosaicColumns(Number(savedMosaicCols));
-    } catch {}
-  }, []);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('stashr_theme') as 'light' | 'dark' | 'system') || 'dark';
+    }
+    return 'dark';
+  });
+  const [gridColumns, setGridColumns] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stashr_grid_columns');
+      if (saved) return Number(saved);
+    }
+    return 3;
+  });
+  const [mosaicColumns, setMosaicColumns] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stashr_mosaic_columns');
+      if (saved) return Number(saved);
+    }
+    return 3;
+  });
 
   const handleSelectTheme = (mode: 'light' | 'dark' | 'system') => {
     setTheme(mode);

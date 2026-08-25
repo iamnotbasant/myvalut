@@ -138,6 +138,26 @@
   html {
     @apply font-sans;
   }
+  
+  /* Global Cursor Pointer Rule for all interactive elements */
+  button,
+  [role="button"],
+  a,
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  /* Tactile Micro-Interactions */
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled) {
+    transform: scale(0.975);
+    transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1);
+  }
 }
 
 /* Custom smooth scroll and scrollbar utilities */
@@ -157,4 +177,14 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
+}
+
+/* Shimmer & Glow Animation Utilities */
+@keyframes tag-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.98); }
+}
+
+.animate-tag-pulse {
+  animation: tag-pulse 2s ease-in-out infinite;
 }

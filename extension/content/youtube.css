@@ -1,0 +1,103 @@
+/* YouTube Injected Valut Button Styles */
+.valut-yt-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f1f1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-family: "Roboto", "YouTube Sans", sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+  margin-left: 8px !important;
+  vertical-align: middle !important;
+  user-select: none !important;
+  outline: none !important;
+  z-index: 10 !important;
+}
+
+.valut-yt-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: scale(1.02) !important;
+}
+
+.valut-yt-btn.valut-yt-saved {
+  background: rgba(34, 197, 94, 0.25) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  color: #4ade80 !important;
+}
+
+.valut-yt-btn.valut-yt-loading {
+  opacity: 0.8 !important;
+  cursor: wait !important;
+}
+
+/* In-Player Controls Button (.ytp-right-controls) */
+.valut-yt-player-control-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #eee !important;
+  cursor: pointer !important;
+  opacity: 0.9 !important;
+  transition: opacity 0.15s, transform 0.15s !important;
+}
+
+.valut-yt-player-control-btn:hover {
+  opacity: 1 !important;
+  transform: scale(1.1) !important;
+  color: #fff !important;
+}
+
+.valut-yt-player-control-btn.valut-yt-saved {
+  color: #4ade80 !important;
+}
+
+/* Shorts Valut Button */
+.valut-shorts-btn {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 16px !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  color: #fff !important;
+  font-family: "Roboto", sans-serif !important;
+}
+
+.valut-shorts-icon-circle {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.valut-shorts-btn:hover .valut-shorts-icon-circle {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: scale(1.08) !important;
+}
+
+.valut-shorts-label {
+  font-size: 11px !important;
+  margin-top: 6px !important;
+  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+}
