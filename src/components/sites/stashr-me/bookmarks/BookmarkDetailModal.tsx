@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
-import { TagDot, PlatformIcon, RedditIcon, Sparkles } from '@/components/icons';
+import { TagDot, PlatformIcon, RedditIcon, Sparkles, ExternalLink } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkDetailModalProps {
@@ -37,6 +37,13 @@ export function BookmarkDetailModal({
 
   if (!isOpen || !bookmark) return null;
 
+  const handleOpenOriginalPost = () => {
+    if (bookmark.url) {
+      soundFx.playClickSound();
+      window.open(bookmark.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const isVideo =
     bookmark.imageUrl?.includes('13_') ||
     bookmark.imageUrl?.includes('video') ||
@@ -50,29 +57,45 @@ export function BookmarkDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150"
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 scrollbar-none"
+        onDoubleClick={handleOpenOriginalPost}
+        title="Double-click to open original post in a new tab"
+        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 scrollbar-none select-none group/modal"
       >
-        {/* Top Right Close Button (✕) */}
-        <button
-          type="button"
-          onClick={() => {
-            soundFx.playClickSound();
-            onClose();
-          }}
-          aria-label="Close"
-          className="absolute top-4 right-4 z-20 flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        {/* Top Right Action Bar: Open Original Post Button + Close Button */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          {bookmark.url && (
+            <button
+              type="button"
+              onClick={handleOpenOriginalPost}
+              title="Open original post (or double-click anywhere)"
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              <span>Open Post</span>
+              <ExternalLink className="size-3" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playClickSound();
+              onClose();
+            }}
+            aria-label="Close"
+            className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
 
         {/* Header with Avatar & Author */}
-        <div className="flex items-center gap-3 pr-8">
+        <div className="flex items-center gap-3 pr-32">
           {bookmark.avatarUrl ? (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-muted relative shadow-md">
               <Image
@@ -121,14 +144,18 @@ export function BookmarkDetailModal({
 
         {/* Media / Video Preview */}
         {cleanImageUrl && (
-          <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner ${
-            bookmark.platform === 'youtube' ? 'aspect-video' : ''
-          }`}>
+          <div
+            onDoubleClick={handleOpenOriginalPost}
+            title="Double-click to open original post"
+            className={`relative overflow-hidden rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer ${
+              bookmark.platform === 'youtube' ? 'aspect-video' : ''
+            }`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={cleanImageUrl}
               alt={bookmark.displayName}
-              className={`w-full object-cover ${
+              className={`w-full object-cover transition-transform duration-300 group-hover/media:scale-[1.01] ${
                 bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[32rem]'
               }`}
               onError={(e) => {
@@ -138,6 +165,13 @@ export function BookmarkDetailModal({
                 }
               }}
             />
+
+            {/* Subtle Overlay Badge on Hover */}
+            <div className="pointer-events-none absolute bottom-3 right-3 opacity-0 group-hover/media:opacity-100 transition-opacity bg-black/70 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1 text-[11px] font-medium text-neutral-200 flex items-center gap-1.5 shadow-lg">
+              <span>Double-click to open post</span>
+              <ExternalLink className="size-3" />
+            </div>
+
             {/* Video Play Button Overlay */}
             {isVideo && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
