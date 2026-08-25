@@ -238,7 +238,7 @@ export function CommandPalette({
               {isDark ? (
                 <Sun className="size-3.5 text-amber-500" />
               ) : (
-                <Moon className="size-3.5 text-indigo-500" />
+                <Moon className="size-3.5 text-neutral-400" />
               )}
               <span>Switch to {isDark ? 'Light' : 'Dark'} mode</span>
             </button>

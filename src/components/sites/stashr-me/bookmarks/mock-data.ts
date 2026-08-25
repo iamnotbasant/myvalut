@@ -10,12 +10,12 @@ export const INITIAL_COLLECTIONS: Collection[] = [
 ];
 
 export const INITIAL_TAGS: Tag[] = [
-  { id: 'tag-1', name: 'graphic design', color: 'blue', count: 4 },
-  { id: 'tag-2', name: 'photo editing', color: 'violet', count: 2 },
-  { id: 'tag-3', name: 'motion design', color: 'violet', count: 3 },
-  { id: 'tag-4', name: 'animation', color: 'pink', count: 3 },
+  { id: 'tag-1', name: 'graphic design', color: 'teal', count: 4 },
+  { id: 'tag-2', name: 'photo editing', color: 'amber', count: 2 },
+  { id: 'tag-3', name: 'motion design', color: 'cyan', count: 3 },
+  { id: 'tag-4', name: 'animation', color: 'orange', count: 3 },
   { id: 'tag-5', name: 'ui', color: 'green', count: 5 },
-  { id: 'tag-6', name: 'ai', color: 'orange', count: 7 },
+  { id: 'tag-6', name: 'ai', color: 'teal', count: 7 },
   { id: 'tag-7', name: 'ux', color: 'amber', count: 2 },
   { id: 'tag-8', name: 'design inspiration', color: 'red', count: 2 },
   { id: 'tag-9', name: 'open source', color: 'green', count: 5 },

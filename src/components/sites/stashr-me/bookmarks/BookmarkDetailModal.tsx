@@ -50,11 +50,11 @@ export function BookmarkDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-neutral-700/90 bg-[#1c1c1f] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-white/15 animate-in zoom-in-95 duration-150 scrollbar-none"
+        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 scrollbar-none"
       >
         {/* Top Right Close Button (✕) */}
         <button
@@ -121,7 +121,7 @@ export function BookmarkDetailModal({
 
         {/* Media / Video Preview */}
         {cleanImageUrl && (
-          <div className={`relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] w-full group/media shadow-inner ${
+          <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner ${
             bookmark.platform === 'youtube' ? 'aspect-video' : ''
           }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -141,7 +141,7 @@ export function BookmarkDetailModal({
             {/* Video Play Button Overlay */}
             {isVideo && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex items-center justify-center rounded-full bg-black/65 ring-1 ring-white/30 backdrop-blur-md size-13 shadow-2xl transition-transform group-hover/media:scale-105">
+                <div className="flex items-center justify-center rounded-full bg-black/75 ring-1 ring-white/30 backdrop-blur-md size-13 shadow-2xl transition-transform group-hover/media:scale-105">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
                     <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5"/>
                   </svg>
@@ -153,8 +153,8 @@ export function BookmarkDetailModal({
 
         {/* Note if available */}
         {bookmark.note && (
-          <div className="flex items-start gap-2 rounded-lg border border-neutral-700/80 bg-white/5 p-2.5 text-xs text-neutral-300">
-            <span className="font-semibold text-primary">Note:</span>
+          <div className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-neutral-300">
+            <span className="font-semibold text-white">Note:</span>
             <span>{bookmark.note}</span>
           </div>
         )}
@@ -164,8 +164,8 @@ export function BookmarkDetailModal({
           {/* Tags */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300 animate-pulse">
-                <Sparkles className="size-3 text-indigo-400 animate-spin" />
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300 animate-pulse">
+                <Sparkles className="size-3 text-neutral-400 animate-spin" />
                 <span>Generating AI Tags...</span>
               </div>
             ) : bookmark.tags && bookmark.tags.length > 0 ? (
@@ -178,7 +178,7 @@ export function BookmarkDetailModal({
                       onSelectTag?.(tag.name);
                       onClose();
                     }}
-                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/80 bg-[#27272a]/80 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
                   >
                     <TagDot color={tag.color} />
                     <span>{tag.name}</span>
@@ -188,9 +188,9 @@ export function BookmarkDetailModal({
                   type="button"
                   onClick={onAutoTag}
                   title="Re-generate tags with AI"
-                  className="inline-flex items-center gap-1 rounded-md border border-neutral-700/60 bg-white/5 hover:bg-white/10 px-2 py-0.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer active:scale-95"
+                  className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 px-2 py-0.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer active:scale-95"
                 >
-                  <Sparkles className="size-3 text-indigo-400" />
+                  <Sparkles className="size-3 text-neutral-400" />
                   <span>Re-Tag AI</span>
                 </button>
               </>
@@ -198,9 +198,9 @@ export function BookmarkDetailModal({
               <button
                 type="button"
                 onClick={onAutoTag}
-                className="inline-flex items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 text-xs text-indigo-300 transition-colors cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer active:scale-95"
               >
-                <Sparkles className="size-3 text-indigo-400" />
+                <Sparkles className="size-3 text-neutral-400" />
                 <span>✦ Auto-Tag with AI</span>
               </button>
             )}
@@ -209,7 +209,7 @@ export function BookmarkDetailModal({
           {/* Date and Centered Platform Icon */}
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
-            <div className="h-3.5 w-px bg-neutral-700"></div>
+            <div className="h-3.5 w-px bg-white/10"></div>
             <PlatformIcon platform={bookmark.platform} />
           </div>
         </div>

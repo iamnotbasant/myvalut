@@ -31,8 +31,7 @@ export function TagsSettings() {
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const colors: TagColor[] = [
-    'violet', 'amber', 'teal', 'green', 'indigo',
-    'orange', 'pink', 'blue', 'cyan', 'red'
+    'amber', 'teal', 'green', 'orange', 'cyan', 'red'
   ];
 
   const handleSavePrompt = () => {

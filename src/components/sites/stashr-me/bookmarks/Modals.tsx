@@ -247,11 +247,11 @@ export function AddBookmarkModal({
                       soundFx.playTagSound();
                       setSelectedTags(selectedTags.filter(x => x !== st));
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 font-medium px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1 rounded-md border border-white/20 bg-white/10 text-white font-medium px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95"
                   >
-                    <span className="size-1.5 rounded-full bg-indigo-400"></span>
+                    <span className="size-1.5 rounded-full bg-emerald-400"></span>
                     <span>{st}</span>
-                    <Check className="size-3 text-indigo-400" />
+                    <Check className="size-3 text-white" />
                   </button>
                 ))}
             </div>

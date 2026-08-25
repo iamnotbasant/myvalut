@@ -93,7 +93,7 @@ export function FilterBar({
             className="flex items-center overflow-hidden rounded-lg bg-card text-xs shadow-xs ring-1 ring-foreground/10"
           >
             <div className="flex items-center gap-1.5 border-r border-foreground/10 px-2 py-1 text-foreground font-medium">
-              <TagDot color="blue" />
+              <TagDot color="teal" />
               <span>{tagName}</span>
             </div>
             <button

@@ -684,7 +684,7 @@ export function PlatformIcon({
     case 'web':
     default:
       return (
-        <span className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-[#0084FF] text-white ring-1 ring-white/20 shadow-xs">
+        <span className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-neutral-200 ring-1 ring-white/15 shadow-xs">
           <WebIcon className="size-2.5" />
         </span>
       );
@@ -694,17 +694,17 @@ export function PlatformIcon({
 // 7. Tag Dot Badge
 export function TagDot({ color = 'blue' }: { color: TagColor }) {
   const colorMap: Record<TagColor, string> = {
-    violet: 'bg-violet-500',
-    amber: 'bg-amber-500',
-    teal: 'bg-teal-500',
-    green: 'bg-emerald-500',
-    indigo: 'bg-indigo-500',
-    orange: 'bg-orange-500',
-    pink: 'bg-pink-500',
-    blue: 'bg-blue-500',
-    cyan: 'bg-cyan-500',
-    red: 'bg-rose-500'
+    violet: 'bg-neutral-400',
+    amber: 'bg-amber-400',
+    teal: 'bg-teal-400',
+    green: 'bg-emerald-400',
+    indigo: 'bg-neutral-300',
+    orange: 'bg-orange-400',
+    pink: 'bg-neutral-400',
+    blue: 'bg-neutral-300',
+    cyan: 'bg-teal-400',
+    red: 'bg-rose-400'
   };
 
-  return <span className={`size-2 shrink-0 rounded-full ${colorMap[color] || 'bg-blue-500'}`} />;
+  return <span className={`size-2 shrink-0 rounded-full ${colorMap[color] || 'bg-neutral-400'}`} />;
 }

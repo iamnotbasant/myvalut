@@ -89,7 +89,7 @@ export function Header({
   };
 
   return (
-    <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#1c1c1f] pr-[9px] pl-2">
+    <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080808] pr-[9px] pl-2">
       {/* Left: Sidebar Toggle Button + Divider + Breadcrumb */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
@@ -128,7 +128,7 @@ export function Header({
           aria-label="Toggle Sound Effects"
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
-          {isMuted ? <VolumeX className="size-4 text-neutral-500" /> : <Volume2 className="size-4 text-primary" />}
+          {isMuted ? <VolumeX className="size-4 text-neutral-500" /> : <Volume2 className="size-4 text-white" />}
         </button>
 
         {/* Extension status with green active dot */}
@@ -140,7 +140,7 @@ export function Header({
           className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <ExtensionPuzzleIcon className="size-4" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-[#1c1c1f] bg-emerald-500" />
+          <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-[#080808] bg-emerald-500" />
         </a>
 
         {/* User Profile Avatar Dropdown */}
@@ -167,7 +167,7 @@ export function Header({
 
           {/* User Menu Dropdown */}
           {isUserMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-white/10 bg-[#1c1c1f] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95">
+            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95">
               <div className="px-3 py-2 border-b border-white/10">
                 <p className="font-semibold text-xs text-white leading-tight">BASANT KUMAR</p>
                 <p className="text-[11px] text-neutral-400 truncate mt-0.5">iamnotbasant@gmail.com</p>

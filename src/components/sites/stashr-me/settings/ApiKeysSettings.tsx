@@ -122,11 +122,11 @@ export function ApiKeysSettings() {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-9 px-6 py-8 md:px-10 md:py-10 animate-in fade-in duration-150">
       {/* 1. Google Gemini AI Key Card */}
-      <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/20 via-[#1c1c1f] to-[#1c1c1f] p-5 shadow-lg space-y-4 ring-1 ring-indigo-500/20">
+      <div className="rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 shadow-lg space-y-4 ring-1 ring-white/5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-indigo-400" />
+              <Sparkles className="size-4 text-white" />
               <h2 className="text-sm font-semibold text-white tracking-tight">Google Gemini AI Smart Tagging</h2>
               {savedGeminiKey ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-500/20">
@@ -148,7 +148,7 @@ export function ApiKeysSettings() {
             href="https://aistudio.google.com/app/apikey"
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+            className="shrink-0 inline-flex items-center gap-1 text-xs text-neutral-300 hover:text-white font-medium transition-colors"
           >
             <span>Get Free Key</span>
             <ExternalLink className="size-3" />
@@ -162,12 +162,12 @@ export function ApiKeysSettings() {
               value={geminiKey}
               onChange={e => setGeminiKey(e.target.value)}
               placeholder="AIzaSy..."
-              className="flex-1 rounded-xl border border-neutral-700 bg-black/40 px-3.5 py-2 text-xs font-mono text-white placeholder:text-neutral-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+              className="flex-1 rounded-xl border border-white/10 bg-black/60 px-3.5 py-2 text-xs font-mono text-white placeholder:text-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
             />
             <button
               type="button"
               onClick={handleSaveGeminiKey}
-              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center rounded-xl bg-white hover:bg-neutral-200 px-4 text-xs font-semibold text-black shadow-sm transition-colors cursor-pointer"
             >
               {isSaved ? 'Saved!' : 'Save Key'}
             </button>
@@ -175,7 +175,7 @@ export function ApiKeysSettings() {
               <button
                 type="button"
                 onClick={handleClearGeminiKey}
-                className="inline-flex items-center justify-center rounded-xl border border-neutral-700 bg-white/5 hover:bg-white/10 px-3 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-3 text-xs font-medium text-red-400 transition-colors cursor-pointer"
                 title="Remove API Key"
               >
                 <Trash2 className="size-3.5" />
@@ -183,14 +183,15 @@ export function ApiKeysSettings() {
             )}
           </div>
 
+          {/* Test Status Feedback */}
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              disabled={isTesting || !geminiKey.trim()}
               onClick={handleTestGeminiKey}
-              className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-indigo-300 transition-colors disabled:opacity-50 cursor-pointer"
+              disabled={isTesting}
+              className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
             >
-              <Sparkles className={`size-3.5 text-indigo-400 ${isTesting ? 'animate-spin' : ''}`} />
+              <Sparkles className={`size-3.5 text-neutral-400 ${isTesting ? 'animate-spin' : ''}`} />
               <span>{isTesting ? 'Testing Connection...' : '⚡ Test Gemini AI Tagging'}</span>
             </button>
             <span className="text-[11px] text-neutral-500">

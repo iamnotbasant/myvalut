@@ -75,8 +75,8 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient glowing purple gradient header */}
-              <div className="h-full w-full bg-gradient-to-br from-indigo-400/30 via-purple-500/25 to-pink-500/25 p-2 flex flex-col justify-end">
+              {/* Top ambient neutral dark header */}
+              <div className="h-full w-full bg-gradient-to-br from-neutral-300 via-neutral-200 to-neutral-300 p-2 flex flex-col justify-end">
                 {/* Mock UI window */}
                 <div className="h-16 w-full rounded-t-xl bg-[#F5F5F7] border-t border-x border-black/10 flex overflow-hidden shadow-sm">
                   {/* Mock Sidebar */}
@@ -107,18 +107,18 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient glowing purple gradient header */}
-              <div className="h-full w-full bg-gradient-to-br from-indigo-500/40 via-purple-600/30 to-pink-500/30 p-2 flex flex-col justify-end">
+              {/* Top ambient neutral black header */}
+              <div className="h-full w-full bg-gradient-to-br from-neutral-800 via-neutral-900 to-black p-2 flex flex-col justify-end">
                 {/* Mock UI window */}
-                <div className="h-16 w-full rounded-t-xl bg-[#1c1c1f] border-t border-x border-white/10 flex overflow-hidden shadow-sm">
+                <div className="h-16 w-full rounded-t-xl bg-[#080808] border-t border-x border-white/10 flex overflow-hidden shadow-sm">
                   {/* Mock Sidebar */}
-                  <div className="w-6 border-r border-white/5 bg-[#141416] p-1 space-y-1">
+                  <div className="w-6 border-r border-white/5 bg-[#050505] p-1 space-y-1">
                     <div className="size-1.5 rounded-full bg-white/25" />
                     <div className="h-1 w-full rounded bg-white/15" />
                     <div className="h-1 w-full rounded bg-white/15" />
                   </div>
                   {/* Mock Main View */}
-                  <div className="flex-1 p-1.5 space-y-1 bg-[#232326]">
+                  <div className="flex-1 p-1.5 space-y-1 bg-[#121212]">
                     <div className="h-1.5 w-1/2 rounded bg-white/20" />
                     <div className="h-6 w-full rounded bg-white/5" />
                   </div>
@@ -139,8 +139,8 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient glowing purple gradient header */}
-              <div className="h-full w-full bg-gradient-to-br from-indigo-400/30 via-purple-500/25 to-pink-500/25 p-2 flex flex-col justify-end">
+              {/* Top ambient neutral header */}
+              <div className="h-full w-full bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 p-2 flex flex-col justify-end">
                 {/* Mock UI window split in half (Light left, Dark right) */}
                 <div className="h-16 w-full rounded-t-xl flex overflow-hidden border-t border-x border-white/10 shadow-sm">
                   {/* Left half light */}
@@ -150,7 +150,7 @@ export function AppearanceSettings() {
                     <div className="h-4 w-full rounded bg-black/5" />
                   </div>
                   {/* Right half dark */}
-                  <div className="w-1/2 bg-[#1c1c1f] p-1 space-y-1 border-l border-white/10">
+                  <div className="w-1/2 bg-[#080808] p-1 space-y-1 border-l border-white/10">
                     <div className="h-1.5 w-1/2 rounded bg-white/20" />
                     <div className="h-4 w-full rounded bg-white/10" />
                   </div>

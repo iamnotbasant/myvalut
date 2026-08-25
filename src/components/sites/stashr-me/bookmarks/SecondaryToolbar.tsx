@@ -89,7 +89,7 @@ export function SecondaryToolbar({
     (filterState.onlyFavorites ? 1 : 0);
 
   return (
-    <div className="flex h-[52px] shrink-0 items-stretch justify-between gap-4 border-b border-white/[0.08] bg-[#1c1c1f] pr-3 pl-2 select-none">
+    <div className="flex h-[52px] shrink-0 items-stretch justify-between gap-4 border-b border-white/[0.08] bg-[#080808] pr-3 pl-2 select-none">
       {/* Left: View Tabs (Grid, Row, Timeline, Mosaic) */}
       <div className="relative flex items-end gap-1 h-full pb-0">
         {/* Grid Tab */}
@@ -196,7 +196,7 @@ export function SecondaryToolbar({
             onClick={onShuffle}
             title="Shuffle"
             aria-label="Shuffle"
-            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-neutral-700/80 bg-[#1c1c1f] hover:bg-neutral-800 text-neutral-400 hover:text-white size-8.5 transition-colors"
+            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-400 hover:text-white size-8.5 transition-colors"
           >
             <Shuffle className="size-4" />
           </button>
@@ -209,14 +209,14 @@ export function SecondaryToolbar({
                 setIsFilterDropdownOpen(!isFilterDropdownOpen);
                 setActiveSubMenu(null);
               }}
-              className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-neutral-700/80 bg-[#1c1c1f] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
-                totalActiveFilters > 0 ? 'border-primary/50 text-white' : ''
+              className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
+                totalActiveFilters > 0 ? 'border-white text-white' : ''
               }`}
             >
               <FilterSlidersIcon className="size-3.5" />
               <span>Add Filters</span>
               {totalActiveFilters > 0 && (
-                <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                <span className="flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-black">
                   {totalActiveFilters}
                 </span>
               )}
@@ -226,7 +226,7 @@ export function SecondaryToolbar({
             {isFilterDropdownOpen && (
               <div className="absolute right-0 top-full z-50 mt-1.5 flex gap-1">
                 {/* Main Filter Menu */}
-                <div className="w-56 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+                <div className="w-56 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
                   <div className="px-2 py-1 mb-1">
                     <input
                       type="text"
@@ -329,7 +329,7 @@ export function SecondaryToolbar({
 
                 {/* Sub Menu Flyout for Platform (Exact Image 3 Match) */}
                 {activeSubMenu === 'platform' && (
-                  <div className="w-48 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+                  <div className="w-48 rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
                     <p className="px-2.5 py-1 text-[11px] font-semibold text-neutral-400">Platform...</p>
                     <div className="space-y-0.5">
                       {platforms.map(p => {
@@ -346,7 +346,7 @@ export function SecondaryToolbar({
                               <span>{p.label}</span>
                             </div>
                             <div className={`size-3.5 rounded border flex items-center justify-center ${
-                              checked ? 'bg-primary border-primary text-black' : 'border-neutral-600 bg-transparent'
+                              checked ? 'bg-white border-white text-black' : 'border-neutral-600 bg-transparent'
                             }`}>
                               {checked && <Check className="size-2.5 stroke-[3]" />}
                             </div>
@@ -359,7 +359,7 @@ export function SecondaryToolbar({
 
                 {/* Sub Menu Flyout for Tag */}
                 {activeSubMenu === 'tag' && (
-                  <div className="w-52 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 max-h-60 overflow-y-auto">
+                  <div className="w-52 rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 max-h-60 overflow-y-auto">
                     <p className="px-2.5 py-1 text-[11px] font-semibold text-neutral-400">Tags...</p>
                     <div className="space-y-0.5">
                       {tags.map(t => {
@@ -376,7 +376,7 @@ export function SecondaryToolbar({
                               <span className="truncate">{t.name}</span>
                             </div>
                             <div className={`size-3.5 rounded border flex items-center justify-center ${
-                              checked ? 'bg-primary border-primary text-black' : 'border-neutral-600 bg-transparent'
+                              checked ? 'bg-white border-white text-black' : 'border-neutral-600 bg-transparent'
                             }`}>
                               {checked && <Check className="size-2.5 stroke-[3]" />}
                             </div>
@@ -394,8 +394,8 @@ export function SecondaryToolbar({
           <button
             type="button"
             onClick={onToggleSelectionMode}
-            className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-neutral-700/80 bg-[#1c1c1f] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
-              isSelectionMode ? 'border-primary/50 text-white' : ''
+            className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
+              isSelectionMode ? 'border-white text-white' : ''
             }`}
           >
             {isSelectionMode ? (
