@@ -50,10 +50,14 @@ export const SYNONYM_MAP: Record<string, string> = {
   'chat-gpt': 'chatgpt',
   'gen-ai': 'generative-ai',
   'genai': 'generative-ai',
+  'agents': 'ai-agents',
+  'agent': 'ai-agents',
 
   // Video & Design
   'videoediting': 'video-editing',
   'video-edit': 'video-editing',
+  'adobe-premiere-pro': 'premiere-pro',
+  'adobe-premiere': 'premiere-pro',
   'premier-pro': 'premiere-pro',
   'premiere': 'premiere-pro',
   'premierepro': 'premiere-pro',
@@ -61,6 +65,7 @@ export const SYNONYM_MAP: Record<string, string> = {
   'davinciresolve': 'davinci-resolve',
   'aftereffects': 'after-effects',
   'after-effect': 'after-effects',
+  'adobe-after-effects': 'after-effects',
   'motiongraphics': 'motion-design',
   'motion-graphics': 'motion-design',
   'graphicdesign': 'graphic-design',
@@ -72,6 +77,8 @@ export const SYNONYM_MAP: Record<string, string> = {
   'user-experience': 'ux',
   'ui-ux': 'ui-ux',
   'uiux': 'ui-ux',
+  'speed-ramp': 'speed-ramping',
+  'color-grading': 'color-grade',
 
   // Coding & Web Development
   'reactjs': 'react',
@@ -94,6 +101,8 @@ export const SYNONYM_MAP: Record<string, string> = {
   'opensource': 'open-source',
   'search-engine-optimization': 'seo',
   'searchengineoptimization': 'seo',
+  'frontend-development': 'frontend',
+  'backend-development': 'backend',
 
   // Fitness & Lifestyle
   'bodyweight-training': 'calisthenics',
@@ -112,6 +121,19 @@ export const SYNONYM_MAP: Record<string, string> = {
 
 // Curated Semantic Color Map (Supports both kebab-case and spaced keys)
 const TOPIC_COLOR_MAP: Record<string, TagColor> = {
+  // Categories (Broad Domains)
+  'tech': 'teal',
+  'video-editing': 'violet',
+  'design': 'pink',
+  'finance': 'teal',
+  'fitness': 'green',
+  'business': 'cyan',
+  'marketing': 'orange',
+  'productivity': 'amber',
+  'education': 'blue',
+  'lifestyle': 'pink',
+  'gaming': 'indigo',
+
   // AI & Machine Learning
   'ai': 'teal',
   'ml': 'teal',
@@ -134,13 +156,14 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   'rag': 'teal',
 
   // Video & Motion & Creative
-  'video-editing': 'violet',
   'premiere-pro': 'violet',
   'after-effects': 'violet',
   'davinci-resolve': 'violet',
   'motion-design': 'violet',
   'animation': 'violet',
   'fx': 'violet',
+  'speed-ramping': 'violet',
+  'color-grade': 'violet',
   'sound-effects': 'pink',
   '3d-design': 'violet',
   'blender': 'orange',
@@ -156,10 +179,8 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   'typography': 'amber',
   'branding': 'orange',
   'graphic-design': 'pink',
-  'design': 'pink',
 
   // Frontend & Web Development
-  'tech': 'teal',
   'web-development': 'teal',
   'frontend': 'cyan',
   'backend': 'teal',
@@ -189,14 +210,12 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   // Business & Marketing & Finance
   'saas': 'cyan',
   'startup': 'green',
-  'marketing': 'orange',
   'growth': 'green',
   'seo': 'blue',
-  'finance': 'teal',
   'crypto': 'amber',
   'investing': 'teal',
 
-  // Content Types
+  // Content Types (Formats)
   'tutorial': 'green',
   'guide': 'green',
   'tool': 'cyan',
@@ -205,9 +224,8 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   'opinion': 'orange',
   'news': 'red',
   'framework': 'indigo',
-  'fitness': 'green',
+  'workflow': 'amber',
   'calisthenics': 'green',
-  'productivity': 'amber',
 };
 
 // Banned Generic / Useless Words
@@ -316,7 +334,7 @@ export function getTagColor(tagName: string, index = 0): TagColor {
   return PALETTE_COLORS[(hash + index) % PALETTE_COLORS.length];
 }
 
-export const DEFAULT_GEMINI_API_KEY = '';
+export const DEFAULT_GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
 // 4. Production-Ready Google Gemini Structured JSON Prompt
 export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Promise<GeneratedTag[] | null> {
@@ -324,28 +342,28 @@ export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Pr
   if (!geminiKey) return null;
 
   const models = [
+    'gemini-3.6-flash',
     'gemini-3.7-flash',
     'gemini-3.5-flash',
-    'gemini-3-flash-preview',
     'gemini-flash-latest',
     'gemini-flash-lite-latest',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
   ];
 
   const systemInstruction = `You are an automated categorization and tagging engine for a personal knowledge vault.
 Analyze the provided content metadata and generate clean, standardized tags in JSON format.
 
 RULES FOR TAG GENERATION:
-1. Generate minimum 3 and maximum 6 tags.
-2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "ai-tools", "trading-strategy").
-3. NO duplicates or near-synonyms (e.g., do not use both "ai" and "artificial-intelligence").
+1. Generate strictly 3 to 5 tags total.
+2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "premiere-pro", "speed-ramping", "tutorial").
+3. NO duplicate or near-synonym tags (e.g., do not use both "ai" and "artificial-intelligence").
 4. ALWAYS prefer shorter, industry-standard acronyms over long descriptions (e.g., use "ai" instead of "artificial-intelligence", "seo" instead of "search-engine-optimization", "fx" instead of "visual-effects").
-5. Structure the output into:
-   - "category": Broad domain (1 item: e.g. "tech", "video-editing", "finance", "fitness", "design")
-   - "topics": Core subject or tools mentioned (2-3 items: e.g. "premiere-pro", "chatgpt", "calisthenics", "react", "next-js")
-   - "type": Nature of content (1 item: e.g., "tutorial", "tool", "resource", "news", "guide", "case-study", "framework", "opinion")
-   - "all_tags": Combined flat list of tags in order [category, ...topics, type]
+5. Structure the output into 3 exact tiers:
+   - "category": 1 broad domain (e.g., "tech", "video-editing", "finance", "fitness", "design", "business", "marketing", "productivity", "education")
+   - "topics": 2-3 specific subject matter or tools mentioned (e.g., ["premiere-pro", "speed-ramping"] or ["next-js", "supabase"] or ["chatgpt", "prompt-engineering"])
+   - "type": 1 nature/format of content (e.g., "tutorial", "tool", "resource", "guide", "case-study", "framework", "opinion", "news", "workflow")
+   - "all_tags": Ordered combined array: [category, ...topics, type]
 
 INPUT FORMAT:
 Platform: {platform}
@@ -389,7 +407,7 @@ Content/Context: ${preprocessedContent}`;
       });
 
       if (!response.ok) {
-        console.warn(`Gemini model ${model} failed with status:`, response.status);
+        console.warn(`Gemini model ${model} returned status:`, response.status);
         continue;
       }
 
@@ -424,7 +442,7 @@ Content/Context: ${preprocessedContent}`;
       // Run through Backend Normalization Pipeline
       const normalizedTagStrings = cleanAndNormalizeTags(rawTagList);
 
-      if (normalizedTagStrings.length > 0) {
+      if (normalizedTagStrings.length >= 2) {
         return normalizedTagStrings.map((tagName, idx) => ({
           name: tagName,
           color: getTagColor(tagName, idx),
@@ -450,10 +468,10 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     rawList.push(match[1]);
   }
 
-  // Domain Taxonomy Mapping
+  // Domain Taxonomy Mapping (Category + Topic + Type)
   const domainRules: { patterns: (string | RegExp)[]; category: string; topic: string; type?: string }[] = [
     // Video Editing & Media
-    { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci', 'capcut', 'after effects', 'vfx'], category: 'video-editing', topic: 'premiere-pro', type: 'tutorial' },
+    { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci', 'capcut', 'after effects', 'vfx', 'speed ramp'], category: 'video-editing', topic: 'premiere-pro', type: 'tutorial' },
     { patterns: ['motion design', 'framer motion', 'gsap', 'lottie', 'animation'], category: 'design', topic: 'motion-design', type: 'resource' },
     
     // AI & Agents
@@ -489,8 +507,8 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     { patterns: ['3d design', 'blender', 'three.js', 'webgl'], category: 'design', topic: '3d-design', type: 'resource' },
 
     // Business & Finance
-    { patterns: ['saas', 'micro saas', 'mrr', 'arr'], category: 'saas', topic: 'startup', type: 'case-study' },
-    { patterns: ['startup', 'founder', 'entrepreneur'], category: 'startup', topic: 'business', type: 'opinion' },
+    { patterns: ['saas', 'micro saas', 'mrr', 'arr'], category: 'business', topic: 'saas', type: 'case-study' },
+    { patterns: ['startup', 'founder', 'entrepreneur'], category: 'business', topic: 'startup', type: 'opinion' },
     { patterns: ['seo', 'conversion rate', 'marketing'], category: 'marketing', topic: 'seo', type: 'guide' },
     { patterns: ['bitcoin', 'ethereum', 'crypto', 'blockchain'], category: 'finance', topic: 'crypto', type: 'news' },
     { patterns: ['stock market', 'investing', 'trading'], category: 'finance', topic: 'investing', type: 'guide' },
@@ -546,7 +564,7 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
 export async function generateAutoTags(input: TagInput, geminiApiKey?: string): Promise<GeneratedTag[]> {
   // 1. Try Gemini AI with fallback models and structured JSON
   const aiTags = await generateGeminiAiTags(input, geminiApiKey);
-  if (aiTags && aiTags.length > 0) {
+  if (aiTags && aiTags.length >= 2) {
     return aiTags;
   }
 

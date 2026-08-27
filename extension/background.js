@@ -298,42 +298,106 @@ function generateLocalAiTags(payload) {
 async function generateGeminiTags(payload, apiKey) {
   if (!apiKey) return null;
 
-  try {
-    const prompt = `You are an expert taxonomy AI for Valut bookmarking.
-Analyze this content and generate STRICT JSON output with 3 to 5 kebab-case tags.
-Content: Title: "${payload.title || ''}", Text: "${(payload.text || '').slice(0, 500)}", Platform: "${payload.platform || ''}".
-Return ONLY a valid JSON object matching: {"tags": ["tag-one", "tag-two", "tag-three"]}`;
+  const models = [
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest'
+  ];
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      }),
-    });
+  const prompt = `You are an automated categorization and tagging engine for a personal knowledge vault.
+Analyze the provided content metadata and generate clean, standardized tags in JSON format.
 
-    if (!res.ok) return null;
-    const data = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return null;
+RULES FOR TAG GENERATION:
+1. Generate strictly 3 to 5 tags total.
+2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "premiere-pro", "speed-ramping", "tutorial").
+3. NO duplicate or near-synonym tags (e.g., do not use both "ai" and "artificial-intelligence").
+4. ALWAYS prefer shorter, industry-standard acronyms over long descriptions (e.g., use "ai" instead of "artificial-intelligence", "seo" instead of "search-engine-optimization", "fx" instead of "visual-effects").
+5. Structure output:
+   - "category": 1 broad domain (e.g. "tech", "video-editing", "finance", "fitness", "design", "business", "marketing", "productivity")
+   - "topics": 2-3 specific subject matter or tools (e.g. ["premiere-pro", "speed-ramping"] or ["next-js", "supabase"])
+   - "type": 1 format (e.g. "tutorial", "tool", "resource", "guide", "case-study", "framework", "opinion", "news", "workflow")
+   - "all_tags": Ordered array [category, ...topics, type]
 
-    const parsed = JSON.parse(rawText);
-    const tagArray = parsed.tags || parsed.all_tags || [];
-    const normalized = cleanAndNormalizeTags(tagArray);
-    return normalized.length > 0 ? normalized : null;
-  } catch (err) {
-    return null;
+Platform: ${payload.platform || 'web'}
+Title: ${payload.title || ''}
+Content: ${(payload.text || payload.title || '').slice(0, 800)}
+
+Return ONLY valid JSON:
+{
+  "category": "string",
+  "topics": ["string", "string"],
+  "type": "string",
+  "all_tags": ["string", "string", "string", "string"]
+}`;
+
+  for (const model of models) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+            maxOutputTokens: 250,
+          },
+        }),
+      });
+
+      if (!res.ok) continue;
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) continue;
+
+      const parsed = JSON.parse(rawText);
+      const tagArray = parsed.all_tags || [
+        ...(parsed.category ? [parsed.category] : []),
+        ...(Array.isArray(parsed.topics) ? parsed.topics : []),
+        ...(parsed.type ? [parsed.type] : [])
+      ];
+      const normalized = cleanAndNormalizeTags(tagArray);
+      if (normalized.length >= 2) return normalized;
+    } catch (err) {
+      // try next model
+    }
   }
+  return null;
 }
 
 // Async Background Tag Enrichment: Updates Supabase DB and notifies Realtime
-async function enrichTagsInBackground(bookmarkId, payload, apiKey) {
+async function enrichTagsInBackground(bookmarkId, payload, apiKey, serverUrl = DEFAULT_SERVER_URL) {
   try {
-    const aiTags = await generateGeminiTags(payload, apiKey);
+    let aiTags = null;
+    if (apiKey) {
+      aiTags = await generateGeminiTags(payload, apiKey);
+    }
+
+    // If no direct API key, call server-side AI tagger endpoint
+    if (!aiTags || aiTags.length === 0) {
+      try {
+        const tagRes = await fetch(`${serverUrl || DEFAULT_SERVER_URL}/api/ai/tag`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: payload.title,
+            text: payload.text || payload.title,
+            url: payload.url,
+            platform: payload.platform,
+          }),
+        });
+        if (tagRes.ok) {
+          const tagData = await tagRes.json();
+          if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length > 0) {
+            aiTags = tagData.tags;
+          }
+        }
+      } catch (srvErr) {
+        // server unreachable
+      }
+    }
+
     if (!aiTags || aiTags.length === 0) return;
 
     await fetch(`${SUPABASE_URL}/rest/v1/bookmarks?id=eq.${bookmarkId}`, {
@@ -489,9 +553,8 @@ async function saveBookmarkCore(payload) {
 
   // 3. Fire-and-forget background Gemini AI tag enrichment
   const apiKey = settings.geminiApiKey || undefined;
-  if (apiKey) {
-    enrichTagsInBackground(bookmarkId, payload, apiKey);
-  }
+  const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
+  enrichTagsInBackground(bookmarkId, payload, apiKey, serverUrl);
 
   // 4. Update Recent Saves list
   const recent = settings.recentSaves || [];
