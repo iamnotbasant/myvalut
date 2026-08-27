@@ -283,6 +283,46 @@ export async function insertCollectionToDb(item: Collection, userId?: string | n
   }
 }
 
+export async function updateCollectionInDb(id: string, updates: Partial<Collection>): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const dbUpdates: { name?: string; icon?: string | null } = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.icon !== undefined) dbUpdates.icon = updates.icon || null;
+
+    const { error } = await supabase
+      .from('collections')
+      .update(dbUpdates)
+      .eq('id', id);
+    if (error) {
+      console.error('Error updating collection in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to update collection in Supabase:', err);
+    return false;
+  }
+}
+
+export async function deleteCollectionFromDb(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    // 1. Unlink bookmarks that belonged to this collection
+    await supabase.from('bookmarks').update({ collection_id: null }).eq('collection_id', id);
+    // 2. Delete collection row
+    const { error } = await supabase.from('collections').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting collection from Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to delete collection from Supabase:', err);
+    return false;
+  }
+}
+
 export async function insertTagToDb(item: Tag, userId?: string | null): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {

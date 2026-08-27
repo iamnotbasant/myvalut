@@ -13,8 +13,14 @@ import {
   Check,
   Users,
   Plus,
-  X
+  X,
+  Pin,
+  PinOff,
+  Copy,
+  Trash2,
+  MoreHorizontal
 } from '@/components/icons';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 
 // ==========================================
 // 1. CREATORS VIEW (100% Dynamic & Connected)
@@ -30,6 +36,7 @@ export interface CreatorProfile {
   bookmarkCount: number;
   profileUrl: string;
   latestBookmarkDate?: string;
+  isPinned?: boolean;
   bookmarks: BookmarkItem[];
 }
 
@@ -37,6 +44,9 @@ interface CreatorsViewProps {
   bookmarks?: BookmarkItem[];
   onSelectCreator: (username: string) => void;
   onOpenAddBookmark?: () => void;
+  onDeleteCreatorBookmarks?: (creator: CreatorProfile) => void;
+  onTogglePinCreator?: (creatorId: string) => void;
+  pinnedCreatorIds?: string[];
 }
 
 type SortOption = 'most_bookmarks' | 'recent' | 'az' | 'za';
@@ -57,7 +67,10 @@ const PLATFORM_LABELS: Record<string, string> = {
 export function CreatorsView({
   bookmarks = [],
   onSelectCreator,
-  onOpenAddBookmark
+  onOpenAddBookmark,
+  onDeleteCreatorBookmarks,
+  onTogglePinCreator,
+  pinnedCreatorIds = []
 }: CreatorsViewProps) {
   const [query, setQuery] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
@@ -65,6 +78,17 @@ export function CreatorsView({
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [hoveredCreatorId, setHoveredCreatorId] = useState<string | null>(null);
+
+  // Context Menu state for Creator cards
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    creator: CreatorProfile | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    creator: null
+  });
 
   // 1. Dynamically compute all unique creators from user's actual active bookmarks
   const dynamicCreators = useMemo(() => {
@@ -123,6 +147,8 @@ export function CreatorsView({
           .map(w => w[0]?.toUpperCase())
           .join('') || cleanDisplayName.slice(0, 2).toUpperCase() || 'CR';
 
+        const isPinned = pinnedCreatorIds.includes(key);
+
         map.set(key, {
           id: key,
           displayName: cleanDisplayName,
@@ -133,13 +159,14 @@ export function CreatorsView({
           bookmarkCount: 1,
           profileUrl,
           latestBookmarkDate: b.date,
+          isPinned,
           bookmarks: [b]
         });
       }
     }
 
     return Array.from(map.values());
-  }, [bookmarks]);
+  }, [bookmarks, pinnedCreatorIds]);
 
   // 2. Count creators per platform for the filter dropdown
   const platformCounts = useMemo(() => {
@@ -178,6 +205,10 @@ export function CreatorsView({
 
   const sortedCreators = useMemo(() => {
     return [...filteredCreators].sort((a, b) => {
+      // Pinned creators always stay on top
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+
       if (sortBy === 'most_bookmarks') {
         return b.bookmarkCount - a.bookmarkCount;
       }
@@ -240,7 +271,7 @@ export function CreatorsView({
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="size-3" />
               </button>
@@ -392,6 +423,15 @@ export function CreatorsView({
             <div
               key={creator.id}
               className="group relative flex h-[62px] items-center justify-between rounded-xl border border-border/80 bg-card/75 p-3 shadow-xs transition-all hover:border-border hover:bg-accent/40"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({
+                  isOpen: true,
+                  position: { x: e.clientX, y: e.clientY },
+                  creator
+                });
+              }}
             >
               {/* Creator Left info: Avatar with Platform Badge + Name & Handle */}
               <div
@@ -424,16 +464,21 @@ export function CreatorsView({
 
                 {/* Creator Names */}
                 <div className="flex flex-col min-w-0 leading-tight">
-                  <span className="truncate text-[13px] font-medium text-strong">
-                    {creator.displayName}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="truncate text-[13px] font-medium text-strong">
+                      {creator.displayName}
+                    </span>
+                    {creator.isPinned && (
+                      <Pin className="size-3 text-amber-400 shrink-0" />
+                    )}
+                  </div>
                   <span className="truncate text-[11px] text-muted-foreground">
                     @{creator.username}
                   </span>
                 </div>
               </div>
 
-              {/* Right Action Cluster: Bookmark Count (with View bookmarks tooltip) + External Link */}
+              {/* Right Action Cluster: Bookmark Count (with View bookmarks tooltip) + External Link + Options */}
               <div className="flex items-center gap-1.5 shrink-0">
                 {/* Bookmark Count Button with Tooltip */}
                 <div
@@ -469,11 +514,108 @@ export function CreatorsView({
                 >
                   <ExternalLink className="size-3.5" />
                 </a>
+
+                {/* 3-dots context menu trigger */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setContextMenu({
+                      isOpen: true,
+                      position: { x: rect.right + 4, y: rect.top },
+                      creator
+                    });
+                  }}
+                  className="flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all cursor-pointer"
+                  title="More actions"
+                >
+                  <MoreHorizontal className="size-3.5" />
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Creator Right-Click Context Menu */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        title={contextMenu.creator ? `${contextMenu.creator.displayName} (@${contextMenu.creator.username})` : undefined}
+        onClose={() => setContextMenu({ isOpen: false, position: { x: 0, y: 0 }, creator: null })}
+        items={
+          contextMenu.creator
+            ? [
+                {
+                  id: 'view',
+                  label: `View Bookmarks (${contextMenu.creator.bookmarkCount})`,
+                  icon: <BookmarkIcon className="size-3.5" />,
+                  onClick: () => {
+                    if (contextMenu.creator) onSelectCreator(contextMenu.creator.username);
+                  }
+                },
+                {
+                  id: 'open-profile',
+                  label: 'Open Social Profile',
+                  icon: <ExternalLink className="size-3.5" />,
+                  onClick: () => {
+                    if (contextMenu.creator?.profileUrl) {
+                      window.open(contextMenu.creator.profileUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  }
+                },
+                {
+                  id: 'copy-handle',
+                  label: 'Copy @handle',
+                  icon: <Copy className="size-3.5" />,
+                  onClick: () => {
+                    if (contextMenu.creator) {
+                      navigator.clipboard.writeText(`@${contextMenu.creator.username}`);
+                    }
+                  }
+                },
+                {
+                  id: 'copy-url',
+                  label: 'Copy Profile Link',
+                  icon: <Copy className="size-3.5" />,
+                  onClick: () => {
+                    if (contextMenu.creator?.profileUrl) {
+                      navigator.clipboard.writeText(contextMenu.creator.profileUrl);
+                    }
+                  }
+                },
+                {
+                  id: 'pin',
+                  label: contextMenu.creator.isPinned ? 'Unpin from Top' : 'Pin Creator to Top',
+                  icon: contextMenu.creator.isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />,
+                  onClick: () => {
+                    if (contextMenu.creator) {
+                      onTogglePinCreator?.(contextMenu.creator.id);
+                    }
+                  }
+                },
+                {
+                  id: 'sep-1',
+                  label: '',
+                  separator: true
+                },
+                {
+                  id: 'delete-bookmarks',
+                  label: `Delete All Bookmarks (${contextMenu.creator.bookmarkCount})`,
+                  icon: <Trash2 className="size-3.5" />,
+                  danger: true,
+                  onClick: () => {
+                    if (contextMenu.creator) {
+                      onDeleteCreatorBookmarks?.(contextMenu.creator);
+                    }
+                  }
+                }
+              ]
+            : []
+        }
+      />
     </div>
   );
 }

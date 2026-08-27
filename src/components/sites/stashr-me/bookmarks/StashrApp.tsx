@@ -18,6 +18,8 @@ import { CommandPalette } from './CommandPalette';
 import {
   AddBookmarkModal,
   AddCollectionModal,
+  EditCollectionModal,
+  ConfirmDialogModal,
   NoteModal,
   ImageLightboxModal,
   FeedbackModal
@@ -33,11 +35,14 @@ import {
   deleteMultipleBookmarksFromDb,
   archiveMultipleBookmarksInDb,
   insertCollectionToDb,
+  updateCollectionInDb,
+  deleteCollectionFromDb,
   insertTagToDb,
   mapDbBookmarkToApp,
   DbBookmark
 } from '@/lib/supabase-db';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { CreatorProfile } from './OtherViews';
 
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useAuth } from '@/lib/auth-context';
@@ -105,6 +110,24 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   // 4. Modal States
   const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false);
   const [isAddCollectionOpen, setIsAddCollectionOpen] = useState(false);
+  const [activeEditCollection, setActiveEditCollection] = useState<Collection | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  });
+  const [pinnedCreatorIds, setPinnedCreatorIds] = useState<string[]>(() =>
+    getInitialLocalStorageData<string[]>('stashr_pinned_creators_v1', [])
+  );
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [activeNoteBookmark, setActiveNoteBookmark] = useState<BookmarkItem | null>(null);
   const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
@@ -112,6 +135,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Sync pinned creators to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('stashr_pinned_creators_v1', JSON.stringify(pinnedCreatorIds));
+    } catch {}
+  }, [pinnedCreatorIds]);
 
   // 5. Theme & Network State
   const [isDark, setIsDark] = useState(() => {
@@ -452,6 +482,75 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     insertCollectionToDb(created, user?.id);
   };
 
+  const handleEditCollection = (collection: Collection) => {
+    soundFx.playClickSound();
+    setActiveEditCollection(collection);
+  };
+
+  const handleSaveEditCollection = (id: string, updates: { name: string; icon: string }) => {
+    soundFx.playClickSound();
+    setCollections(prev =>
+      prev.map(c => (c.id === id ? { ...c, ...updates } : c))
+    );
+    updateCollectionInDb(id, updates);
+  };
+
+  const handleDeleteCollection = (id: string) => {
+    const target = collections.find(c => c.id === id);
+    const targetName = target?.name || 'this collection';
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete collection?',
+      description: `Are you sure you want to delete "${targetName}"? Any bookmarks in this collection will remain safe in your vault.`,
+      confirmText: 'Delete',
+      isDestructive: true,
+      onConfirm: () => {
+        soundFx.playArchiveSound();
+        setCollections(prev => prev.filter(c => c.id !== id));
+        if (filterState.collectionId === id) {
+          setFilterState(prev => ({ ...prev, collectionId: null }));
+        }
+        deleteCollectionFromDb(id);
+      }
+    });
+  };
+
+  const handleTogglePinCollection = (id: string) => {
+    soundFx.playClickSound();
+    setCollections(prev =>
+      prev.map(c => (c.id === id ? { ...c, isPinned: !c.isPinned } : c))
+    );
+  };
+
+  const handleTogglePinCreator = (creatorId: string) => {
+    soundFx.playClickSound();
+    setPinnedCreatorIds(prev =>
+      prev.includes(creatorId)
+        ? prev.filter(id => id !== creatorId)
+        : [...prev, creatorId]
+    );
+  };
+
+  const handleDeleteCreatorBookmarks = (creator: CreatorProfile) => {
+    const ids = creator.bookmarks.map(b => b.id);
+    if (ids.length === 0) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: `Delete all bookmarks by ${creator.displayName}?`,
+      description: `This will delete ${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'} by @${creator.username} from your vault. This action cannot be undone.`,
+      confirmText: `Delete ${ids.length} Bookmarks`,
+      isDestructive: true,
+      onConfirm: () => {
+        soundFx.playArchiveSound();
+        const idSet = new Set(ids);
+        setBookmarks(prev => prev.filter(b => !idSet.has(b.id)));
+        deleteMultipleBookmarksFromDb(ids);
+      }
+    });
+  };
+
   const handleShuffle = () => {
     soundFx.playClickSound();
     setBookmarks(prev => [...prev].sort(() => Math.random() - 0.5));
@@ -565,6 +664,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         creatorsCount={uniqueCreatorsCount}
         onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
         onOpenAddCollection={() => setIsAddCollectionOpen(true)}
+        onEditCollection={handleEditCollection}
+        onDeleteCollection={handleDeleteCollection}
+        onTogglePinCollection={handleTogglePinCollection}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
@@ -622,6 +724,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
               });
             }}
             onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
+            onDeleteCreatorBookmarks={handleDeleteCreatorBookmarks}
+            onTogglePinCreator={handleTogglePinCreator}
+            pinnedCreatorIds={pinnedCreatorIds}
           />
         )}
 
@@ -727,6 +832,25 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         isOpen={isAddCollectionOpen}
         onClose={() => setIsAddCollectionOpen(false)}
         onAdd={handleAddCollection}
+      />
+
+      <EditCollectionModal
+        isOpen={!!activeEditCollection}
+        collection={activeEditCollection}
+        onClose={() => setActiveEditCollection(null)}
+        onSave={handleSaveEditCollection}
+        onDelete={handleDeleteCollection}
+      />
+
+      <ConfirmDialogModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        isDestructive={confirmDialog.isDestructive}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
 
       <NoteModal

@@ -15,7 +15,9 @@ import {
   Star,
   Flag,
   Bookmark,
-  Check
+  Check,
+  Trash2,
+  Pencil
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
@@ -614,6 +616,216 @@ export function FeedbackModal({
             </div>
           </form>
         )}
+      </div>
+    </div>
+  );
+}
+
+// 6. Edit Collection Modal
+interface EditCollectionModalProps {
+  isOpen: boolean;
+  collection: Collection | null;
+  onClose: () => void;
+  onSave: (id: string, updates: { name: string; icon: string }) => void;
+  onDelete: (id: string) => void;
+}
+
+export function EditCollectionModal({
+  isOpen,
+  collection,
+  onClose,
+  onSave,
+  onDelete
+}: EditCollectionModalProps) {
+  const [name, setName] = useState(collection?.name || '');
+  const [icon, setIcon] = useState(collection?.icon || 'Folder');
+
+  React.useEffect(() => {
+    if (collection) {
+      setName(collection.name);
+      setIcon(collection.icon || 'Folder');
+    }
+  }, [collection]);
+
+  if (!isOpen || !collection) return null;
+
+  const icons = [
+    { name: 'Folder', component: Folder },
+    { name: 'Sparkles', component: Sparkles },
+    { name: 'Lightbulb', component: Lightbulb },
+    { name: 'Heart', component: Heart },
+    { name: 'Bookmark', component: Bookmark },
+    { name: 'Flag', component: Flag }
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSave(collection.id, { name: name.trim(), icon });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+      <div
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <div className="flex items-center gap-2">
+            <Pencil className="size-4 text-primary" />
+            <h3 className="font-semibold text-sm text-strong">Edit collection</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Collection Name
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Design Inspiration"
+              className="h-8 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Icon
+            </label>
+            <div className="flex items-center gap-2">
+              {icons.map(ic => {
+                const IconComponent = ic.component;
+                const isSelected = icon === ic.name;
+                return (
+                  <button
+                    key={ic.name}
+                    type="button"
+                    onClick={() => setIcon(ic.name)}
+                    className={`flex size-8 items-center justify-center rounded-lg border transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <IconComponent className="size-4" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                onDelete(collection.id);
+                onClose();
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Delete</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-8 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// 7. Confirm Dialog Modal
+interface ConfirmDialogModalProps {
+  isOpen: boolean;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDestructive?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}
+
+export function ConfirmDialogModal({
+  isOpen,
+  title,
+  description,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  isDestructive = false,
+  onConfirm,
+  onClose
+}: ConfirmDialogModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150 select-none"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-sm text-strong">{title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border mt-5 pt-3.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className={`h-8 rounded-lg px-4 text-xs font-medium transition-all shadow-xs cursor-pointer ${
+              isDestructive
+                ? 'bg-rose-500 text-white hover:bg-rose-600'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+            }`}
+          >
+            {confirmText}
+          </button>
+        </div>
       </div>
     </div>
   );

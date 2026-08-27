@@ -432,6 +432,36 @@ export function Smartphone({ className = 'size-4', ...props }: IconProps) {
   );
 }
 
+export function Pin({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A4 4 0 0 1 14 9V4h1a1 1 0 0 0 0-2H9a1 1 0 0 0 0 2h1v5a4 4 0 0 1-2.11 3.56l-1.78.89A2 2 0 0 0 5 15.24Z" />
+    </svg>
+  );
+}
+
+export function PinOff({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="2" y1="2" x2="22" y2="22" />
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <path d="M9 9v-.76A4 4 0 0 1 10 4h-1a1 1 0 0 1 0-2h6a1 1 0 0 1 0 2h-1v5a4 4 0 0 1 .53 1.95" />
+      <path d="M15 15.34l-1.11-.55A4 4 0 0 1 12 11.23" />
+      <path d="M5 17h12" />
+    </svg>
+  );
+}
+
+export function Pencil({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
 // 5. Official Platform Icons
 export function TwitterIcon({ className = 'size-3' }: { className?: string }) {
   return (

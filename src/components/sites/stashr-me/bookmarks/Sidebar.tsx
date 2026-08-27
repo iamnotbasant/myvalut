@@ -18,10 +18,16 @@ import {
   Settings,
   HelpCircle,
   Trash2,
-  X
+  X,
+  Pencil,
+  Pin,
+  PinOff,
+  Copy,
+  MoreHorizontal
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 import { LogIn, User } from 'lucide-react';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 
 interface SidebarProps {
   filterState: FilterState;
@@ -33,6 +39,9 @@ interface SidebarProps {
   creatorsCount?: number;
   onOpenAddBookmark: () => void;
   onOpenAddCollection: () => void;
+  onEditCollection?: (collection: Collection) => void;
+  onDeleteCollection?: (id: string) => void;
+  onTogglePinCollection?: (id: string) => void;
   onOpenFeedback: () => void;
   onOpenCommandPalette: () => void;
   onOpenAuth?: () => void;
@@ -50,6 +59,9 @@ export function Sidebar({
   creatorsCount,
   onOpenAddBookmark,
   onOpenAddCollection,
+  onEditCollection,
+  onDeleteCollection,
+  onTogglePinCollection,
   onOpenFeedback,
   onOpenCommandPalette,
   onOpenAuth,
@@ -59,6 +71,17 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
+  
+  // Context Menu state for Collections
+  const [contextMenu, setContextMenu] = React.useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    collection: Collection | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    collection: null
+  });
 
   const navItemClass = "group/button inline-flex shrink-0 select-none items-center whitespace-nowrap rounded-lg border-transparent bg-clip-padding text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 h-8 justify-start gap-3 border-0 px-2 font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground/80 data-[active=true]:hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:w-8 group-data-[state=collapsed]/sidebar:justify-center group-data-[state=collapsed]/sidebar:gap-0 group-data-[state=collapsed]/sidebar:px-0 cursor-pointer";
 
@@ -181,6 +204,7 @@ export function Sidebar({
                 type="button"
                 onClick={onOpenAddCollection}
                 className="inline-flex size-4 items-center justify-center rounded border border-border bg-background hover:bg-accent text-foreground shadow-xs cursor-pointer"
+                title="New collection"
               >
                 <Plus className="size-3" />
               </button>
@@ -190,28 +214,123 @@ export function Sidebar({
               {collections.length === 0 ? (
                 <p className="px-2 py-2 text-[11px] text-muted-foreground italic">No collections yet</p>
               ) : (
-                collections.map(col => {
-                  const isActive = filterState.collectionId === col.id;
-                  return (
-                    <div key={col.id} className="group/row relative">
-                      <a
-                        role="button"
-                        data-active={isActive ? "true" : undefined}
-                        onClick={(e) => { e.preventDefault(); onFilterChange({ collectionId: isActive ? null : col.id, activeNav: 'bookmarks' }); onCloseMobile?.(); }}
-                        className="inline-flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-xs font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground cursor-pointer"
+                [...collections]
+                  .sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map(col => {
+                    const isActive = filterState.collectionId === col.id;
+                    return (
+                      <div
+                        key={col.id}
+                        className="group/row relative flex items-center"
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setContextMenu({
+                            isOpen: true,
+                            position: { x: e.clientX, y: e.clientY },
+                            collection: col
+                          });
+                        }}
                       >
-                        <span className="flex size-4 shrink-0 items-center justify-center rounded bg-blue-500/15 text-blue-500">
-                          <Folder className="size-3" />
-                        </span>
-                        <span className="min-w-0 truncate">{col.name}</span>
-                      </a>
-                    </div>
-                  );
-                })
+                        <a
+                          role="button"
+                          data-active={isActive ? "true" : undefined}
+                          onClick={(e) => { e.preventDefault(); onFilterChange({ collectionId: isActive ? null : col.id, activeNav: 'bookmarks' }); onCloseMobile?.(); }}
+                          className="inline-flex h-8 w-full items-center justify-between rounded-lg px-2 text-xs font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground cursor-pointer pr-7"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="flex size-4 shrink-0 items-center justify-center rounded bg-blue-500/15 text-blue-500">
+                              <Folder className="size-3" />
+                            </span>
+                            <span className="min-w-0 truncate">{col.name}</span>
+                          </div>
+
+                          {col.isPinned && (
+                            <Pin className="size-3 text-muted-foreground shrink-0 group-hover/row:hidden" />
+                          )}
+                        </a>
+
+                        {/* 3-dots actions trigger on hover */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setContextMenu({
+                              isOpen: true,
+                              position: { x: rect.right + 4, y: rect.top },
+                              collection: col
+                            });
+                          }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-accent hover:text-foreground transition-all cursor-pointer"
+                          title="Collection options"
+                        >
+                          <MoreHorizontal className="size-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
               )}
             </div>
           </div>
         </div>
+
+        {/* Collections Context Menu */}
+        <ContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          title={contextMenu.collection?.name}
+          onClose={() => setContextMenu({ isOpen: false, position: { x: 0, y: 0 }, collection: null })}
+          items={
+            contextMenu.collection
+              ? [
+                  {
+                    id: 'rename',
+                    label: 'Rename / Edit',
+                    icon: <Pencil className="size-3.5" />,
+                    onClick: () => {
+                      if (contextMenu.collection) onEditCollection?.(contextMenu.collection);
+                    }
+                  },
+                  {
+                    id: 'pin',
+                    label: contextMenu.collection.isPinned ? 'Unpin from Top' : 'Pin to Top',
+                    icon: contextMenu.collection.isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />,
+                    onClick: () => {
+                      if (contextMenu.collection) onTogglePinCollection?.(contextMenu.collection.id);
+                    }
+                  },
+                  {
+                    id: 'copy',
+                    label: 'Copy Name',
+                    icon: <Copy className="size-3.5" />,
+                    onClick: () => {
+                      if (contextMenu.collection) navigator.clipboard.writeText(contextMenu.collection.name);
+                    }
+                  },
+                  {
+                    id: 'sep-1',
+                    label: '',
+                    separator: true
+                  },
+                  {
+                    id: 'delete',
+                    label: 'Delete Collection',
+                    icon: <Trash2 className="size-3.5" />,
+                    danger: true,
+                    onClick: () => {
+                      if (contextMenu.collection) onDeleteCollection?.(contextMenu.collection.id);
+                    }
+                  }
+                ]
+              : []
+          }
+        />
 
         {/* User Account / Auth Trigger & Footer */}
         <div className="mt-auto flex flex-col gap-1 px-3 py-3 group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0">

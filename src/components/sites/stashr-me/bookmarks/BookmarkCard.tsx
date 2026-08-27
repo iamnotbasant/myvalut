@@ -13,9 +13,11 @@ import {
   Trash2,
   Copy,
   Check,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 
 interface BookmarkCardProps {
   bookmark: BookmarkItem;
@@ -108,6 +110,83 @@ export function BookmarkCard({
     }
   };
 
+  const [rightClickMenu, setRightClickMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 }
+  });
+
+  const handleCardContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRightClickMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY }
+    });
+  };
+
+  const bookmarkMenuItems: ContextMenuItem[] = [
+    {
+      id: 'favorite',
+      label: bookmark.isFavorite ? 'Unfavorite' : 'Favorite',
+      icon: <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-400 text-amber-400' : ''}`} />,
+      onClick: () => onToggleFavorite(bookmark.id)
+    },
+    {
+      id: 'note',
+      label: bookmark.note ? 'Edit Note' : 'Add Note',
+      icon: <FileText className="size-3.5" />,
+      onClick: () => onOpenNote(bookmark)
+    },
+    {
+      id: 'autotag',
+      label: 'Auto-Tag with AI',
+      icon: <Sparkles className="size-3.5 text-primary" />,
+      onClick: () => onAutoTag?.()
+    },
+    {
+      id: 'copy',
+      label: copied ? 'Copied Link!' : 'Copy Link',
+      icon: copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />,
+      onClick: () => {
+        if (bookmark.url) {
+          navigator.clipboard.writeText(bookmark.url);
+          soundFx.playClickSound();
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
+      }
+    },
+    ...(bookmark.url ? [{
+      id: 'open',
+      label: 'Open in New Tab',
+      icon: <ExternalLink className="size-3.5" />,
+      onClick: () => {
+        if (bookmark.url) window.open(bookmark.url, '_blank', 'noopener,noreferrer');
+      }
+    }] : []),
+    {
+      id: 'archive',
+      label: bookmark.isArchived ? 'Unarchive' : 'Archive',
+      icon: <Archive className="size-3.5" />,
+      onClick: () => onArchive(bookmark.id)
+    },
+    {
+      id: 'sep',
+      label: '',
+      separator: true
+    },
+    {
+      id: 'delete',
+      label: 'Delete Bookmark',
+      icon: <Trash2 className="size-3.5" />,
+      danger: true,
+      onClick: () => onDelete(bookmark.id)
+    }
+  ];
+
   const isVideo =
     bookmark.platform === 'youtube' ||
     bookmark.imageUrl?.includes('13_') ||
@@ -120,6 +199,7 @@ export function BookmarkCard({
   if (viewMode === 'row') {
     return (
       <article
+        onContextMenu={handleCardContextMenu}
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect?.();
@@ -268,6 +348,13 @@ export function BookmarkCard({
             <PlatformIcon platform={bookmark.platform} />
           </div>
         </div>
+
+        <ContextMenu
+          isOpen={rightClickMenu.isOpen}
+          position={rightClickMenu.position}
+          items={bookmarkMenuItems}
+          onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
+        />
       </article>
     );
   }
@@ -276,6 +363,7 @@ export function BookmarkCard({
   if (viewMode === 'timeline') {
     return (
       <article
+        onContextMenu={handleCardContextMenu}
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect?.();
@@ -390,6 +478,13 @@ export function BookmarkCard({
           </div>
           <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
         </div>
+
+        <ContextMenu
+          isOpen={rightClickMenu.isOpen}
+          position={rightClickMenu.position}
+          items={bookmarkMenuItems}
+          onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
+        />
       </article>
     );
   }
@@ -397,6 +492,7 @@ export function BookmarkCard({
   // 3. GRID & MOSAIC VIEW (Default - Image 5 Match)
   return (
     <div
+      onContextMenu={handleCardContextMenu}
       onClick={() => {
         if (isSelectionMode) {
           onToggleSelect?.();
@@ -735,6 +831,13 @@ export function BookmarkCard({
           <PlatformIcon platform={bookmark.platform} />
         </div>
       </div>
+
+      <ContextMenu
+        isOpen={rightClickMenu.isOpen}
+        position={rightClickMenu.position}
+        items={bookmarkMenuItems}
+        onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
+      />
     </div>
   );
 }
