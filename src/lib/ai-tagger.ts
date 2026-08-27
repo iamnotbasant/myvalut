@@ -470,6 +470,18 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
 
   // Domain Taxonomy Mapping (Category + Topic + Type)
   const domainRules: { patterns: (string | RegExp)[]; category: string; topic: string; type?: string }[] = [
+    // Gaming & Esports
+    { patterns: ['gta 6', 'gta6', 'gta', 'grand theft auto', 'rockstar games', 'rockstar', 'gameplay', 'gaming', 'playstation', 'ps5', 'xbox', 'steam', 'fortnite', 'minecraft', 'valorant', 'esports'], category: 'gaming', topic: 'gta-6', type: 'trailer' },
+    
+    // Entertainment, Streaming, Movies & Documentaries
+    { patterns: ['netflix', 'documentary', 'docuseries', 'extended look', 'episode', 'series', 'cinema', 'hollywood', 'anime', 'movie', 'film'], category: 'entertainment', topic: 'documentary', type: 'reaction' },
+    { patterns: ['reaction', 'reacting', 'live reaction'], category: 'entertainment', topic: 'reaction', type: 'opinion' },
+    { patterns: ['leak', 'leaks', 'cyberleek', 'rumor', 'insider'], category: 'entertainment', topic: 'news', type: 'case-study' },
+
+    // Social Media, Instagram & Creators
+    { patterns: ['instagram', 'reels', 'insta', 'photo', 'influencer'], category: 'social-media', topic: 'instagram', type: 'showcase' },
+    { patterns: ['twitter', 'tweet', 'threads', 'bluesky'], category: 'social-media', topic: 'news', type: 'opinion' },
+
     // Video Editing & Media
     { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci', 'capcut', 'after effects', 'vfx', 'speed ramp'], category: 'video-editing', topic: 'premiere-pro', type: 'tutorial' },
     { patterns: ['motion design', 'framer motion', 'gsap', 'lottie', 'animation'], category: 'design', topic: 'motion-design', type: 'resource' },
@@ -482,7 +494,7 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     { patterns: ['deepseek', 'deepseek-r1'], category: 'tech', topic: 'deepseek', type: 'tool' },
     { patterns: ['prompt engineering', 'system prompt', 'prompting'], category: 'tech', topic: 'prompt-engineering', type: 'guide' },
     { patterns: ['machine learning', 'deep learning', 'pytorch'], category: 'tech', topic: 'ml', type: 'guide' },
-    { patterns: ['artificial intelligence', 'genai', 'ai tool'], category: 'tech', topic: 'ai', type: 'resource' },
+    { patterns: ['artificial intelligence', 'genai', 'ai tool', /\bai\b/], category: 'tech', topic: 'ai', type: 'resource' },
 
     // Frontend Development
     { patterns: ['next.js', 'nextjs', 'app router', 'turbopack'], category: 'tech', topic: 'next-js', type: 'framework' },
@@ -532,8 +544,9 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     });
 
     if (isMatched) {
-      rawList.push(rule.category, rule.topic);
-      if (rule.type) rawList.push(rule.type);
+      if (!rawList.includes(rule.category)) rawList.push(rule.category);
+      if (!rawList.includes(rule.topic)) rawList.push(rule.topic);
+      if (rule.type && !rawList.includes(rule.type)) rawList.push(rule.type);
     }
   }
 
@@ -542,14 +555,27 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     rawList.push(...input.customTags);
   }
 
-  // Fallback tokens if still empty
-  if (rawList.length === 0) {
-    const rawTokens = (input.title || input.text)
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length >= 3 && !BANNED_GENERIC_WORDS.has(w.toLowerCase()));
+  // Fallback keyword entity extraction to ensure 3-5 tags
+  const cleanTokens = (input.title || input.text || '')
+    .replace(/[^\w\s-]/g, ' ')
+    .split(/\s+/)
+    .map(w => w.toLowerCase().trim())
+    .filter(w => w.length >= 3 && !BANNED_GENERIC_WORDS.has(w) && !['the', 'and', 'for', 'with', 'from', 'this', 'that', 'here', 'into', 'three', 'minutes', 'seconds'].includes(w));
 
-    rawList.push(...rawTokens.slice(0, 3));
+  for (const tok of cleanTokens) {
+    if (rawList.length >= 4) break;
+    if (!rawList.includes(tok)) {
+      rawList.push(tok);
+    }
+  }
+
+  if (rawList.length < 3) {
+    const platform = (input.platform || 'web').toLowerCase();
+    if (platform === 'youtube') rawList.push('youtube', 'video', 'tutorial');
+    else if (platform === 'twitter' || platform === 'x') rawList.push('social-media', 'news', 'opinion');
+    else if (platform === 'instagram') rawList.push('social-media', 'instagram', 'showcase');
+    else if (platform === 'reddit') rawList.push('discussion', 'community', 'guide');
+    else rawList.push('resource', 'guide', 'tech');
   }
 
   const normalized = cleanAndNormalizeTags(rawList);

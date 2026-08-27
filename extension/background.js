@@ -256,42 +256,66 @@ function cleanAndNormalizeTags(rawTags) {
 }
 
 function generateLocalAiTags(payload) {
-  const text = `${payload.title || ''} ${payload.text || ''} ${payload.url || ''}`.toLowerCase();
-  const found = [];
+  const textBlob = `${payload.title || ''} ${payload.text || ''} ${payload.url || ''}`.toLowerCase();
+  const rawList = [];
 
-  const add = (name) => {
-    if (!found.includes(name) && found.length < 5) {
-      found.push(name);
+  const domainRules = [
+    { patterns: ['gta 6', 'gta6', 'gta', 'grand theft auto', 'rockstar', 'gameplay', 'gaming', 'playstation', 'ps5', 'xbox', 'steam', 'fortnite', 'minecraft', 'valorant', 'esports'], category: 'gaming', topic: 'gta-6', type: 'trailer' },
+    { patterns: ['netflix', 'documentary', 'docuseries', 'extended look', 'episode', 'series', 'cinema', 'anime', 'movie', 'film'], category: 'entertainment', topic: 'documentary', type: 'reaction' },
+    { patterns: ['reaction', 'reacting', 'live reaction'], category: 'entertainment', topic: 'reaction', type: 'opinion' },
+    { patterns: ['leak', 'leaks', 'cyberleek', 'rumor', 'insider'], category: 'entertainment', topic: 'news', type: 'case-study' },
+    { patterns: ['instagram', 'reels', 'insta', 'photo', 'influencer'], category: 'social-media', topic: 'instagram', type: 'showcase' },
+    { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci', 'capcut', 'after effects', 'vfx', 'speed ramp'], category: 'video-editing', topic: 'premiere-pro', type: 'tutorial' },
+    { patterns: ['motion design', 'framer motion', 'gsap', 'lottie', 'animation'], category: 'design', topic: 'motion-design', type: 'resource' },
+    { patterns: ['claude', 'anthropic', 'chatgpt', 'gpt-4', 'openai', 'gemini', 'deepseek', 'prompt engineering', 'machine learning', 'artificial intelligence', 'genai', 'ai tool', 'llm'], category: 'tech', topic: 'ai', type: 'tool' },
+    { patterns: ['next.js', 'nextjs', 'react', 'tailwind', 'typescript', 'javascript', 'frontend', 'webdev', 'coding'], category: 'tech', topic: 'next-js', type: 'framework' },
+    { patterns: ['supabase', 'postgresql', 'postgres', 'database', 'python', 'rust', 'docker', 'devops'], category: 'tech', topic: 'supabase', type: 'tool' },
+    { patterns: ['figma', 'ui design', 'ux design', 'ui/ux', 'design system', '3d design', 'blender'], category: 'design', topic: 'ui-ux', type: 'guide' },
+    { patterns: ['saas', 'startup', 'founder', 'seo', 'marketing'], category: 'business', topic: 'startup', type: 'case-study' },
+    { patterns: ['crypto', 'bitcoin', 'ethereum', 'investing', 'trading', 'finance', 'stocks'], category: 'finance', topic: 'crypto', type: 'news' },
+    { patterns: ['calisthenics', 'bodyweight', 'workout', 'fitness', 'gym'], category: 'fitness', topic: 'calisthenics', type: 'tutorial' },
+    { patterns: ['productivity', 'workflow', 'notion', 'second brain'], category: 'productivity', topic: 'workflow', type: 'tool' },
+  ];
+
+  for (const rule of domainRules) {
+    if (rawList.length >= 4) break;
+    const isMatched = rule.patterns.some(p => textBlob.includes(p));
+    if (isMatched) {
+      if (!rawList.includes(rule.category)) rawList.push(rule.category);
+      if (!rawList.includes(rule.topic)) rawList.push(rule.topic);
+      if (rule.type && !rawList.includes(rule.type)) rawList.push(rule.type);
     }
-  };
-
-  if (text.includes('ai') || text.includes('llm') || text.includes('gpt') || text.includes('claude') || text.includes('agent') || text.includes('deepseek')) {
-    add('ai');
-  }
-  if (text.includes('video') || text.includes('edit') || text.includes('premiere') || text.includes('davinci') || text.includes('after effects')) {
-    add('video-editing');
-  }
-  if (text.includes('design') || text.includes('ui') || text.includes('ux') || text.includes('figma')) {
-    add('design');
-  }
-  if (text.includes('code') || text.includes('react') || text.includes('next') || text.includes('developer') || text.includes('javascript') || text.includes('python')) {
-    add('tech');
-  }
-  if (text.includes('tutorial') || text.includes('guide') || text.includes('course') || text.includes('how to')) {
-    add('tutorial');
-  }
-  if (text.includes('saas') || text.includes('startup') || text.includes('business') || text.includes('product')) {
-    add('saas');
-  }
-  if (text.includes('finance') || text.includes('money') || text.includes('crypto') || text.includes('stock')) {
-    add('finance');
   }
 
-  if (found.length === 0) {
-    found.push('resource');
+  // Include user custom tags if provided
+  if (payload.customTags && Array.isArray(payload.customTags)) {
+    rawList.push(...payload.customTags);
   }
 
-  return cleanAndNormalizeTags(found);
+  // Fallback keyword entity extraction
+  const cleanTokens = (payload.title || payload.text || '')
+    .replace(/[^\w\s-]/g, ' ')
+    .split(/\s+/)
+    .map(w => w.toLowerCase().trim())
+    .filter(w => w.length >= 3 && !BANNED_GENERIC_TAGS.has(w) && !['the', 'and', 'for', 'with', 'from', 'this', 'that', 'here', 'into', 'three', 'minutes', 'seconds'].includes(w));
+
+  for (const tok of cleanTokens) {
+    if (rawList.length >= 4) break;
+    if (!rawList.includes(tok)) {
+      rawList.push(tok);
+    }
+  }
+
+  if (rawList.length < 3) {
+    const platform = (payload.platform || 'web').toLowerCase();
+    if (platform === 'youtube') rawList.push('youtube', 'video', 'tutorial');
+    else if (platform === 'twitter' || platform === 'x') rawList.push('social-media', 'news', 'opinion');
+    else if (platform === 'instagram') rawList.push('social-media', 'instagram', 'showcase');
+    else if (platform === 'reddit') rawList.push('discussion', 'community', 'guide');
+    else rawList.push('resource', 'guide', 'tech');
+  }
+
+  return cleanAndNormalizeTags(rawList);
 }
 
 // Background Gemini Tag Generator (Runs Asynchronously)

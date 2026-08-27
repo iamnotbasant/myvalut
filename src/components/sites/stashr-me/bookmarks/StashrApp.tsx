@@ -595,6 +595,17 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setIsSelectionMode(false);
   };
 
+  const handleAutoTagSelected = async () => {
+    const targets = bookmarks.filter(b => selectedIds.has(b.id));
+    if (targets.length === 0) return;
+    soundFx.playAiSuccessSound();
+    for (const bm of targets) {
+      await handleAutoTagBookmark(bm);
+    }
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  };
+
   // Filtered bookmarks computation
   const filteredBookmarks = useMemo(() => {
     return bookmarks.filter(b => {
@@ -777,6 +788,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onDelete={handleDelete}
                 onArchiveSelected={handleArchiveSelected}
                 onDeleteSelected={handleDeleteSelected}
+                onAutoTagSelected={handleAutoTagSelected}
                 onResetFilters={() =>
                   setFilterState({
                     query: '',
