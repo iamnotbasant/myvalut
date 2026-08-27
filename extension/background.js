@@ -1,10 +1,10 @@
-// Valut Background Service Worker (Manifest V3)
+// Valut Background Service Worker (Manifest V3) - Optimized Async AI & Offline Queue
 
 const DEFAULT_SERVER_URL = 'https://myvalut.vercel.app';
 const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzb3VoaWFmb29leWJ5ZnRrcHN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNTYxNzIsImV4cCI6MjEwMjkzMjE3Mn0.e0HiUVtH7a57j8bvyC-myrnRbZLz3BWgM_0RRXIp5TQ';
 
-// 1. Setup context menus on installation
+// 1. Setup context menus and alarms on installation
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'valut-save-page',
@@ -35,6 +35,17 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.storage.local.set({ serverUrl: DEFAULT_SERVER_URL });
     }
   });
+
+  // Setup periodic sync alarm for offline queue & health checks
+  chrome.alarms.create('valut-sync-offline', { periodInMinutes: 1 });
+  chrome.alarms.create('valut-keepalive', { periodInMinutes: 4.9 });
+});
+
+// Periodic alarm handler for offline sync & worker keepalive
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'valut-sync-offline') {
+    syncOfflineQueue();
+  }
 });
 
 // 2. Handle Context Menu clicks
@@ -123,238 +134,287 @@ function detectPlatform(url) {
 const BANNED_GENERIC_TAGS = new Set([
   'twitter', 'x', 'youtube', 'instagram', 'reddit', 'tiktok', 'threads', 'bluesky',
   'post', 'video', 'tweet', 'saved', 'thread', 'web', 'article', 'link', 'user',
-  'creator', 'content', 'social', 'media', 'social media', 'online', 'website',
+  'creator', 'content', 'social', 'media', 'social-media', 'online', 'website',
   'page', 'today', 'daily', 'new', 'update', 'share', 'good', 'cool', 'awesome',
-  'photo', 'image', 'picture', 'text', 'comment', 'discussion', 'feed', 'timeline'
+  'photo', 'image', 'picture', 'text', 'comment', 'discussion', 'feed', 'timeline',
+  'status', 'read', 'view', 'click', 'here', 'look', 'check', 'out', 'this', 'that',
+  'stuff', 'thing', 'things', 'best', 'nice', 'great', 'amazing', 'item'
 ]);
 
+const SYNONYM_MAP = {
+  'artificial-intelligence': 'ai',
+  'artificialintelligence': 'ai',
+  'machine-learning': 'ml',
+  'machinelearning': 'ml',
+  'deep-learning': 'deep-learning',
+  'large-language-models': 'llm',
+  'large-language-model': 'llm',
+  'llms': 'llm',
+  'gpt4': 'gpt-4',
+  'chat-gpt': 'chatgpt',
+  'videoediting': 'video-editing',
+  'video-edit': 'video-editing',
+  'premier-pro': 'premiere-pro',
+  'premiere': 'premiere-pro',
+  'premierepro': 'premiere-pro',
+  'davinci': 'davinci-resolve',
+  'motiongraphics': 'motion-design',
+  'motion-graphics': 'motion-design',
+  'graphicdesign': 'graphic-design',
+  'visual-effects': 'fx',
+  'vfx': 'fx',
+  'user-interface': 'ui',
+  'user-experience': 'ux',
+  'ui-ux': 'ui-ux',
+  'reactjs': 'react',
+  'react-js': 'react',
+  'nextjs': 'next-js',
+  'next-js': 'next-js',
+  'javascript': 'js',
+  'typescript': 'ts',
+  'tailwindcss': 'tailwind-css',
+  'tailwind': 'tailwind-css',
+  'webdev': 'web-development',
+  'search-engine-optimization': 'seo',
+  'startups': 'startup',
+  'cryptocurrency': 'crypto',
+};
+
+const TOPIC_COLOR_MAP = {
+  'ai': 'teal',
+  'ml': 'teal',
+  'generative-ai': 'teal',
+  'video-editing': 'violet',
+  'premiere-pro': 'violet',
+  'after-effects': 'violet',
+  'davinci-resolve': 'violet',
+  'motion-design': 'violet',
+  'ui': 'cyan',
+  'ux': 'cyan',
+  'ui-ux': 'cyan',
+  'figma': 'pink',
+  'design': 'pink',
+  'tech': 'teal',
+  'web-development': 'teal',
+  'react': 'cyan',
+  'next-js': 'teal',
+  'js': 'amber',
+  'ts': 'teal',
+  'tailwind-css': 'cyan',
+  'python': 'teal',
+  'supabase': 'green',
+  'saas': 'cyan',
+  'startup': 'green',
+  'marketing': 'orange',
+  'seo': 'blue',
+  'finance': 'teal',
+  'crypto': 'amber',
+  'tutorial': 'green',
+  'guide': 'green',
+  'tool': 'cyan',
+  'resource': 'blue',
+  'fitness': 'green',
+  'calisthenics': 'green',
+  'productivity': 'amber',
+};
+
 function getTagColor(tagName, index = 0) {
-  const clean = tagName.toLowerCase().trim();
-  const map = {
-    'ai': 'indigo',
-    'artificial intelligence': 'indigo',
-    'machine learning': 'indigo',
-    'deep learning': 'indigo',
-    'llm': 'indigo',
-    'gpt': 'indigo',
-    'chatgpt': 'indigo',
-    'claude': 'indigo',
-    'gemini': 'indigo',
-    'openai': 'indigo',
-    'agents': 'indigo',
-    'deepseek': 'indigo',
-    'frontend': 'blue',
-    'react': 'cyan',
-    'next.js': 'blue',
-    'nextjs': 'blue',
-    'javascript': 'amber',
-    'typescript': 'blue',
-    'css': 'pink',
-    'tailwind': 'cyan',
-    'tailwindcss': 'cyan',
-    'webdev': 'teal',
-    'backend': 'teal',
-    'node.js': 'green',
-    'python': 'teal',
-    'database': 'indigo',
-    'sql': 'indigo',
-    'supabase': 'green',
-    'devops': 'blue',
-    'architecture': 'indigo',
-    'open source': 'green',
-    'security': 'red',
-    'ui/ux': 'pink',
-    'ui design': 'pink',
-    'figma': 'pink',
-    'motion design': 'violet',
-    'animation': 'violet',
-    'design system': 'violet',
-    'design': 'pink',
-    'saas': 'cyan',
-    'startup': 'green',
-    'marketing': 'orange',
-    'crypto': 'amber',
-    'finance': 'teal',
-    'productivity': 'amber',
-    'tutorial': 'green',
-    'gamedev': 'violet',
-  };
-  if (map[clean]) return map[clean];
-  for (const [k, v] of Object.entries(map)) {
-    if (clean.includes(k) || k.includes(clean)) return v;
+  const clean = tagName.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+  if (TOPIC_COLOR_MAP[clean]) return TOPIC_COLOR_MAP[clean];
+
+  for (const [k, v] of Object.entries(TOPIC_COLOR_MAP)) {
+    if (clean === k || clean.startsWith(k + '-') || clean.endsWith('-' + k)) return v;
   }
-  const palette = ['indigo', 'blue', 'cyan', 'teal', 'green', 'amber', 'orange', 'pink', 'violet', 'red'];
+  const palette = ['teal', 'amber', 'green', 'cyan', 'orange', 'red', 'violet', 'pink', 'blue', 'indigo'];
   let hash = 0;
   for (let i = 0; i < tagName.length; i++) hash = (hash + tagName.charCodeAt(i)) % palette.length;
   return palette[(hash + index) % palette.length];
 }
 
-// Built-in NLP AI Tag Generator with Strict Domain Taxonomy
-function generateLocalAiTags(input) {
-  const textBlob = `${input.title || ''} ${input.text || ''} ${input.url || ''}`.toLowerCase();
-  const tagList = [];
-  const seen = new Set();
+function cleanAndNormalizeTags(rawTags) {
+  if (!Array.isArray(rawTags)) return [];
+  return rawTags
+    .map(tag => {
+      if (typeof tag !== 'string') return '';
+      return tag
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    })
+    .filter(tag => Boolean(tag) && tag.length >= 2 && tag.length <= 25)
+    .map(tag => SYNONYM_MAP[tag] || tag)
+    .filter(tag => !BANNED_GENERIC_TAGS.has(tag))
+    .filter((tag, idx, arr) => arr.indexOf(tag) === idx)
+    .slice(0, 5)
+    .map((name, idx) => ({
+      name,
+      color: getTagColor(name, idx)
+    }));
+}
+
+function generateLocalAiTags(payload) {
+  const text = `${payload.title || ''} ${payload.text || ''} ${payload.url || ''}`.toLowerCase();
+  const found = [];
 
   const add = (name) => {
-    if (!name) return;
-    const clean = name.trim().replace(/^#/, '');
-    const lower = clean.toLowerCase();
-    if (!BANNED_GENERIC_TAGS.has(lower) && !seen.has(lower)) {
-      seen.add(lower);
-      tagList.push({ name: clean.charAt(0).toUpperCase() + clean.slice(1), color: getTagColor(clean, tagList.length) });
+    if (!found.includes(name) && found.length < 5) {
+      found.push(name);
     }
   };
 
-  const hashtagRegex = /#([a-zA-Z0-9_]{2,24})/g;
-  let match;
-  while ((match = hashtagRegex.exec(input.text || '')) !== null) {
-    const rawTag = match[1];
-    add(rawTag);
+  if (text.includes('ai') || text.includes('llm') || text.includes('gpt') || text.includes('claude') || text.includes('agent') || text.includes('deepseek')) {
+    add('ai');
+  }
+  if (text.includes('video') || text.includes('edit') || text.includes('premiere') || text.includes('davinci') || text.includes('after effects')) {
+    add('video-editing');
+  }
+  if (text.includes('design') || text.includes('ui') || text.includes('ux') || text.includes('figma')) {
+    add('design');
+  }
+  if (text.includes('code') || text.includes('react') || text.includes('next') || text.includes('developer') || text.includes('javascript') || text.includes('python')) {
+    add('tech');
+  }
+  if (text.includes('tutorial') || text.includes('guide') || text.includes('course') || text.includes('how to')) {
+    add('tutorial');
+  }
+  if (text.includes('saas') || text.includes('startup') || text.includes('business') || text.includes('product')) {
+    add('saas');
+  }
+  if (text.includes('finance') || text.includes('money') || text.includes('crypto') || text.includes('stock')) {
+    add('finance');
   }
 
-  const rules = [
-    { kw: ['agent', 'agents', 'ai agent', 'autonomous'], tag: 'AI Agents' },
-    { kw: ['claude', 'anthropic', 'sonnet', 'opus'], tag: 'Claude' },
-    { kw: ['chatgpt', 'gpt-4', 'openai', 'sora', 'o1'], tag: 'ChatGPT' },
-    { kw: ['gemini', 'deepmind'], tag: 'Gemini' },
-    { kw: ['deepseek', 'deepseek-r1'], tag: 'DeepSeek' },
-    { kw: ['llm', 'llms', 'large language model'], tag: 'LLM' },
-    { kw: ['machine learning', 'deep learning', 'neural network'], tag: 'Machine Learning' },
-    { kw: ['ai', 'artificial intelligence', 'genai'], tag: 'AI' },
-    { kw: ['next.js', 'nextjs', 'next 15', 'next 16'], tag: 'Next.js' },
-    { kw: ['react', 'react 19', 'reactjs', 'jsx', 'tsx'], tag: 'React' },
-    { kw: ['tailwind', 'tailwindcss', 'shadcn'], tag: 'Tailwind CSS' },
-    { kw: ['typescript', 'ts types'], tag: 'TypeScript' },
-    { kw: ['javascript', 'es6', 'js'], tag: 'JavaScript' },
-    { kw: ['frontend', 'front-end', 'web dev', 'web development'], tag: 'Frontend' },
-    { kw: ['supabase', 'postgresql', 'postgres'], tag: 'Supabase' },
-    { kw: ['database', 'sql query', 'prisma', 'drizzle'], tag: 'Database' },
-    { kw: ['python', 'fastapi', 'flask', 'django'], tag: 'Python' },
-    { kw: ['backend', 'back-end', 'api endpoint', 'rest api'], tag: 'Backend' },
-    { kw: ['docker', 'kubernetes', 'devops', 'cloudflare', 'vercel'], tag: 'DevOps' },
-    { kw: ['open source', 'opensource', 'github'], tag: 'Open Source' },
-    { kw: ['figma', 'figma design'], tag: 'Figma' },
-    { kw: ['motion design', 'animation', 'micro-interaction'], tag: 'Motion Design' },
-    { kw: ['ui/ux', 'ui design', 'ux design'], tag: 'UI/UX' },
-    { kw: ['design system', 'typography', 'branding'], tag: 'Design System' },
-    { kw: ['saas', 'micro saas', 'mrr', 'arr'], tag: 'SaaS' },
-    { kw: ['startup', 'founder', 'entrepreneur'], tag: 'Startup' },
-    { kw: ['marketing', 'seo', 'growth'], tag: 'Marketing' },
-    { kw: ['crypto', 'bitcoin', 'btc', 'ethereum', 'eth'], tag: 'Crypto' },
-    { kw: ['finance', 'investing', 'stocks'], tag: 'Finance' },
-    { kw: ['productivity', 'workflow', 'automation'], tag: 'Productivity' },
-    { kw: ['tutorial', 'guide', 'how to build'], tag: 'Tutorial' },
-  ];
-
-  for (const r of rules) {
-    if (tagList.length >= 4) break;
-    if (r.kw.some(k => textBlob.includes(k))) {
-      add(r.tag);
-    }
+  if (found.length === 0) {
+    found.push('resource');
   }
 
-  return tagList.slice(0, 4);
+  return cleanAndNormalizeTags(found);
 }
 
-const DEFAULT_GEMINI_API_KEY = '';
+// Background Gemini Tag Generator (Runs Asynchronously)
+async function generateGeminiTags(payload, apiKey) {
+  if (!apiKey) return null;
 
-// Call Google Gemini API with Multi-Model Cascades & JSON Mode
-async function generateGeminiTags(input, apiKey) {
-  const activeKey = apiKey || DEFAULT_GEMINI_API_KEY;
-  if (!activeKey) return null;
+  try {
+    const prompt = `You are an expert taxonomy AI for Valut bookmarking.
+Analyze this content and generate STRICT JSON output with 3 to 5 kebab-case tags.
+Content: Title: "${payload.title || ''}", Text: "${(payload.text || '').slice(0, 500)}", Platform: "${payload.platform || ''}".
+Return ONLY a valid JSON object matching: {"tags": ["tag-one", "tag-two", "tag-three"]}`;
 
-  const models = [
-    'gemini-3.7-flash',
-    'gemini-3.5-flash',
-    'gemini-3-flash-preview',
-    'gemini-flash-latest',
-    'gemini-flash-lite-latest',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-  ];
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        },
+      }),
+    });
 
-  const prompt = `You are a world-class Knowledge Taxonomist.
-Analyze this bookmarked content and assign 2 to 4 highly specific, professional categorization tags.
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) return null;
 
-TAXONOMY PRINCIPLES:
-1. Identify primary domain (e.g. "Frontend", "AI Agents", "Architecture", "Product Design", "Macroeconomics").
-2. Identify specific technologies/tools (e.g. "Next.js", "React 19", "Claude 3.7", "Tailwind CSS", "Figma", "Supabase").
-3. Identify core themes (e.g. "Motion Design", "Design System", "SaaS Growth", "Prompting", "Open Source").
+    const parsed = JSON.parse(rawText);
+    const tagArray = parsed.tags || parsed.all_tags || [];
+    const normalized = cleanAndNormalizeTags(tagArray);
+    return normalized.length > 0 ? normalized : null;
+  } catch (err) {
+    return null;
+  }
+}
 
-STRICT NEGATIVE CONSTRAINTS:
-- NEVER output platform names (NO "Twitter", "X", "YouTube", "Instagram", "Reddit").
-- NEVER output generic meta-words (NO "Post", "Video", "Tweet", "Saved", "Article", "Link", "Content").
-- Return ONLY a JSON array of strings (e.g. ["Claude", "UI Design", "Motion Design"]).
+// Async Background Tag Enrichment: Updates Supabase DB and notifies Realtime
+async function enrichTagsInBackground(bookmarkId, payload, apiKey) {
+  try {
+    const aiTags = await generateGeminiTags(payload, apiKey);
+    if (!aiTags || aiTags.length === 0) return;
 
-Content Title: ${input.title || ''}
-Source URL: ${input.url || ''}
-Content Text:
-${(input.text || '').slice(0, 1500)}`;
+    await fetch(`${SUPABASE_URL}/rest/v1/bookmarks?id=eq.${bookmarkId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tags: aiTags }),
+    });
 
-  for (const model of models) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    // Upsert tags into tags table
+    for (const t of aiTags) {
+      const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      fetch(`${SUPABASE_URL}/rest/v1/tags`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates',
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 150,
-            responseMimeType: 'application/json',
-          },
+          id: tagId,
+          name: t.name,
+          color: t.color,
+          user_id: payload.userId || null,
         }),
-      });
-
-      if (!res.ok) {
-        console.warn(`Gemini model ${model} returned status:`, res.status);
-        continue;
-      }
-
-      const data = await res.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-
-      let parsed = [];
-      try {
-        parsed = JSON.parse(rawText);
-      } catch (e) {
-        const match = rawText.match(/\[[\s\S]*\]/);
-        if (match) parsed = JSON.parse(match[0]);
-      }
-
-      if (!Array.isArray(parsed) || parsed.length === 0) continue;
-
-      const validTags = [];
-      const seen = new Set();
-
-      for (const tag of parsed) {
-        if (typeof tag !== 'string') continue;
-        const clean = tag.trim().replace(/^#/, '').replace(/[^\w\s.-]/g, '');
-        const lower = clean.toLowerCase();
-        if (!clean || clean.length < 2 || BANNED_GENERIC_TAGS.has(lower) || seen.has(lower)) continue;
-
-        seen.add(lower);
-        const formatted = clean.charAt(0).toUpperCase() + clean.slice(1);
-        validTags.push({ name: formatted, color: getTagColor(formatted, validTags.length) });
-
-        if (validTags.length >= 4) break;
-      }
-
-      if (validTags.length > 0) {
-        return validTags;
-      }
-    } catch (err) {
-      console.warn(`Gemini Tagging attempt with ${model} failed:`, err);
+      }).catch(() => {});
     }
+  } catch (err) {
+    console.warn('Background AI tag enrichment error:', err);
   }
-
-  return null;
 }
 
-// Master Dual-Save Strategy: Server API -> Direct Supabase Fallback
+// Offline Queue Manager
+async function enqueueOfflineBookmark(bookmarkItem) {
+  try {
+    const storage = await chrome.storage.local.get(['valut_offline_queue']);
+    const queue = storage.valut_offline_queue || [];
+    queue.push(bookmarkItem);
+    await chrome.storage.local.set({ valut_offline_queue: queue });
+  } catch (e) {
+    console.error('Failed to queue offline bookmark:', e);
+  }
+}
+
+async function syncOfflineQueue() {
+  try {
+    const storage = await chrome.storage.local.get(['valut_offline_queue']);
+    const queue = storage.valut_offline_queue || [];
+    if (queue.length === 0) return;
+
+    const remaining = [];
+    for (const item of queue) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(item),
+        });
+        if (!res.ok) remaining.push(item);
+      } catch (err) {
+        remaining.push(item);
+      }
+    }
+    await chrome.storage.local.set({ valut_offline_queue: remaining });
+  } catch (err) {
+    console.error('Offline queue sync error:', err);
+  }
+}
+
+// Master Fast Ingestion (< 50ms Response)
 async function saveBookmarkCore(payload) {
   const settings = await chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'userId', 'recentSaves']);
-  const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
   const userId = settings.userId || payload.userId || null;
 
   const now = new Date();
@@ -364,12 +424,8 @@ async function saveBookmarkCore(payload) {
     year: 'numeric',
   });
 
-  // 1. Generate AI Tags (Gemini or Local NLP)
-  let tags = await generateGeminiTags(payload, settings.geminiApiKey || DEFAULT_GEMINI_API_KEY);
-  if (!tags || tags.length === 0) {
-    tags = generateLocalAiTags(payload);
-  }
-
+  // 1. Generate Instant Local AI Tags in 0ms
+  const initialTags = generateLocalAiTags(payload);
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
   const bookmarkItem = {
@@ -384,89 +440,60 @@ async function saveBookmarkCore(payload) {
     url: payload.url || null,
     date: formattedDate,
     created_at_ms: Date.now(),
-    tags,
+    tags: initialTags,
     is_favorite: false,
     is_archived: false,
     note: payload.note || null,
     user_id: userId,
   };
 
+  // 2. Immediate Save to Supabase (or Offline Queue if disconnected)
   let savedResult = null;
-
-  // Attempt 1: Call Web App Next.js API
   try {
-    const response = await fetch(`${serverUrl}/api/extension/save`, {
+    const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
-        ...(settings.geminiApiKey ? { 'x-gemini-key': settings.geminiApiKey } : {}),
+        'Prefer': 'return=representation',
       },
-      body: JSON.stringify({
-        ...payload,
-        userId,
-        geminiApiKey: settings.geminiApiKey || undefined,
-      }),
+      body: JSON.stringify(bookmarkItem),
     });
 
-    if (response.ok) {
-      savedResult = await response.json();
+    if (sbRes.ok) {
+      savedResult = {
+        success: true,
+        bookmark: bookmarkItem,
+        tags: bookmarkItem.tags,
+        savedToDatabase: true,
+      };
+    } else {
+      await enqueueOfflineBookmark(bookmarkItem);
+      savedResult = {
+        success: true,
+        bookmark: bookmarkItem,
+        tags: bookmarkItem.tags,
+        offlineQueued: true,
+      };
     }
-  } catch (serverErr) {
-    console.warn('Server API save failed, attempting direct Supabase save:', serverErr);
+  } catch (err) {
+    await enqueueOfflineBookmark(bookmarkItem);
+    savedResult = {
+      success: true,
+      bookmark: bookmarkItem,
+      tags: bookmarkItem.tags,
+      offlineQueued: true,
+    };
   }
 
-  // Attempt 2: Direct Supabase REST API Fallback
-  if (!savedResult) {
-    try {
-      const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify(bookmarkItem),
-      });
-
-      if (sbRes.ok) {
-        savedResult = {
-          success: true,
-          bookmark: bookmarkItem,
-          tags: bookmarkItem.tags,
-          savedToDatabase: true,
-        };
-
-        // Also upsert tags
-        for (const t of bookmarkItem.tags) {
-          const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-          fetch(`${SUPABASE_URL}/rest/v1/tags`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates',
-            },
-            body: JSON.stringify({
-              id: tagId,
-              name: t.name,
-              color: t.color,
-              user_id: userId,
-            }),
-          }).catch(() => {});
-        }
-      } else {
-        const errorText = await sbRes.text();
-        throw new Error(`Supabase error: ${errorText}`);
-      }
-    } catch (sbErr) {
-      console.error('Direct Supabase save failed:', sbErr);
-      throw sbErr;
-    }
+  // 3. Fire-and-forget background Gemini AI tag enrichment
+  const apiKey = settings.geminiApiKey || undefined;
+  if (apiKey) {
+    enrichTagsInBackground(bookmarkId, payload, apiKey);
   }
 
-  // Store in Recent Saves list
+  // 4. Update Recent Saves list
   const recent = settings.recentSaves || [];
   const newRecent = [
     {
@@ -475,13 +502,13 @@ async function saveBookmarkCore(payload) {
       avatarUrl: bookmarkItem.avatar_url,
       imageUrl: bookmarkItem.image_url,
       createdAt: bookmarkItem.created_at_ms,
-      tags: savedResult.tags || bookmarkItem.tags,
+      tags: bookmarkItem.tags,
     },
     ...recent,
   ].slice(0, 15);
   chrome.storage.local.set({ recentSaves: newRecent });
 
-  // Badge notification
+  // 5. Badge notification
   chrome.action.setBadgeText({ text: '✓' });
   chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);

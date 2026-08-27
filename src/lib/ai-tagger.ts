@@ -5,13 +5,20 @@ export interface GeneratedTag {
   color: TagColor;
 }
 
-interface TagInput {
+export interface TagInput {
   title?: string | null;
   text: string;
   platform?: string;
   url?: string | null;
   customTags?: string[];
   context?: string | null;
+}
+
+export interface GeminiTagResponse {
+  category: string;
+  topics: string[];
+  type: string;
+  all_tags?: string[];
 }
 
 const PALETTE_COLORS: TagColor[] = [
@@ -21,18 +28,97 @@ const PALETTE_COLORS: TagColor[] = [
   'cyan',
   'orange',
   'red',
+  'violet',
+  'pink',
+  'blue',
+  'indigo',
 ];
 
-// Curated Semantic Color Map for 100+ Topics
+// 1. Synonym Normalization Dictionary (Prevents duplicate/variant tags)
+export const SYNONYM_MAP: Record<string, string> = {
+  // AI & ML
+  'artificial-intelligence': 'ai',
+  'artificialintelligence': 'ai',
+  'machine-learning': 'ml',
+  'machinelearning': 'ml',
+  'deep-learning': 'deep-learning',
+  'large-language-models': 'llm',
+  'large-language-model': 'llm',
+  'llms': 'llm',
+  'gpt4': 'gpt-4',
+  'gpt-4o': 'gpt-4',
+  'chat-gpt': 'chatgpt',
+  'gen-ai': 'generative-ai',
+  'genai': 'generative-ai',
+
+  // Video & Design
+  'videoediting': 'video-editing',
+  'video-edit': 'video-editing',
+  'premier-pro': 'premiere-pro',
+  'premiere': 'premiere-pro',
+  'premierepro': 'premiere-pro',
+  'davinci': 'davinci-resolve',
+  'davinciresolve': 'davinci-resolve',
+  'aftereffects': 'after-effects',
+  'after-effect': 'after-effects',
+  'motiongraphics': 'motion-design',
+  'motion-graphics': 'motion-design',
+  'graphicdesign': 'graphic-design',
+  'graphic-designs': 'graphic-design',
+  'visual-effects': 'fx',
+  'vfx': 'fx',
+  'sfx': 'sound-effects',
+  'user-interface': 'ui',
+  'user-experience': 'ux',
+  'ui-ux': 'ui-ux',
+  'uiux': 'ui-ux',
+
+  // Coding & Web Development
+  'reactjs': 'react',
+  'react-js': 'react',
+  'nextjs': 'next-js',
+  'next-js': 'next-js',
+  'vuejs': 'vue',
+  'vue-js': 'vue',
+  'sveltejs': 'svelte',
+  'javascript': 'js',
+  'typescript': 'ts',
+  'tailwindcss': 'tailwind-css',
+  'tailwind': 'tailwind-css',
+  'web-dev': 'web-development',
+  'webdev': 'web-development',
+  'webdevelopment': 'web-development',
+  'node-js': 'nodejs',
+  'postgres': 'postgresql',
+  'open-source-software': 'open-source',
+  'opensource': 'open-source',
+  'search-engine-optimization': 'seo',
+  'searchengineoptimization': 'seo',
+
+  // Fitness & Lifestyle
+  'bodyweight-training': 'calisthenics',
+  'bodyweight-workout': 'calisthenics',
+  'working-out': 'fitness',
+  'workout': 'fitness',
+
+  // Finance & Business
+  'personal-finance': 'finance',
+  'cryptocurrency': 'crypto',
+  'cryptocurrencies': 'crypto',
+  'start-up': 'startup',
+  'startups': 'startup',
+  'micro-saas': 'saas',
+};
+
+// Curated Semantic Color Map (Supports both kebab-case and spaced keys)
 const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   // AI & Machine Learning
   'ai': 'teal',
-  'artificial intelligence': 'teal',
-  'generative ai': 'teal',
-  'machine learning': 'teal',
-  'deep learning': 'teal',
+  'ml': 'teal',
+  'generative-ai': 'teal',
+  'machine-learning': 'teal',
+  'deep-learning': 'teal',
   'llm': 'teal',
-  'llms': 'teal',
   'gpt': 'teal',
   'gpt-4': 'teal',
   'chatgpt': 'teal',
@@ -41,171 +127,188 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   'openai': 'teal',
   'anthropic': 'teal',
   'deepseek': 'teal',
-  'ai agents': 'teal',
-  'agents': 'teal',
-  'prompt engineering': 'teal',
-  'computer vision': 'teal',
+  'ai-agents': 'teal',
+  'prompt-engineering': 'teal',
+  'computer-vision': 'teal',
   'nlp': 'teal',
-  'neural networks': 'teal',
-  'huggingface': 'amber',
-  'diffusion': 'teal',
   'rag': 'teal',
-  'fine-tuning': 'teal',
+
+  // Video & Motion & Creative
+  'video-editing': 'violet',
+  'premiere-pro': 'violet',
+  'after-effects': 'violet',
+  'davinci-resolve': 'violet',
+  'motion-design': 'violet',
+  'animation': 'violet',
+  'fx': 'violet',
+  'sound-effects': 'pink',
+  '3d-design': 'violet',
+  'blender': 'orange',
+  'three-js': 'violet',
+
+  // Design, UI/UX
+  'ui': 'cyan',
+  'ux': 'cyan',
+  'ui-ux': 'cyan',
+  'product-design': 'pink',
+  'design-system': 'violet',
+  'figma': 'pink',
+  'typography': 'amber',
+  'branding': 'orange',
+  'graphic-design': 'pink',
+  'design': 'pink',
 
   // Frontend & Web Development
+  'tech': 'teal',
+  'web-development': 'teal',
   'frontend': 'cyan',
-  'react': 'cyan',
-  'react 19': 'cyan',
-  'next.js': 'teal',
-  'nextjs': 'teal',
-  'vue': 'green',
-  'vue.js': 'green',
-  'svelte': 'orange',
-  'angular': 'red',
-  'javascript': 'amber',
-  'typescript': 'teal',
-  'html': 'orange',
-  'css': 'pink',
-  'tailwind css': 'cyan',
-  'tailwind': 'cyan',
-  'tailwindcss': 'cyan',
-  'shadcn': 'blue',
-  'shadcn/ui': 'blue',
-  'web development': 'teal',
-  'webdev': 'teal',
-  'performance': 'amber',
-  'accessibility': 'teal',
-
-  // Backend & Cloud & DevOps
   'backend': 'teal',
-  'node.js': 'green',
-  'nodejs': 'green',
-  'express': 'green',
-  'nestjs': 'red',
+  'react': 'cyan',
+  'next-js': 'teal',
+  'vue': 'green',
+  'svelte': 'orange',
+  'js': 'amber',
+  'ts': 'teal',
+  'tailwind-css': 'cyan',
+  'shadcn': 'blue',
+  'coding': 'cyan',
+
+  // Backend & Cloud & Database
   'python': 'teal',
-  'fastapi': 'teal',
-  'django': 'green',
-  'golang': 'cyan',
-  'go': 'cyan',
   'rust': 'orange',
+  'go': 'cyan',
   'database': 'indigo',
-  'sql': 'indigo',
   'postgresql': 'blue',
-  'postgres': 'blue',
   'supabase': 'green',
-  'mongodb': 'green',
-  'redis': 'red',
-  'prisma': 'indigo',
-  'drizzle': 'amber',
   'docker': 'blue',
   'kubernetes': 'blue',
   'devops': 'blue',
-  'aws': 'orange',
-  'gcp': 'blue',
-  'cloudflare': 'orange',
-  'vercel': 'blue',
-  'api': 'teal',
-  'rest api': 'teal',
-  'graphql': 'pink',
-  'grpc': 'cyan',
-  'microservices': 'indigo',
-  'architecture': 'indigo',
-  'system design': 'indigo',
-  'open source': 'green',
-  'cybersecurity': 'red',
+  'open-source': 'green',
   'security': 'red',
-  'auth': 'amber',
-  'linux': 'amber',
 
-  // Design, 3D & Creative
-  'ui design': 'pink',
-  'ux design': 'pink',
-  'ui/ux': 'pink',
-  'product design': 'pink',
-  'design system': 'violet',
-  'figma': 'pink',
-  'motion design': 'violet',
-  'animation': 'violet',
-  'micro-interactions': 'violet',
-  'typography': 'amber',
-  'branding': 'orange',
-  '3d & graphics': 'violet',
-  '3d design': 'violet',
-  'blender': 'orange',
-  'three.js': 'violet',
-  'webgl': 'violet',
-  'shader': 'pink',
-  'illustration': 'pink',
-  'design': 'pink',
-  'creativity': 'violet',
-  'graphic design': 'pink',
-
-  // Business, SaaS & Product
+  // Business & Marketing & Finance
   'saas': 'cyan',
   'startup': 'green',
-  'startups': 'green',
-  'entrepreneurship': 'green',
-  'founder': 'green',
-  'product management': 'teal',
-  'product strategy': 'teal',
   'marketing': 'orange',
   'growth': 'green',
   'seo': 'blue',
-  'copywriting': 'amber',
-  'sales': 'green',
-  'venture capital': 'teal',
-  'pricing': 'amber',
-
-  // Finance & Web3
   'finance': 'teal',
-  'investing': 'teal',
-  'stock market': 'green',
-  'stocks': 'green',
   'crypto': 'amber',
-  'bitcoin': 'amber',
-  'ethereum': 'indigo',
-  'solana': 'violet',
-  'blockchain': 'indigo',
-  'defi': 'pink',
-  'economics': 'teal',
+  'investing': 'teal',
 
-  // Productivity, Learning & Career
-  'productivity': 'amber',
-  'workflow': 'cyan',
-  'second brain': 'indigo',
-  'tools': 'cyan',
+  // Content Types
   'tutorial': 'green',
   'guide': 'green',
-  'learning': 'blue',
-  'career': 'teal',
-  'coding': 'cyan',
-  'programming': 'cyan',
-  'software engineering': 'blue',
-  'game development': 'violet',
-  'gamedev': 'violet',
+  'tool': 'cyan',
+  'resource': 'blue',
+  'case-study': 'amber',
+  'opinion': 'orange',
+  'news': 'red',
+  'framework': 'indigo',
+  'fitness': 'green',
+  'calisthenics': 'green',
+  'productivity': 'amber',
 };
 
-// Forbidden Generic / Useless Words
+// Banned Generic / Useless Words
 const BANNED_GENERIC_WORDS = new Set([
   'twitter', 'x', 'youtube', 'instagram', 'reddit', 'tiktok', 'threads', 'bluesky',
   'post', 'video', 'tweet', 'saved', 'thread', 'web', 'article', 'link', 'user',
-  'creator', 'content', 'social', 'media', 'social media', 'online', 'website',
+  'creator', 'content', 'social', 'media', 'social-media', 'online', 'website',
   'page', 'today', 'daily', 'new', 'update', 'share', 'good', 'cool', 'awesome',
   'photo', 'image', 'picture', 'text', 'comment', 'discussion', 'feed', 'timeline',
   'status', 'read', 'view', 'click', 'here', 'look', 'check', 'out', 'this', 'that',
-  'stuff', 'thing', 'things', 'best', 'nice', 'great', 'awesome', 'amazing', 'item'
+  'stuff', 'thing', 'things', 'best', 'nice', 'great', 'amazing', 'item'
 ]);
 
+// 2. Preprocessing: Platform-Wise Input Data Truncation (High-Signal Context Only)
+export function preprocessPlatformInput(input: TagInput): string {
+  const platform = (input.platform || 'web').toLowerCase();
+  const rawText = input.text || '';
+  const title = input.title ? `Title: ${input.title.trim()}\n` : '';
+  const context = input.context ? input.context.trim() : '';
+
+  switch (platform) {
+    case 'youtube': {
+      // Title + First 500 chars of Description + First 200 words of Transcript (Ideal: ~800-1000 chars)
+      const descPart = rawText.slice(0, 500);
+      const transcriptWords = context ? context.split(/\s+/).slice(0, 200).join(' ') : '';
+      const transcriptPart = transcriptWords ? `\nTranscript: ${transcriptWords}` : '';
+      return `${title}Description: ${descPart}${transcriptPart}`.trim().slice(0, 1000);
+    }
+    case 'instagram':
+    case 'reels':
+    case 'tiktok': {
+      // Caption + Short Extracted Audio Transcript (Ideal: ~500 chars)
+      const caption = rawText.slice(0, 400);
+      const audioText = context ? `\nAudio Transcript: ${context.slice(0, 150)}` : '';
+      return `${title}Caption: ${caption}${audioText}`.trim().slice(0, 550);
+    }
+    case 'twitter':
+    case 'x':
+    case 'threads':
+    case 'bluesky': {
+      // Full Tweet Text + Quoted Tweet Text (Ideal: ~300 - 500 chars)
+      const quoteText = context ? `\nQuoted Tweet: ${context.slice(0, 250)}` : '';
+      return `${title}Tweet: ${rawText}${quoteText}`.trim().slice(0, 500);
+    }
+    case 'reddit': {
+      // Post Title + Post Body (selftext) (Ideal: ~1000 chars max)
+      return `${title}Post Body: ${rawText}`.trim().slice(0, 1000);
+    }
+    case 'web':
+    default: {
+      // Page <title> + Meta Description + First 2-3 Headings/Paragraphs (Ideal: ~1200 chars)
+      return `${title}Content: ${rawText}`.trim().slice(0, 1200);
+    }
+  }
+}
+
+// 3. Backend Normalization Pipeline: Lowercase + Kebab + Synonym Map + Deduplication + Length Filter + Cap
+export function cleanAndNormalizeTags(rawTags: (string | null | undefined)[]): string[] {
+  if (!Array.isArray(rawTags)) return [];
+
+  return rawTags
+    .map(tag => {
+      if (typeof tag !== 'string') return '';
+      return tag
+        .toLowerCase()
+        .trim()
+        .replace(/^#+/, '')
+        .replace(/[_\s]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    })
+    .map(tag => SYNONYM_MAP[tag] || tag)
+    .filter((tag, index, self) => {
+      return (
+        tag.length >= 2 &&
+        !BANNED_GENERIC_WORDS.has(tag) &&
+        !BANNED_GENERIC_WORDS.has(tag.replace(/-/g, ' ')) &&
+        self.indexOf(tag) === index
+      );
+    })
+    .slice(0, 5); // Hard cap at 5 tags for consistent UI/DB
+}
+
 export function getTagColor(tagName: string, index = 0): TagColor {
-  const clean = tagName.toLowerCase().trim();
+  const clean = tagName.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+  const spaceKey = clean.replace(/-/g, ' ');
+
   if (TOPIC_COLOR_MAP[clean]) {
     return TOPIC_COLOR_MAP[clean];
   }
+  if (TOPIC_COLOR_MAP[spaceKey]) {
+    return TOPIC_COLOR_MAP[spaceKey];
+  }
+
   for (const [key, color] of Object.entries(TOPIC_COLOR_MAP)) {
-    if (clean === key || clean.startsWith(key + ' ') || clean.endsWith(' ' + key)) {
+    if (clean === key || clean.startsWith(key + '-') || clean.endsWith('-' + key)) {
       return color;
     }
   }
+
   let hash = 0;
   for (let i = 0; i < tagName.length; i++) {
     hash = (hash + tagName.charCodeAt(i)) % PALETTE_COLORS.length;
@@ -215,12 +318,11 @@ export function getTagColor(tagName: string, index = 0): TagColor {
 
 export const DEFAULT_GEMINI_API_KEY = '';
 
-// 1. Google Gemini AI Deep Content Analysis & Semantic Tagging
+// 4. Production-Ready Google Gemini Structured JSON Prompt
 export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Promise<GeneratedTag[] | null> {
   const geminiKey = apiKey || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY;
   if (!geminiKey) return null;
 
-  // Verified working models for this API key in priority order
   const models = [
     'gemini-3.7-flash',
     'gemini-3.5-flash',
@@ -231,28 +333,37 @@ export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Pr
     'gemini-2.0-flash',
   ];
 
-  const systemInstruction = `You are a world-class Knowledge Taxonomist, AI Research Analyst, and Content Curator.
-Your task is to analyze the given bookmarked text, title, and link, deeply understand the underlying subject matter, and assign 2 to 4 highly specific, professional, high-value categorization tags.
+  const systemInstruction = `You are an automated categorization and tagging engine for a personal knowledge vault.
+Analyze the provided content metadata and generate clean, standardized tags in JSON format.
 
-TAXONOMY PRINCIPLES:
-1. Identify the PRIMARY DOMAIN (e.g. "Frontend", "AI Agents", "System Architecture", "Product Design", "Macroeconomics", "Cybersecurity").
-2. Identify SPECIFIC TECHNOLOGIES, TOOLS or FRAMEWORKS mentioned (e.g. "Next.js", "React 19", "Claude 3.7", "Tailwind CSS", "Figma", "Supabase", "PyTorch", "GSAP").
-3. Identify KEY CONCEPTS or THEMES (e.g. "Motion Design", "Design System", "Fine-Tuning", "Prompting", "SaaS Growth", "Typography", "Open Source", "API Design").
+RULES FOR TAG GENERATION:
+1. Generate minimum 3 and maximum 6 tags.
+2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "ai-tools", "trading-strategy").
+3. NO duplicates or near-synonyms (e.g., do not use both "ai" and "artificial-intelligence").
+4. ALWAYS prefer shorter, industry-standard acronyms over long descriptions (e.g., use "ai" instead of "artificial-intelligence", "seo" instead of "search-engine-optimization", "fx" instead of "visual-effects").
+5. Structure the output into:
+   - "category": Broad domain (1 item: e.g. "tech", "video-editing", "finance", "fitness", "design")
+   - "topics": Core subject or tools mentioned (2-3 items: e.g. "premiere-pro", "chatgpt", "calisthenics", "react", "next-js")
+   - "type": Nature of content (1 item: e.g., "tutorial", "tool", "resource", "news", "guide", "case-study", "framework", "opinion")
+   - "all_tags": Combined flat list of tags in order [category, ...topics, type]
 
-NEGATIVE CONSTRAINTS (STRICTLY FORBIDDEN):
-- NEVER output platform names (NO "Twitter", "X", "YouTube", "Instagram", "Reddit", "TikTok", "Bluesky").
-- NEVER output generic meta-labels (NO "Post", "Video", "Tweet", "Saved", "Article", "Link", "Content", "Social Media", "Discussion", "Update").
-- NEVER output generic adjectives (NO "Good", "Awesome", "Cool", "Best", "Daily").
-- Each tag must be 1 to 3 words, Title Case (e.g. "AI Agents", "Motion Design", "Next.js").
+INPUT FORMAT:
+Platform: {platform}
+Title: {title}
+Content/Context: {content_text}
 
-OUTPUT FORMAT:
-Return JSON: an array of strings. Example: ["Claude", "UI Design", "Motion Design"]`;
+OUTPUT FORMAT (JSON ONLY):
+{
+  "category": "string",
+  "topics": ["string", "string"],
+  "type": "string",
+  "all_tags": ["string", "string", "string", "string"]
+}`;
 
-  const userContent = `Content Title: ${input.title || 'Untitled'}
-Source URL: ${input.url || 'None'}
-Platform Context: ${input.platform || 'web'}
-Content Body:
-${input.text.slice(0, 2000)}`;
+  const preprocessedContent = preprocessPlatformInput(input);
+  const userContent = `Platform: ${input.platform || 'web'}
+Title: ${input.title || 'Untitled'}
+Content/Context: ${preprocessedContent}`;
 
   for (const model of models) {
     try {
@@ -265,13 +376,13 @@ ${input.text.slice(0, 2000)}`;
             {
               role: 'user',
               parts: [
-                { text: `${systemInstruction}\n\n${userContent}\n\nReturn ONLY the JSON array of tags:` }
+                { text: `${systemInstruction}\n\n${userContent}\n\nReturn JSON output matching the schema:` }
               ]
             }
           ],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 150,
+            maxOutputTokens: 250,
             responseMimeType: 'application/json',
           },
         }),
@@ -285,39 +396,39 @@ ${input.text.slice(0, 2000)}`;
       const data = await response.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-      let parsedTags: string[] = [];
+      let rawTagList: string[] = [];
+
       try {
-        parsedTags = JSON.parse(rawText);
-      } catch (parseErr) {
-        const match = rawText.match(/\[[\s\S]*\]/);
-        if (match) parsedTags = JSON.parse(match[0]);
-      }
-
-      if (!Array.isArray(parsedTags) || parsedTags.length === 0) continue;
-
-      const validTags: GeneratedTag[] = [];
-      const seen = new Set<string>();
-
-      for (const tag of parsedTags) {
-        if (typeof tag !== 'string') continue;
-        const clean = tag.trim().replace(/^#/, '').replace(/[^\w\s.-]/g, '');
-        const lower = clean.toLowerCase();
-
-        if (!clean || clean.length < 2 || BANNED_GENERIC_WORDS.has(lower) || seen.has(lower)) {
-          continue;
+        const parsed: GeminiTagResponse = JSON.parse(rawText);
+        if (Array.isArray(parsed.all_tags) && parsed.all_tags.length > 0) {
+          rawTagList = parsed.all_tags;
+        } else {
+          const list: string[] = [];
+          if (parsed.category) list.push(parsed.category);
+          if (Array.isArray(parsed.topics)) list.push(...parsed.topics);
+          if (parsed.type) list.push(parsed.type);
+          rawTagList = list;
         }
-
-        seen.add(lower);
-        validTags.push({
-          name: clean.charAt(0).toUpperCase() + clean.slice(1),
-          color: getTagColor(clean, validTags.length),
-        });
-
-        if (validTags.length >= 4) break;
+      } catch (parseErr) {
+        // Fallback array regex parse
+        const match = rawText.match(/\[[\s\S]*\]/);
+        if (match) {
+          try {
+            rawTagList = JSON.parse(match[0]);
+          } catch {
+            // ignore
+          }
+        }
       }
 
-      if (validTags.length > 0) {
-        return validTags;
+      // Run through Backend Normalization Pipeline
+      const normalizedTagStrings = cleanAndNormalizeTags(rawTagList);
+
+      if (normalizedTagStrings.length > 0) {
+        return normalizedTagStrings.map((tagName, idx) => ({
+          name: tagName,
+          color: getTagColor(tagName, idx),
+        }));
       }
     } catch (err) {
       console.warn(`Error trying Gemini model ${model}:`, err);
@@ -327,97 +438,70 @@ ${input.text.slice(0, 2000)}`;
   return null;
 }
 
-// 2. Comprehensive Semantic Heuristic Classification Engine (100+ Rules)
+// 5. Semantic Heuristic Fallback Engine (Normalized to lowercase-kebab-case)
 export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
   const textBlob = `${input.title || ''} ${input.text} ${input.url || ''} ${input.context || ''}`.toLowerCase();
-  const seenLower = new Set<string>();
-  const tagList: string[] = [];
+  const rawList: string[] = [];
 
-  const addTag = (tag: string) => {
-    const trimmed = tag.trim().replace(/^#/, '');
-    if (!trimmed || trimmed.length < 2) return;
-    const lower = trimmed.toLowerCase();
-    if (!BANNED_GENERIC_WORDS.has(lower) && !seenLower.has(lower)) {
-      seenLower.add(lower);
-      tagList.push(trimmed);
-    }
-  };
-
-  // 1. Explicit relevant hashtags
-  const hashtagRegex = /#([a-zA-Z0-9_]{2,28})/g;
+  // Hashtags extraction
+  const hashtagRegex = /#([a-zA-Z0-9_-]{2,28})/g;
   let match;
   while ((match = hashtagRegex.exec(input.text)) !== null) {
-    const rawTag = match[1];
-    const lower = rawTag.toLowerCase();
-    if (!BANNED_GENERIC_WORDS.has(lower)) {
-      addTag(rawTag.charAt(0).toUpperCase() + rawTag.slice(1));
-    }
+    rawList.push(match[1]);
   }
 
-  // 2. High-Precision Domain Taxonomy Mapping
-  const domainRules: { patterns: (string | RegExp)[]; tag: string }[] = [
-    // AI Agents & Models
-    { patterns: [/\bagents?\b/, /\bai agents?\b/, 'crewai', 'autogen', 'langchain', 'langgraph', 'swarm'], tag: 'AI Agents' },
-    { patterns: ['claude', 'anthropic', 'sonnet', 'opus', 'haiku', 'claude 3'], tag: 'Claude' },
-    { patterns: ['chatgpt', 'gpt-4', 'gpt-4o', 'openai', 'sora', 'o1-preview', 'o3-mini', 'dall-e'], tag: 'ChatGPT' },
-    { patterns: ['gemini', 'deepmind', 'google ai', 'gemini flash', 'gemini pro'], tag: 'Gemini' },
-    { patterns: ['deepseek', 'deepseek-r1', 'deepseek-v3', 'r1 reasoning'], tag: 'DeepSeek' },
-    { patterns: ['prompt engineering', 'system prompt', 'prompting', 'few-shot'], tag: 'Prompting' },
-    { patterns: [/\bllms?\b/, 'large language model', 'transformer', 'fine-tuning', 'rag', 'vector database'], tag: 'LLM' },
-    { patterns: ['machine learning', 'deep learning', 'pytorch', 'tensorflow', 'neural network'], tag: 'Machine Learning' },
-    { patterns: ['artificial intelligence', 'genai', 'generative ai', 'ai tool', 'ai models'], tag: 'AI' },
+  // Domain Taxonomy Mapping
+  const domainRules: { patterns: (string | RegExp)[]; category: string; topic: string; type?: string }[] = [
+    // Video Editing & Media
+    { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci', 'capcut', 'after effects', 'vfx'], category: 'video-editing', topic: 'premiere-pro', type: 'tutorial' },
+    { patterns: ['motion design', 'framer motion', 'gsap', 'lottie', 'animation'], category: 'design', topic: 'motion-design', type: 'resource' },
+    
+    // AI & Agents
+    { patterns: [/\bagents?\b/, 'crewai', 'autogen', 'langchain', 'langgraph'], category: 'tech', topic: 'ai-agents', type: 'tool' },
+    { patterns: ['claude', 'anthropic', 'sonnet', 'opus'], category: 'tech', topic: 'claude', type: 'tool' },
+    { patterns: ['chatgpt', 'gpt-4', 'openai', 'o3-mini'], category: 'tech', topic: 'chatgpt', type: 'tool' },
+    { patterns: ['gemini', 'deepmind', 'google ai'], category: 'tech', topic: 'gemini', type: 'tool' },
+    { patterns: ['deepseek', 'deepseek-r1'], category: 'tech', topic: 'deepseek', type: 'tool' },
+    { patterns: ['prompt engineering', 'system prompt', 'prompting'], category: 'tech', topic: 'prompt-engineering', type: 'guide' },
+    { patterns: ['machine learning', 'deep learning', 'pytorch'], category: 'tech', topic: 'ml', type: 'guide' },
+    { patterns: ['artificial intelligence', 'genai', 'ai tool'], category: 'tech', topic: 'ai', type: 'resource' },
 
     // Frontend Development
-    { patterns: ['next.js', 'nextjs', 'next 15', 'next 16', 'app router', 'turbopack', 'server actions'], tag: 'Next.js' },
-    { patterns: ['react', 'react 19', 'react hooks', 'reactjs', 'jsx', 'tsx', 'usecontext', 'usestate'], tag: 'React' },
-    { patterns: ['tailwind', 'tailwindcss', 'tailwind v4', 'shadcn', 'shadcn/ui', 'radix ui'], tag: 'Tailwind CSS' },
-    { patterns: ['typescript', 'typecheck', 'type system', 'interface'], tag: 'TypeScript' },
-    { patterns: ['javascript', 'ecmascript', 'es6', 'npm package', 'vanilla js'], tag: 'JavaScript' },
-    { patterns: ['vue.js', 'vuejs', 'vue 3', 'nuxt', 'pinia'], tag: 'Vue' },
-    { patterns: ['svelte', 'sveltekit', 'svelte 5'], tag: 'Svelte' },
-    { patterns: ['css grid', 'flexbox', 'css animation', 'css tricks', 'frontend', 'front-end', 'webdev'], tag: 'Frontend' },
+    { patterns: ['next.js', 'nextjs', 'app router', 'turbopack'], category: 'tech', topic: 'next-js', type: 'framework' },
+    { patterns: ['react', 'react 19', 'react hooks', 'reactjs'], category: 'tech', topic: 'react', type: 'framework' },
+    { patterns: ['tailwind', 'tailwindcss', 'shadcn'], category: 'tech', topic: 'tailwind-css', type: 'tool' },
+    { patterns: ['typescript', 'type system'], category: 'tech', topic: 'ts', type: 'resource' },
+    { patterns: ['javascript', 'es6', 'vanilla js'], category: 'tech', topic: 'js', type: 'tutorial' },
+    { patterns: ['css grid', 'flexbox', 'webdev', 'frontend'], category: 'tech', topic: 'web-development', type: 'tutorial' },
 
     // Backend, Cloud & Database
-    { patterns: ['supabase', 'supabase db', 'supabase auth', 'supabase storage'], tag: 'Supabase' },
-    { patterns: ['postgresql', 'postgres', 'mysql', 'sqlite', 'redis', 'mongodb', 'prisma', 'drizzle'], tag: 'Database' },
-    { patterns: ['python', 'fastapi', 'flask', 'django', 'pydantic', 'pandas', 'numpy'], tag: 'Python' },
-    { patterns: ['rust', 'rustlang', 'cargo', 'tokio'], tag: 'Rust' },
-    { patterns: ['golang', /\bgo language\b/, 'goroutine'], tag: 'Golang' },
-    { patterns: ['node.js', 'nodejs', 'express.js', 'hono', 'bun.js', 'deno'], tag: 'Node.js' },
-    { patterns: ['rest api', 'graphql', 'grpc', 'api endpoint', 'webhook', 'backend', 'back-end'], tag: 'Backend' },
-    { patterns: ['docker', 'kubernetes', 'k8s', 'devops', 'ci/cd', 'github actions', 'cloudflare', 'vercel', 'aws'], tag: 'DevOps' },
-    { patterns: ['open source', 'opensource', 'github repo', 'repository', 'oss'], tag: 'Open Source' },
-    { patterns: ['cybersecurity', 'infosec', 'vulnerability', 'auth', 'oauth', 'jwt', 'encryption'], tag: 'Security' },
-    { patterns: ['software architecture', 'system design', 'microservices', 'distributed systems'], tag: 'Architecture' },
-    { patterns: ['coding', 'programmer', 'software engineer', 'software engineering', 'developer'], tag: 'Coding' },
+    { patterns: ['supabase', 'supabase db'], category: 'tech', topic: 'supabase', type: 'tool' },
+    { patterns: ['postgresql', 'postgres', 'sqlite', 'database'], category: 'tech', topic: 'postgresql', type: 'resource' },
+    { patterns: ['python', 'fastapi', 'flask', 'django'], category: 'tech', topic: 'python', type: 'tutorial' },
+    { patterns: ['rust', 'cargo', 'tokio'], category: 'tech', topic: 'rust', type: 'resource' },
+    { patterns: ['docker', 'kubernetes', 'devops', 'ci/cd'], category: 'tech', topic: 'devops', type: 'tool' },
+    { patterns: ['open source', 'opensource', 'github repo'], category: 'tech', topic: 'open-source', type: 'resource' },
 
-    // Design, UI/UX & Motion
-    { patterns: ['figma', 'figma design', 'figma plugin', 'figjam'], tag: 'Figma' },
-    { patterns: ['motion design', 'framer motion', 'gsap', 'lottie', 'smooth animation', 'keyframe', 'micro-interaction'], tag: 'Motion Design' },
-    { patterns: ['ui design', 'ux design', 'ui/ux', 'user interface', 'user experience', 'interaction design'], tag: 'UI/UX' },
-    { patterns: ['design system', 'design tokens', 'component library', 'typography scale', 'color palette'], tag: 'Design System' },
-    { patterns: ['3d design', 'blender', 'spline', 'three.js', 'threejs', 'webgl', 'shader', 'shaders', '3d model'], tag: '3D & Graphics' },
-    { patterns: ['typography', 'fonts', 'font pairing', 'font family', 'kerning'], tag: 'Typography' },
-    { patterns: ['design inspiration', 'minimalist', 'dark mode', 'glassmorphism', 'aesthetic', 'branding'], tag: 'Design' },
+    // Design, UI/UX
+    { patterns: ['figma', 'figma design', 'figjam'], category: 'design', topic: 'figma', type: 'tool' },
+    { patterns: ['ui design', 'ux design', 'ui/ux', 'user interface'], category: 'design', topic: 'ui-ux', type: 'guide' },
+    { patterns: ['design system', 'design tokens'], category: 'design', topic: 'design-system', type: 'case-study' },
+    { patterns: ['3d design', 'blender', 'three.js', 'webgl'], category: 'design', topic: '3d-design', type: 'resource' },
 
-    // Business, SaaS & Startup
-    { patterns: ['saas', 'micro saas', 'mrr', 'arr', 'b2b saas', 'churn rate', 'ltv'], tag: 'SaaS' },
-    { patterns: ['startup', 'startups', 'founder', 'co-founder', 'entrepreneur', 'bootstrapped', 'y combinator'], tag: 'Startup' },
-    { patterns: ['growth marketing', 'seo', 'conversion rate', 'funnel', 'copywriting', 'lead generation'], tag: 'Marketing' },
-    { patterns: ['product management', 'product strategy', 'roadmap', 'product discovery'], tag: 'Product Strategy' },
+    // Business & Finance
+    { patterns: ['saas', 'micro saas', 'mrr', 'arr'], category: 'saas', topic: 'startup', type: 'case-study' },
+    { patterns: ['startup', 'founder', 'entrepreneur'], category: 'startup', topic: 'business', type: 'opinion' },
+    { patterns: ['seo', 'conversion rate', 'marketing'], category: 'marketing', topic: 'seo', type: 'guide' },
+    { patterns: ['bitcoin', 'ethereum', 'crypto', 'blockchain'], category: 'finance', topic: 'crypto', type: 'news' },
+    { patterns: ['stock market', 'investing', 'trading'], category: 'finance', topic: 'investing', type: 'guide' },
 
-    // Finance & Web3
-    { patterns: ['bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'crypto', 'cryptocurrency', 'defi', 'blockchain'], tag: 'Crypto' },
-    { patterns: ['stock market', 'stocks', 'investing', 'portfolio', 'trading', 'macroeconomics', 'personal finance'], tag: 'Finance' },
-
-    // Productivity & Tutorials
-    { patterns: ['productivity', 'workflow', 'notion', 'second brain', 'time management', 'automation', 'obsidian'], tag: 'Productivity' },
-    { patterns: ['tutorial', 'how to build', 'step by step', 'crash course', 'guide', 'cheat sheet'], tag: 'Tutorial' },
-    { patterns: ['gamedev', 'game development', 'unreal engine', 'unity', 'godot', 'indie game'], tag: 'GameDev' },
+    // Fitness & Productivity
+    { patterns: ['calisthenics', 'bodyweight', 'pullups', 'pushups'], category: 'fitness', topic: 'calisthenics', type: 'tutorial' },
+    { patterns: ['productivity', 'workflow', 'notion', 'second brain'], category: 'productivity', topic: 'workflow', type: 'tool' },
   ];
 
   for (const rule of domainRules) {
-    if (tagList.length >= 4) break;
+    if (rawList.length >= 4) break;
     const isMatched = rule.patterns.some(pattern => {
       if (typeof pattern === 'string') {
         if (pattern.length <= 4) {
@@ -430,49 +514,42 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     });
 
     if (isMatched) {
-      addTag(rule.tag);
+      rawList.push(rule.category, rule.topic);
+      if (rule.type) rawList.push(rule.type);
     }
   }
 
   // Include user custom tags if provided
   if (input.customTags && Array.isArray(input.customTags)) {
-    for (const ct of input.customTags) {
-      addTag(ct);
-    }
+    rawList.push(...input.customTags);
   }
 
-  // Fallback: If still empty, grab meaningful salient topic keywords
-  if (tagList.length === 0) {
+  // Fallback tokens if still empty
+  if (rawList.length === 0) {
     const rawTokens = (input.title || input.text)
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(w => w.length >= 4 && !BANNED_GENERIC_WORDS.has(w.toLowerCase()));
+      .filter(w => w.length >= 3 && !BANNED_GENERIC_WORDS.has(w.toLowerCase()));
 
-    for (const token of rawTokens.slice(0, 2)) {
-      addTag(token.charAt(0).toUpperCase() + token.slice(1).toLowerCase());
-    }
+    rawList.push(...rawTokens.slice(0, 3));
   }
 
-  const result: GeneratedTag[] = [];
-  let idx = 0;
-  for (const tag of tagList.slice(0, 4)) {
-    result.push({
-      name: tag,
-      color: getTagColor(tag, idx++),
-    });
-  }
+  const normalized = cleanAndNormalizeTags(rawList);
 
-  return result;
+  return normalized.map((tagName, idx) => ({
+    name: tagName,
+    color: getTagColor(tagName, idx),
+  }));
 }
 
 // Master Tag Generation Pipeline
 export async function generateAutoTags(input: TagInput, geminiApiKey?: string): Promise<GeneratedTag[]> {
-  // 1. Try Gemini AI with fallback models
+  // 1. Try Gemini AI with fallback models and structured JSON
   const aiTags = await generateGeminiAiTags(input, geminiApiKey);
   if (aiTags && aiTags.length > 0) {
     return aiTags;
   }
 
-  // 2. High-precision semantic NLP engine fallback
+  // 2. High-precision normalized semantic heuristic fallback
   return extractHeuristicTags(input);
 }

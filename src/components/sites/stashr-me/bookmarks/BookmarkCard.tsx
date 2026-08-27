@@ -36,9 +36,7 @@ interface BookmarkCardProps {
 
 function getCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (url.includes('hqdefault.jpg')) {
-    return url.replace('hqdefault.jpg', 'maxresdefault.jpg');
-  }
+  // If it's a YouTube URL, keep it valid
   return url;
 }
 
@@ -61,9 +59,16 @@ export function BookmarkCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string | undefined>(getCleanImageUrl(bookmark.imageUrl));
+  const [hasImageError, setHasImageError] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const cleanImageUrl = getCleanImageUrl(bookmark.imageUrl);
+  useEffect(() => {
+    setImgSrc(getCleanImageUrl(bookmark.imageUrl));
+    setHasImageError(false);
+    setIsImageLoaded(false);
+  }, [bookmark.imageUrl]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -74,6 +79,24 @@ export function BookmarkCard({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleImageError = () => {
+    if (!imgSrc) {
+      setHasImageError(true);
+      return;
+    }
+
+    // YouTube multi-stage fallback ladder
+    if (imgSrc.includes('maxresdefault.jpg')) {
+      setImgSrc(imgSrc.replace('maxresdefault.jpg', 'hqdefault.jpg'));
+    } else if (imgSrc.includes('hqdefault.jpg')) {
+      setImgSrc(imgSrc.replace('hqdefault.jpg', 'mqdefault.jpg'));
+    } else if (imgSrc.includes('mqdefault.jpg')) {
+      setImgSrc(imgSrc.replace('mqdefault.jpg', '0.jpg'));
+    } else {
+      setHasImageError(true);
+    }
+  };
 
   const handleCopyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,6 +109,7 @@ export function BookmarkCard({
   };
 
   const isVideo =
+    bookmark.platform === 'youtube' ||
     bookmark.imageUrl?.includes('13_') ||
     bookmark.imageUrl?.includes('video') ||
     bookmark.imageUrl?.includes('YXY1') ||
@@ -101,8 +125,8 @@ export function BookmarkCard({
             onToggleSelect?.();
           } else if (onOpenDetail) {
             onOpenDetail(bookmark);
-          } else if (bookmark.imageUrl) {
-            onOpenImage?.(bookmark.imageUrl);
+          } else if (imgSrc && !hasImageError) {
+            onOpenImage?.(imgSrc);
           }
         }}
         className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer ${
@@ -125,7 +149,7 @@ export function BookmarkCard({
                 <RedditIcon className="size-full" />
               ) : (
                 <div className="flex size-full items-center justify-center bg-accent text-xs font-semibold text-strong">
-                  {bookmark.displayName.charAt(0)}
+                  {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
                 </div>
               )}
             </div>
@@ -164,20 +188,21 @@ export function BookmarkCard({
             {bookmark.text}
           </p>
 
-          {cleanImageUrl && (
-            <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-black group/thumb">
+          {imgSrc && !hasImageError && (
+            <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
+              {!isImageLoaded && (
+                <div className="absolute inset-0 bg-white/5 animate-pulse" />
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={cleanImageUrl}
+                src={imgSrc}
                 alt={bookmark.displayName}
-                className={`size-full object-cover ${bookmark.platform === 'youtube' ? 'aspect-video' : ''}`}
+                className={`size-full object-cover transition-opacity duration-300 ${
+                  isImageLoaded ? 'opacity-100' : 'opacity-0'
+                } ${bookmark.platform === 'youtube' ? 'aspect-video' : ''}`}
                 loading="lazy"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (target.src.includes('maxresdefault.jpg')) {
-                    target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
-                  }
-                }}
+                onLoad={() => setIsImageLoaded(true)}
+                onError={handleImageError}
               />
               {isVideo && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
@@ -256,17 +281,18 @@ export function BookmarkCard({
             onToggleSelect?.();
           } else if (onOpenDetail) {
             onOpenDetail(bookmark);
-          } else if (bookmark.imageUrl) {
-            onOpenImage?.(bookmark.imageUrl);
+          } else if (imgSrc && !hasImageError) {
+            onOpenImage?.(imgSrc);
           }
         }}
-        className={`group/timeline relative mx-auto w-full flex flex-col gap-3.5 rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_12px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:shadow-[0_18px_45px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] cursor-pointer ${
-          isSelected ? 'bg-primary/5 ring-primary ring-2 border-primary' : ''
+        className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer ${
+          isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
         }`}
       >
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted shadow-sm">
+        {/* Top Header: Avatar, Name, Handle, Menu & Actions */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
               {bookmark.avatarUrl ? (
                 <Image
                   src={bookmark.avatarUrl}
@@ -279,45 +305,63 @@ export function BookmarkCard({
                 <RedditIcon className="size-full" />
               ) : (
                 <div className="flex size-full items-center justify-center bg-accent text-xs font-semibold text-strong">
-                  {bookmark.displayName.charAt(0)}
+                  {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
                 </div>
               )}
             </div>
-            <div>
-              <div className="font-semibold text-[15px] text-white leading-tight">{bookmark.displayName}</div>
-              <div className="text-xs text-neutral-400 leading-tight mt-0.5">@{bookmark.username}</div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold text-white text-sm truncate">
+                {bookmark.displayName}
+              </span>
+              {bookmark.username && (
+                <span className="text-xs text-neutral-400 truncate">
+                  @{bookmark.username}
+                </span>
+              )}
             </div>
           </div>
-          <div className="size-4 rounded border border-neutral-700/60 opacity-0 group-hover/timeline:opacity-100 transition-opacity" />
-        </header>
 
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onToggleFavorite(bookmark.id);
+              }}
+              className="p-1.5 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <Star className={`size-4 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+            </button>
+            <PlatformIcon platform={bookmark.platform} />
+          </div>
+        </div>
+
+        {/* Content text */}
         <p className="text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
           {bookmark.text}
         </p>
 
-        {cleanImageUrl && (
-          <div className={`relative overflow-hidden rounded-xl border border-neutral-700/80 bg-[#121214] cursor-pointer group/media ${
-            bookmark.platform === 'youtube' ? 'aspect-video' : ''
-          }`}>
+        {/* Big Media Container */}
+        {imgSrc && !hasImageError && (
+          <div className="relative overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/media w-full">
+            {!isImageLoaded && (
+              <div className="w-full aspect-video bg-white/5 animate-pulse" />
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={cleanImageUrl}
+              src={imgSrc}
               alt={bookmark.displayName}
-              className={`w-full object-cover rounded-xl ${
-                bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[34rem]'
-              }`}
+              className={`w-full object-cover transition-opacity duration-300 ${
+                isImageLoaded ? 'opacity-100' : 'opacity-0'
+              } ${bookmark.platform === 'youtube' ? 'aspect-video' : 'max-h-[38rem]'}`}
               loading="lazy"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.src.includes('maxresdefault.jpg')) {
-                  target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
-                }
-              }}
+              onLoad={() => setIsImageLoaded(true)}
+              onError={handleImageError}
             />
             {isVideo && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex items-center justify-center rounded-full bg-black/65 ring-1 ring-white/30 backdrop-blur-md size-13 shadow-2xl transition-transform group-hover/media:scale-105">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                <div className="flex size-12 items-center justify-center rounded-full bg-black/70 ring-1 ring-white/30 backdrop-blur-xs shadow-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
                     <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5"/>
                   </svg>
                 </div>
@@ -326,92 +370,31 @@ export function BookmarkCard({
           </div>
         )}
 
-        <footer className="flex items-center justify-between gap-3 pt-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300 animate-pulse">
-                <Sparkles className="size-3 text-neutral-400 animate-spin" />
-                <span>AI Tagging...</span>
-              </div>
-            ) : bookmark.tags && bookmark.tags.length > 0 ? (
-              bookmark.tags.map((tag, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  onClick={e => {
-                    e.stopPropagation();
-                    onSelectTag?.(tag.name);
-                  }}
-                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
-                >
-                  <TagDot color={tag.color} />
-                  <span>{tag.name}</span>
-                </button>
-              ))
-            ) : (
+        {/* Footer: Tags & Date */}
+        <div className="flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            {bookmark.tags && bookmark.tags.length > 0 && bookmark.tags.map((tag, idx) => (
               <button
                 type="button"
+                key={idx}
                 onClick={e => {
                   e.stopPropagation();
-                  onAutoTag?.();
+                  onSelectTag?.(tag.name);
                 }}
-                className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-300 transition-colors py-0.5 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] text-xs text-neutral-300 hover:text-white"
               >
-                <Sparkles className="size-3 text-neutral-400" />
-                <span>✦ Auto-Tag with AI</span>
+                <TagDot color={tag.color} />
+                <span>{tag.name}</span>
               </button>
-            )}
+            ))}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
-            <div className="h-3 w-px bg-neutral-700"></div>
-            <PlatformIcon platform={bookmark.platform} />
-          </div>
-        </footer>
+          <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
+        </div>
       </article>
     );
   }
 
-  // 3. MOSAIC VIEW VARIANT (Pure Media Wall - Pinterest-Style Layout)
-  if (viewMode === 'mosaic') {
-    if (!bookmark.imageUrl) return null;
-
-    return (
-      <div
-        onClick={() => {
-          if (isSelectionMode) {
-            onToggleSelect?.();
-          } else if (onOpenDetail) {
-            onOpenDetail(bookmark);
-          } else if (bookmark.imageUrl) {
-            onOpenImage?.(bookmark.imageUrl);
-          }
-        }}
-        className={`group/mosaic relative break-inside-avoid overflow-hidden rounded-xl border border-white/[0.08] bg-[#1c1c1f] shadow-md transition-all hover:scale-[1.01] hover:border-white/20 cursor-pointer ${
-          isSelected ? 'ring-primary ring-2 border-primary' : ''
-        }`}
-      >
-        <div className="relative w-full overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={bookmark.imageUrl}
-            alt={bookmark.displayName || bookmark.title || 'Media'}
-            className="w-full h-auto object-cover block"
-            loading="lazy"
-          />
-          {isVideo && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center justify-center rounded-full bg-black/60 ring-1 ring-white/30 backdrop-blur-md size-10 shadow-xl transition-transform group-hover/mosaic:scale-105">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
-                  <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2"/>
-                </svg>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // 3. GRID & MOSAIC VIEW (Default - Image 5 Match)
   return (
     <div
       onClick={() => {
@@ -419,8 +402,8 @@ export function BookmarkCard({
           onToggleSelect?.();
         } else if (onOpenDetail) {
           onOpenDetail(bookmark);
-        } else if (bookmark.imageUrl) {
-          onOpenImage?.(bookmark.imageUrl);
+        } else if (imgSrc && !hasImageError) {
+          onOpenImage?.(imgSrc);
         }
       }}
       className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
@@ -615,7 +598,7 @@ export function BookmarkCard({
       )}
 
       {/* Image / Video Preview (Natural Sizing with max-h-[34rem]) */}
-      {cleanImageUrl && (
+      {imgSrc && !hasImageError && (
         <button
           type="button"
           aria-label="Open media"
@@ -623,28 +606,29 @@ export function BookmarkCard({
             e.stopPropagation();
             if (onOpenDetail) {
               onOpenDetail(bookmark);
-            } else if (cleanImageUrl) {
-              onOpenImage?.(cleanImageUrl);
+            } else if (imgSrc) {
+              onOpenImage?.(imgSrc);
             }
           }}
           className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] relative block w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 group/media text-left ${
             bookmark.platform === 'youtube' ? 'aspect-video' : ''
           }`}
         >
+          {!isImageLoaded && (
+            <div className="absolute inset-0 bg-white/5 animate-pulse" />
+          )}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={cleanImageUrl}
+            src={imgSrc}
             alt={bookmark.displayName}
-            className={`w-full object-cover transition-transform duration-300 group-hover/media:scale-101 ${
+            className={`w-full object-cover transition-all duration-300 group-hover/media:scale-101 ${
+              isImageLoaded ? 'opacity-100' : 'opacity-0'
+            } ${
               bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[34rem]'
             }`}
             loading="lazy"
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (target.src.includes('maxresdefault.jpg')) {
-                target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
-              }
-            }}
+            onLoad={() => setIsImageLoaded(true)}
+            onError={handleImageError}
           />
           {/* Circular Frosted Video Play Button Overlay */}
           {isVideo && (
@@ -691,7 +675,7 @@ export function BookmarkCard({
                     e.stopPropagation();
                     onSelectTag?.(tag.name);
                   }}
-                  className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-neutral-850 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 min-w-0 shrink transition-all cursor-pointer active:scale-95"
+                  className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 min-w-0 shrink transition-all cursor-pointer active:scale-95"
                 >
                   <TagDot color={tag.color} />
                   <span className="truncate">{tag.name}</span>
@@ -705,7 +689,7 @@ export function BookmarkCard({
                   >
                     +{bookmark.tags.length - 2}
                   </button>
-                  {/* Floating Tag Tooltip / Popover matching User Image 1 */}
+                  {/* Floating Tag Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50">
                     <div className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#141414] px-2.5 py-1 text-xs text-neutral-200 shadow-2xl backdrop-blur-md whitespace-nowrap">
                       {bookmark.tags.slice(2).map((tag, idx) => (

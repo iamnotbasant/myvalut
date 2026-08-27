@@ -1,4 +1,5 @@
-/* Twitter / X Injected Valut Action Button */
+/* Twitter / X Injected Valut Action Button - 100% Native X Integration */
+
 .valut-x-action {
   display: flex !important;
   align-items: center !important;
@@ -10,39 +11,45 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 50% !important;
+  width: 34.75px !important;
+  height: 34.75px !important;
+  border-radius: 9999px !important;
   background: transparent !important;
   border: none !important;
   color: rgb(113, 118, 123) !important;
   cursor: pointer !important;
-  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1), color 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
   outline: none !important;
   padding: 0 !important;
+  position: relative !important;
 }
 
 .valut-x-btn:hover {
-  background-color: rgba(56, 189, 248, 0.1) !important;
-  color: rgb(56, 189, 248) !important;
+  background-color: rgba(29, 155, 240, 0.1) !important;
+  color: rgb(29, 155, 240) !important;
 }
 
-.valut-x-btn.valut-x-saved {
-  color: #4ade80 !important;
-  background-color: rgba(74, 222, 128, 0.1) !important;
-}
-
-.valut-x-btn.valut-x-loading {
-  opacity: 0.7 !important;
-  cursor: wait !important;
+.valut-x-btn:active {
+  transform: scale(0.92) !important;
 }
 
 .valut-x-btn svg {
-  width: 18px !important;
-  height: 18px !important;
-  transition: transform 0.2s !important;
+  width: 18.75px !important;
+  height: 18.75px !important;
+  color: currentColor !important;
 }
 
 .valut-x-btn:hover svg {
-  transform: scale(1.1) !important;
+  transform: scale(1.08) !important;
+}
+
+/* Saving State */
+.valut-x-btn.valut-x-loading {
+  opacity: 0.75 !important;
+  cursor: wait !important;
+}
+
+/* Saved State */
+.valut-x-btn.valut-x-saved {
+  color: rgb(29, 155, 240) !important;
 }

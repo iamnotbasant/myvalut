@@ -10,15 +10,15 @@ export const INITIAL_COLLECTIONS: Collection[] = [
 ];
 
 export const INITIAL_TAGS: Tag[] = [
-  { id: 'tag-1', name: 'graphic design', color: 'teal', count: 4 },
-  { id: 'tag-2', name: 'photo editing', color: 'amber', count: 2 },
-  { id: 'tag-3', name: 'motion design', color: 'cyan', count: 3 },
-  { id: 'tag-4', name: 'animation', color: 'orange', count: 3 },
-  { id: 'tag-5', name: 'ui', color: 'green', count: 5 },
+  { id: 'tag-1', name: 'graphic-design', color: 'pink', count: 4 },
+  { id: 'tag-2', name: 'photo-editing', color: 'violet', count: 2 },
+  { id: 'tag-3', name: 'motion-design', color: 'violet', count: 3 },
+  { id: 'tag-4', name: 'animation', color: 'violet', count: 3 },
+  { id: 'tag-5', name: 'ui', color: 'cyan', count: 5 },
   { id: 'tag-6', name: 'ai', color: 'teal', count: 7 },
-  { id: 'tag-7', name: 'ux', color: 'amber', count: 2 },
-  { id: 'tag-8', name: 'design inspiration', color: 'red', count: 2 },
-  { id: 'tag-9', name: 'open source', color: 'green', count: 5 },
+  { id: 'tag-7', name: 'ux', color: 'cyan', count: 2 },
+  { id: 'tag-8', name: 'design-inspiration', color: 'pink', count: 2 },
+  { id: 'tag-9', name: 'open-source', color: 'green', count: 5 },
   { id: 'tag-10', name: 'github', color: 'orange', count: 3 }
 ];
 
@@ -36,8 +36,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 17, 2026',
     createdAt: Date.now() - 1000 * 60 * 60,
     tags: [
-      { name: 'graphic design', color: 'blue' },
-      { name: 'photo editing', color: 'violet' }
+      { name: 'graphic-design', color: 'pink' },
+      { name: 'photo-editing', color: 'violet' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -56,8 +56,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 17, 2026',
     createdAt: Date.now() - 1000 * 60 * 120,
     tags: [
-      { name: 'motion design', color: 'violet' },
-      { name: 'animation', color: 'pink' },
+      { name: 'motion-design', color: 'violet' },
+      { name: 'animation', color: 'violet' },
       { name: 'marketing', color: 'orange' }
     ],
     isFavorite: false,
@@ -77,8 +77,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 18, 2026',
     createdAt: Date.now() - 1000 * 60 * 180,
     tags: [
-      { name: 'ui', color: 'green' },
-      { name: 'ai', color: 'orange' }
+      { name: 'ui', color: 'cyan' },
+      { name: 'ai', color: 'teal' }
     ],
     isFavorite: true,
     isArchived: false,
@@ -97,8 +97,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 17, 2026',
     createdAt: Date.now() - 1000 * 60 * 240,
     tags: [
-      { name: 'ux', color: 'amber' },
-      { name: 'ui', color: 'green' }
+      { name: 'ux', color: 'cyan' },
+      { name: 'ui', color: 'cyan' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -117,8 +117,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 17, 2026',
     createdAt: Date.now() - 1000 * 60 * 300,
     tags: [
-      { name: 'graphic design', color: 'blue' },
-      { name: 'design inspiration', color: 'red' }
+      { name: 'graphic-design', color: 'pink' },
+      { name: 'design-inspiration', color: 'pink' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -137,8 +137,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 16, 2026',
     createdAt: Date.now() - 1000 * 60 * 360,
     tags: [
-      { name: 'design', color: 'blue' },
-      { name: 'ui', color: 'green' }
+      { name: 'design', color: 'pink' },
+      { name: 'ui', color: 'cyan' }
     ],
     isFavorite: true,
     isArchived: false,
@@ -157,8 +157,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 14, 2026',
     createdAt: Date.now() - 86400000 * 3,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'open source', color: 'green' }
+      { name: 'ai', color: 'teal' },
+      { name: 'open-source', color: 'green' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -177,8 +177,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 11, 2026',
     createdAt: Date.now() - 86400000 * 6,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'open source', color: 'green' }
+      { name: 'ai', color: 'teal' },
+      { name: 'open-source', color: 'green' }
     ],
     isFavorite: true,
     isArchived: false,
@@ -197,7 +197,7 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Aug 2, 2026',
     createdAt: Date.now() - 86400000 * 15,
     tags: [
-      { name: 'open source', color: 'green' },
+      { name: 'open-source', color: 'green' },
       { name: 'github', color: 'orange' }
     ],
     isFavorite: false,
@@ -234,8 +234,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 20, 2026',
     createdAt: Date.now() - 86400000 * 28,
     tags: [
-      { name: 'health', color: 'amber' },
-      { name: 'supplement', color: 'teal' }
+      { name: 'fitness', color: 'green' },
+      { name: 'guide', color: 'green' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -254,8 +254,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 13, 2026',
     createdAt: Date.now() - 86400000 * 35,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'web development', color: 'blue' }
+      { name: 'ai', color: 'teal' },
+      { name: 'web-development', color: 'teal' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -274,8 +274,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 11, 2026',
     createdAt: Date.now() - 86400000 * 37,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'productivity', color: 'blue' }
+      { name: 'ai', color: 'teal' },
+      { name: 'productivity', color: 'amber' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -294,8 +294,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 4, 2026',
     createdAt: Date.now() - 86400000 * 44,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'productivity', color: 'blue' }
+      { name: 'ai', color: 'teal' },
+      { name: 'productivity', color: 'amber' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -314,8 +314,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 2, 2026',
     createdAt: Date.now() - 86400000 * 46,
     tags: [
-      { name: 'ai', color: 'orange' },
-      { name: 'productivity', color: 'blue' }
+      { name: 'ai', color: 'teal' },
+      { name: 'productivity', color: 'amber' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -334,8 +334,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jul 1, 2026',
     createdAt: Date.now() - 86400000 * 47,
     tags: [
-      { name: 'ui', color: 'green' },
-      { name: 'mobile', color: 'orange' }
+      { name: 'ui', color: 'cyan' },
+      { name: 'tool', color: 'cyan' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -355,7 +355,7 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     createdAt: Date.now() - 86400000 * 48,
     tags: [
       { name: 'github', color: 'orange' },
-      { name: 'game modding', color: 'violet' }
+      { name: 'open-source', color: 'green' }
     ],
     isFavorite: false,
     isArchived: false,
@@ -374,8 +374,8 @@ export const INITIAL_BOOKMARKS: BookmarkItem[] = [
     date: 'Jun 29, 2026',
     createdAt: Date.now() - 86400000 * 49,
     tags: [
-      { name: 'open source', color: 'green' },
-      { name: 'productivity', color: 'blue' }
+      { name: 'open-source', color: 'green' },
+      { name: 'productivity', color: 'amber' }
     ],
     isFavorite: false,
     isArchived: false,

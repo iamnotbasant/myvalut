@@ -85,22 +85,22 @@
     };
 
     if (lower.includes('ai') || lower.includes('gpt') || lower.includes('llm') || lower.includes('agent')) {
-      add('AI', 'indigo');
+      add('ai', 'teal');
     }
     if (lower.includes('code') || lower.includes('github') || lower.includes('dev') || lower.includes('api')) {
-      add('Coding', 'cyan');
+      add('tech', 'teal');
     }
     if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('font')) {
-      add('Design', 'pink');
+      add('design', 'pink');
     }
     if (lower.includes('saas') || lower.includes('startup') || lower.includes('pricing') || lower.includes('product')) {
-      add('SaaS', 'cyan');
+      add('saas', 'cyan');
     }
     if (lower.includes('productivity') || lower.includes('tool') || lower.includes('app') || lower.includes('guide')) {
-      add('Productivity', 'amber');
+      add('productivity', 'amber');
     }
     if (tags.length === 0) {
-      tags.push({ name: 'Web', color: 'blue' });
+      tags.push({ name: 'tech', color: 'teal' });
     }
     return tags;
   }

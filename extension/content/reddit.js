@@ -1,55 +1,43 @@
 // Reddit Content Script for Valut
 (function () {
   const VALUT_ICON_SVG = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16.4854 1.39731C15.348 1.24998 13.8393 1.24999 12 1.25C10.1607 1.24999 8.652 1.24998 7.51458 1.39731C6.34712 1.54853 5.40051 1.86672 4.65121 2.58863C3.898 3.31431 3.56243 4.23743 3.40365 5.37525C3.38356 5.51919 3.3661 5.66833 3.35092 5.8228C3.33154 6.02004 3.32185 6.11866 3.38139 6.18433C3.44092 6.25 3.54199 6.25 3.74412 6.25H20.2559C20.458 6.25 20.5591 6.25 20.6186 6.18433C20.6782 6.11866 20.6685 6.02004 20.6491 5.8228C20.6339 5.66833 20.6164 5.51919 20.5964 5.37525C20.4376 4.23743 20.102 3.31431 19.3488 2.58863C18.5995 1.86672 17.6529 1.54853 16.4854 1.39731Z" fill="currentColor" />
+      <path d="M20.7458 8.1438C20.7441 7.95852 20.7433 7.86588 20.6848 7.80794C20.6263 7.75 20.5333 7.75 20.3472 7.75H3.65284C3.46674 7.75 3.37368 7.75 3.31522 7.80794C3.25675 7.86588 3.25591 7.95852 3.25424 8.1438C3.24999 8.61366 3.25 9.115 3.25001 9.64943L3.25 18.0458C3.24996 19.1433 3.24993 20.0553 3.35533 20.7405C3.46438 21.4495 3.71857 22.1395 4.41958 22.5139C5.04476 22.8477 5.7324 22.7798 6.31544 22.6028C6.90514 22.4238 7.50454 22.0989 8.05335 21.7521C8.60739 21.402 9.15065 21.0029 9.623 20.6538C10.0858 20.3117 10.5131 19.9958 10.7969 19.8249C11.1965 19.5843 11.4488 19.4335 11.6533 19.3371C11.842 19.2482 11.9337 19.234 12 19.234C12.0663 19.234 12.158 19.2482 12.3467 19.3371C12.5513 19.4335 12.8035 19.5843 13.2031 19.8249C13.4869 19.9958 13.9142 20.3117 14.377 20.6538C14.8494 21.0029 15.3926 21.402 15.9467 21.7521C16.4955 22.0989 17.0949 22.4238 17.6846 22.6028C18.2676 22.7798 18.9553 22.8477 19.5804 22.5139C20.2814 22.1395 20.5356 21.4495 20.6447 20.7405C20.7501 20.0553 20.75 19.1434 20.75 18.0458V9.64945C20.75 9.11501 20.75 8.61366 20.7458 8.1438Z" fill="currentColor" />
     </svg>
   `;
 
-  const VALUT_CHECK_SVG = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 6 9 17l-5-5"/>
-    </svg>
-  `;
-
-  function extractRedditPostData(postElement) {
+  function extractRedditPostData(postEl) {
     let title = '';
-    let author = 'redditor';
-    let subreddit = 'reddit';
-    let permalink = window.location.href;
+    let authorName = '';
     let text = '';
     let imageUrl = '';
+    let postUrl = window.location.href;
 
-    if (postElement.tagName.toLowerCase() === 'shreddit-post') {
-      title = postElement.getAttribute('post-title') || postElement.querySelector('a[slot="title"], h1[slot="title"], [id*="post-title"]')?.textContent?.trim() || '';
-      author = postElement.getAttribute('author') || 'redditor';
-      subreddit = postElement.getAttribute('subreddit-prefixed-name') || 'reddit';
-      const pl = postElement.getAttribute('permalink');
-      if (pl) {
-        permalink = pl.startsWith('http') ? pl : `https://www.reddit.com${pl}`;
-      }
-      const postTextEl = postElement.querySelector('div[slot="text-body"], div.text-neutral-content, div[id*="post-rtjson-content"]');
-      text = postTextEl?.textContent?.trim() || title;
+    const titleEl = postEl.querySelector('a[slot="title"], h1, h2, h3, a.title');
+    if (titleEl) title = titleEl.textContent.trim();
 
-      const imgEl = postElement.querySelector('img[src*="preview.redd.it"], img[src*="i.redd.it"], img[slot="thumbnail"], shreddit-aspect-ratio img');
-      imageUrl = imgEl?.getAttribute('src') || '';
-    } else {
-      const titleEl = postElement.querySelector('a.title, a.post-title');
-      title = titleEl?.textContent?.trim() || document.title;
-      const subEl = postElement.querySelector('a.subreddit, a[href^="/r/"]');
-      subreddit = subEl?.textContent?.trim() || 'reddit';
-      const userEl = postElement.querySelector('a.author, a[href^="/user/"]');
-      author = userEl?.textContent?.trim() || 'redditor';
-      text = title;
+    const authorEl = postEl.querySelector('a[href*="/user/"], [slot="authorName"]');
+    if (authorEl) authorName = authorEl.textContent.trim().replace(/^u\//, '');
+
+    const bodyEl = postEl.querySelector('[slot="text-body"], div.md, div[data-click-id="text"]');
+    if (bodyEl) text = bodyEl.textContent.trim().slice(0, 1000);
+
+    const imgEl = postEl.querySelector('img[alt="Post image"], img.preview, [slot="post-media-container"] img');
+    if (imgEl) imageUrl = imgEl.getAttribute('src') || '';
+
+    const permalink = postEl.getAttribute('permalink') || postEl.querySelector('a[slot="full-post-link"]')?.getAttribute('href');
+    if (permalink) {
+      postUrl = permalink.startsWith('http') ? permalink : `https://www.reddit.com${permalink}`;
     }
 
     return {
-      url: permalink,
+      url: postUrl,
       platform: 'reddit',
-      title: title || `${subreddit} post`,
-      text: `${subreddit} • ${text}`,
-      displayName: subreddit,
-      username: author,
+      title: title || 'Reddit Post',
+      text: text || title || 'Saved Reddit Post',
+      displayName: authorName ? `u/${authorName}` : 'Redditor',
+      username: authorName || 'redditor',
       imageUrl: imageUrl || undefined,
     };
   }
@@ -64,22 +52,22 @@
     };
 
     if (lower.includes('programming') || lower.includes('webdev') || lower.includes('react') || lower.includes('python') || lower.includes('coding')) {
-      add('Coding', 'cyan');
+      add('tech', 'teal');
     }
     if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama')) {
-      add('AI', 'indigo');
+      add('ai', 'teal');
     }
     if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design')) {
-      add('Design', 'pink');
+      add('design', 'pink');
     }
     if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject')) {
-      add('SaaS', 'cyan');
+      add('saas', 'cyan');
     }
     if (lower.includes('productivity') || lower.includes('selfimprovement') || lower.includes('books')) {
-      add('Productivity', 'amber');
+      add('productivity', 'amber');
     }
     if (tags.length === 0) {
-      tags.push({ name: 'Community', color: 'orange' });
+      tags.push({ name: 'resource', color: 'blue' });
     }
     return tags;
   }
@@ -99,8 +87,8 @@
     const bookmarkItem = {
       id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       platform: 'reddit',
-      display_name: payload.displayName || 'Reddit User',
-      username: payload.username ? payload.username.replace(/^@/, '') : 'reddit',
+      display_name: payload.displayName || 'Redditor',
+      username: payload.username || 'redditor',
       avatar_url: payload.avatarUrl || null,
       image_url: payload.imageUrl || null,
       title: payload.title || null,
@@ -132,7 +120,7 @@
     if (btn) {
       btn.classList.remove('valut-reddit-loading');
       btn.classList.add('valut-reddit-saved');
-      btn.innerHTML = `${VALUT_CHECK_SVG} <span>Saved!</span>`;
+      btn.innerHTML = `${VALUT_ICON_SVG} <span>Saved</span>`;
     }
     if (toast) {
       toast.updateSuccess({ tags: tags || [] });
@@ -159,7 +147,8 @@
 
     if (btn) {
       btn.classList.add('valut-reddit-loading');
-      btn.innerHTML = `<span class="valut-spinner"></span> <span>Saving...</span>`;
+      const span = btn.querySelector('span');
+      if (span) span.textContent = 'Saving...';
     }
 
     try {
@@ -197,7 +186,7 @@
     posts.forEach(post => {
       if (post.querySelector('.valut-reddit-btn')) return;
 
-      let actionBar = post.querySelector('div[slot="actions"], shreddit-post-overflow-menu, div.flat-list.buttons, [slot="flatlist"]');
+      let actionBar = post.querySelector('div[slot="actions"], shreddit-post-overflow-menu, [slot="flatlist"], div.flat-list.buttons');
       if (!actionBar) {
         actionBar = post.querySelector('div.flex.items-center.gap-x-1, div[data-testid="post-action-bar"]');
       }
@@ -215,7 +204,12 @@
         saveRedditPost(post, btn);
       });
 
-      actionBar.appendChild(btn);
+      const shareBtn = actionBar.querySelector('shreddit-post-share-button, button[aria-label*="Share"], div[data-testid="post-share-button"]');
+      if (shareBtn && shareBtn.nextSibling) {
+        actionBar.insertBefore(btn, shareBtn.nextSibling);
+      } else {
+        actionBar.appendChild(btn);
+      }
     });
   }
 

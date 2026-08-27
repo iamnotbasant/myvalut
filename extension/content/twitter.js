@@ -1,82 +1,47 @@
 // Twitter / X Content Script for Valut
 (function () {
   const VALUT_ICON_SVG = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-    </svg>
-  `;
-
-  const VALUT_CHECK_SVG = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 6 9 17l-5-5"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16.4854 1.39731C15.348 1.24998 13.8393 1.24999 12 1.25C10.1607 1.24999 8.652 1.24998 7.51458 1.39731C6.34712 1.54853 5.40051 1.86672 4.65121 2.58863C3.898 3.31431 3.56243 4.23743 3.40365 5.37525C3.38356 5.51919 3.3661 5.66833 3.35092 5.8228C3.33154 6.02004 3.32185 6.11866 3.38139 6.18433C3.44092 6.25 3.54199 6.25 3.74412 6.25H20.2559C20.458 6.25 20.5591 6.25 20.6186 6.18433C20.6782 6.11866 20.6685 6.02004 20.6491 5.8228C20.6339 5.66833 20.6164 5.51919 20.5964 5.37525C20.4376 4.23743 20.102 3.31431 19.3488 2.58863C18.5995 1.86672 17.6529 1.54853 16.4854 1.39731Z" fill="currentColor" />
+      <path d="M20.7458 8.1438C20.7441 7.95852 20.7433 7.86588 20.6848 7.80794C20.6263 7.75 20.5333 7.75 20.3472 7.75H3.65284C3.46674 7.75 3.37368 7.75 3.31522 7.80794C3.25675 7.86588 3.25591 7.95852 3.25424 8.1438C3.24999 8.61366 3.25 9.115 3.25001 9.64943L3.25 18.0458C3.24996 19.1433 3.24993 20.0553 3.35533 20.7405C3.46438 21.4495 3.71857 22.1395 4.41958 22.5139C5.04476 22.8477 5.7324 22.7798 6.31544 22.6028C6.90514 22.4238 7.50454 22.0989 8.05335 21.7521C8.60739 21.402 9.15065 21.0029 9.623 20.6538C10.0858 20.3117 10.5131 19.9958 10.7969 19.8249C11.1965 19.5843 11.4488 19.4335 11.6533 19.3371C11.842 19.2482 11.9337 19.234 12 19.234C12.0663 19.234 12.158 19.2482 12.3467 19.3371C12.5513 19.4335 12.8035 19.5843 13.2031 19.8249C13.4869 19.9958 13.9142 20.3117 14.377 20.6538C14.8494 21.0029 15.3926 21.402 15.9467 21.7521C16.4955 22.0989 17.0949 22.4238 17.6846 22.6028C18.2676 22.7798 18.9553 22.8477 19.5804 22.5139C20.2814 22.1395 20.5356 21.4495 20.6447 20.7405C20.7501 20.0553 20.75 19.1434 20.75 18.0458V9.64945C20.75 9.11501 20.75 8.61366 20.7458 8.1438Z" fill="currentColor" />
     </svg>
   `;
 
   function extractTweetData(tweetArticle) {
-    const timeEl = tweetArticle.querySelector('time');
-    const linkEl = timeEl?.closest('a') || tweetArticle.querySelector('a[href*="/status/"]');
-    const tweetUrl = linkEl ? (linkEl.href.startsWith('http') ? linkEl.href : `https://x.com${linkEl.getAttribute('href')}`) : window.location.href;
-
-    const userNameContainer = tweetArticle.querySelector('div[data-testid="User-Name"]');
-    let displayName = 'Twitter User';
-    let username = 'user';
-
-    if (userNameContainer) {
-      const nameSpans = userNameContainer.querySelectorAll('span');
-      if (nameSpans.length > 0) {
-        displayName = nameSpans[0].textContent.trim();
-      }
-      const handleA = userNameContainer.querySelector('a[href^="/"]');
-      if (handleA) {
-        username = handleA.getAttribute('href').replace('/', '').trim();
-      }
-    }
-
+    let displayName = '';
+    let username = '';
     let avatarUrl = '';
-    const avatarEl = tweetArticle.querySelector('div[data-testid="Tweet-User-Avatar"] img, img[src*="profile_images"]');
-    if (avatarEl) {
-      avatarUrl = avatarEl.getAttribute('src') || '';
-      avatarUrl = avatarUrl.replace('_normal.', '_bigger.').replace('_mini.', '_bigger.');
+    let text = '';
+    let imageUrl = '';
+    let tweetUrl = window.location.href;
+
+    const userEl = tweetArticle.querySelector('div[data-testid="User-Name"]');
+    if (userEl) {
+      const names = userEl.querySelectorAll('span');
+      if (names.length > 0) displayName = names[0].textContent.trim();
+      const handleEl = userEl.querySelector('a[tabindex="-1"]');
+      if (handleEl) username = handleEl.textContent.trim().replace(/^@/, '');
     }
+
+    const avatarEl = tweetArticle.querySelector('div[data-testid="Tweet-User-Avatar"] img');
+    if (avatarEl) avatarUrl = avatarEl.getAttribute('src') || '';
 
     const textEl = tweetArticle.querySelector('div[data-testid="tweetText"]');
-    let text = textEl?.textContent?.trim() || '';
+    if (textEl) text = textEl.innerText.trim();
 
-    // Extract Link Card Title & Description if present
-    const cardEl = tweetArticle.querySelector('div[data-testid*="card.layout"]');
-    if (cardEl) {
-      const cardText = cardEl.textContent?.trim();
-      if (cardText && !text.includes(cardText)) {
-        text += `\n[Link Preview: ${cardText}]`;
-      }
-    }
+    const photoEl = tweetArticle.querySelector('div[data-testid="tweetPhoto"] img');
+    if (photoEl) imageUrl = photoEl.getAttribute('src') || '';
 
-    // Extract Quoted Tweet if present
-    const quoteEl = tweetArticle.querySelector('div[data-testid="quoteTweet"], div[role="blockquote"]');
-    if (quoteEl) {
-      const quoteText = quoteEl.textContent?.trim();
-      if (quoteText && !text.includes(quoteText)) {
-        text += `\n[Quoted: ${quoteText}]`;
-      }
-    }
-
-    // Extract High-Res Photo or Video Poster
-    let imageUrl = '';
-    const photoEl = tweetArticle.querySelector('div[data-testid="tweetPhoto"] img, div[data-testid="videoPlayer"] video, div[data-testid="videoPlayer"] poster, div[data-testid*="card.layout"] img');
-    if (photoEl) {
-      imageUrl = photoEl.getAttribute('src') || photoEl.getAttribute('poster') || '';
-      if (imageUrl.includes('format=') && !imageUrl.includes('name=large')) {
-        imageUrl = imageUrl.replace(/name=[a-z0-9_]+/i, 'name=large');
-      }
-    }
+    const timeLink = tweetArticle.querySelector('time')?.closest('a');
+    if (timeLink) tweetUrl = timeLink.href;
 
     return {
       url: tweetUrl,
       platform: 'twitter',
-      title: `${displayName} on X`,
-      text: text || `Tweet by ${displayName}`,
-      displayName,
-      username,
+      title: `${displayName || username || 'Tweet'} on X`,
+      text: text || 'Saved Tweet from X',
+      displayName: displayName || 'X Creator',
+      username: username || 'user',
       avatarUrl: avatarUrl || undefined,
       imageUrl: imageUrl || undefined,
     };
@@ -92,22 +57,22 @@
     };
 
     if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai')) {
-      add('AI Agents', 'indigo');
+      add('ai', 'teal');
     }
     if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind')) {
-      add('Frontend', 'blue');
+      add('tech', 'teal');
     }
     if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('animation')) {
-      add('UI/UX', 'pink');
+      add('design', 'pink');
     }
     if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('growth')) {
-      add('SaaS', 'cyan');
+      add('saas', 'cyan');
     }
     if (lower.includes('python') || lower.includes('backend') || lower.includes('database') || lower.includes('supabase')) {
-      add('Backend', 'teal');
+      add('tech', 'teal');
     }
     if (tags.length === 0) {
-      tags.push({ name: 'Inspiration', color: 'indigo' });
+      tags.push({ name: 'tech', color: 'teal' });
     }
     return tags;
   }
@@ -160,7 +125,6 @@
     if (buttonElement) {
       buttonElement.classList.remove('valut-x-loading');
       buttonElement.classList.add('valut-x-saved');
-      buttonElement.innerHTML = VALUT_CHECK_SVG;
       buttonElement.title = 'Saved to Valut!';
     }
     if (toast) {
@@ -171,7 +135,6 @@
   function handleSaveError(buttonElement, toast, errMsg) {
     if (buttonElement) {
       buttonElement.classList.remove('valut-x-loading');
-      buttonElement.innerHTML = VALUT_ICON_SVG;
     }
     if (toast) {
       toast.updateError(errMsg);
@@ -188,7 +151,6 @@
 
     if (buttonElement) {
       buttonElement.classList.add('valut-x-loading');
-      buttonElement.innerHTML = `<span class="valut-spinner"></span>`;
     }
 
     try {
@@ -245,7 +207,13 @@
       });
 
       container.appendChild(btn);
-      actionRow.appendChild(container);
+
+      const shareBtn = actionRow.querySelector('button[data-testid="share"], button[aria-label*="Share"]');
+      if (shareBtn && shareBtn.parentNode === actionRow) {
+        actionRow.insertBefore(container, shareBtn);
+      } else {
+        actionRow.appendChild(container);
+      }
     });
   }
 
@@ -253,5 +221,6 @@
   observer.observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', injectTweetButtons);
+  setInterval(injectTweetButtons, 1000);
   injectTweetButtons();
 })();

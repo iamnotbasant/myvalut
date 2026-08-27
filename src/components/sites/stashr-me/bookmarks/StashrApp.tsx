@@ -113,7 +113,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // 5. Theme State
+  // 5. Theme & Network State
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('stashr_theme');
@@ -122,6 +122,42 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
     return true;
   });
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Network offline / online detection & auto-reconnect sync
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (isSupabaseConfigured) {
+        Promise.all([
+          fetchBookmarksFromDb(user?.id),
+          fetchCollectionsFromDb(user?.id),
+          fetchTagsFromDb(user?.id)
+        ])
+          .then(([dbBm, dbCol, dbTg]) => {
+            if (dbBm !== null) setBookmarks(dbBm);
+            if (dbCol !== null) setCollections(dbCol);
+            if (dbTg !== null) setTags(dbTg);
+          })
+          .catch(() => {});
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user]);
 
   // Apply dark class on mount/change
   useEffect(() => {
@@ -703,6 +739,14 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
       />
+
+      {/* 4. Subtle Offline Status Indicator */}
+      {!isOnline && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-amber-500/30 bg-neutral-900/90 px-4 py-2 text-xs text-amber-300 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
+          <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+          <span>Offline mode — your bookmarks are cached locally and will auto-sync when online.</span>
+        </div>
+      )}
     </div>
   );
 }

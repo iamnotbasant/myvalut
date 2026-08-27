@@ -1,42 +1,62 @@
-/* Reddit Injected Valut Button Styles */
+/* Reddit Injected Valut Button Styles - 100% Native Shreddit / Reddit Pill Integration */
+
 .valut-reddit-btn {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
+  justify-content: center !important;
+  gap: 6px !important;
   height: 32px !important;
-  padding: 0 12px !important;
+  padding: 0 12px 0 10px !important;
   border-radius: 9999px !important;
   background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: none !important;
   color: #d7dadc !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   margin-left: 6px !important;
-  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+  transition: background-color 0.18s cubic-bezier(0.2, 0, 0, 1) !important;
   user-select: none !important;
   outline: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Light theme Reddit */
+html:not(.theme-dark):not([dark]) .valut-reddit-btn {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #576f76 !important;
 }
 
 .valut-reddit-btn:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
 }
 
-.valut-reddit-btn.valut-reddit-saved {
-  background: rgba(34, 197, 94, 0.18) !important;
-  border-color: rgba(34, 197, 94, 0.4) !important;
-  color: #4ade80 !important;
+html:not(.theme-dark):not([dark]) .valut-reddit-btn:hover {
+  background: rgba(0, 0, 0, 0.09) !important;
+  color: #000000 !important;
 }
 
-.valut-reddit-btn.valut-reddit-loading {
-  opacity: 0.7 !important;
-  cursor: wait !important;
+.valut-reddit-btn:active {
+  transform: scale(0.95) !important;
 }
 
 .valut-reddit-btn svg {
   width: 14px !important;
   height: 14px !important;
+  flex-shrink: 0 !important;
+  color: currentColor !important;
+}
+
+/* Saving State */
+.valut-reddit-btn.valut-reddit-loading {
+  opacity: 0.8 !important;
+  cursor: wait !important;
+}
+
+/* Saved State */
+.valut-reddit-btn.valut-reddit-saved {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
 }
