@@ -30,6 +30,7 @@ interface SidebarProps {
   tags: Tag[];
   bookmarksCount: number;
   archivedCount: number;
+  creatorsCount?: number;
   onOpenAddBookmark: () => void;
   onOpenAddCollection: () => void;
   onOpenFeedback: () => void;
@@ -46,6 +47,7 @@ export function Sidebar({
   tags,
   bookmarksCount,
   archivedCount,
+  creatorsCount,
   onOpenAddBookmark,
   onOpenAddCollection,
   onOpenFeedback,
@@ -154,6 +156,9 @@ export function Sidebar({
           >
             <Users className="size-4" />
             <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Creators</span>
+            {creatorsCount !== undefined && (
+              <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{creatorsCount}</span>
+            )}
           </a>
           <a
             role="button"

@@ -541,6 +541,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
   const activeBookmarksCount = bookmarks.filter(b => !b.isArchived).length;
   const archivedBookmarksCount = bookmarks.filter(b => b.isArchived).length;
+  const uniqueCreatorsCount = useMemo(() => {
+    const activeBms = bookmarks.filter(b => !b.isArchived);
+    const sourceBms = activeBms.length > 0 ? activeBms : bookmarks;
+    const set = new Set(
+      sourceBms
+        .map(b => `${b.platform || 'web'}___${(b.username || b.displayName || '').replace(/^@+/, '').replace(/^u\//i, '').trim().toLowerCase()}`)
+        .filter(k => !k.endsWith('___'))
+    );
+    return set.size;
+  }, [bookmarks]);
 
   return (
     <div className="flex h-svh overflow-hidden bg-background md:bg-sidebar text-foreground antialiased selection:bg-primary/20">
@@ -552,6 +562,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         tags={tags}
         bookmarksCount={activeBookmarksCount}
         archivedCount={archivedBookmarksCount}
+        creatorsCount={uniqueCreatorsCount}
         onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
         onOpenAddCollection={() => setIsAddCollectionOpen(true)}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
@@ -610,10 +621,11 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 collectionId: null
               });
             }}
+            onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
           />
         )}
 
-        {filterState.activeNav === 'connections' && <ConnectionsView />}
+        {filterState.activeNav === 'connections' && <ConnectionsView bookmarks={bookmarks} />}
 
         {(filterState.activeNav === 'bookmarks' || filterState.activeNav === 'archived') && (
           <div className="flex-1 overflow-y-auto">

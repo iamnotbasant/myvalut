@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
 import {
@@ -10,11 +10,14 @@ import {
   ExtensionPuzzleIcon,
   SlidersHorizontal,
   Bookmark as BookmarkIcon,
-  Check
+  Check,
+  Users,
+  Plus,
+  X
 } from '@/components/icons';
 
 // ==========================================
-// 1. CREATORS VIEW (Exact Match to Image 1)
+// 1. CREATORS VIEW (100% Dynamic & Connected)
 // ==========================================
 
 export interface CreatorProfile {
@@ -23,423 +26,467 @@ export interface CreatorProfile {
   username: string;
   platform: PlatformType;
   avatarUrl?: string;
-  initials?: string;
+  initials: string;
   bookmarkCount: number;
   profileUrl: string;
+  latestBookmarkDate?: string;
+  bookmarks: BookmarkItem[];
 }
-
-const DEFAULT_CREATORS: CreatorProfile[] = [
-  {
-    id: 'c1',
-    displayName: 'Busy-Race-4648',
-    username: 'Busy-Race-4648',
-    platform: 'reddit',
-    initials: 'BU',
-    bookmarkCount: 3,
-    profileUrl: 'https://reddit.com/user/Busy-Race-4648'
-  },
-  {
-    id: 'c2',
-    displayName: 'Wail Beghoul',
-    username: 'wailbranding',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/657ccdf6fd99feec.jpg',
-    bookmarkCount: 2,
-    profileUrl: 'https://x.com/wailbranding'
-  },
-  {
-    id: 'c3',
-    displayName: 'fuyo',
-    username: 'fuyofulo',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/6e91ff44b380a5e3.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/fuyofulo'
-  },
-  {
-    id: 'c4',
-    displayName: 'roman',
-    username: 'Nozelcode',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8b700a235ebcffd6.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/Nozelcode'
-  },
-  {
-    id: 'c5',
-    displayName: 'Adi',
-    username: 'AdityaSur11',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/62db0f69f5d36f21.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/AdityaSur11'
-  },
-  {
-    id: 'c6',
-    displayName: 'Ian Nuttall',
-    username: 'iannuttall',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/b218c4095252c807.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/iannuttall'
-  },
-  {
-    id: 'c7',
-    displayName: 'Manish Kumar',
-    username: 'Manixh02',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8266259c9e4c4384.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/Manixh02'
-  },
-  {
-    id: 'c8',
-    displayName: 'Carter The Editor',
-    username: 'vfxcarter',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/657ccdf6fd99feec.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/vfxcarter'
-  },
-  {
-    id: 'c9',
-    displayName: 'José Siles | AI | Data',
-    username: 'josesilesdata',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/6e91ff44b380a5e3.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/josesilesdata'
-  },
-  {
-    id: 'c10',
-    displayName: 'Kailash',
-    username: 'kail_designs',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8b700a235ebcffd6.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/kail_designs'
-  },
-  {
-    id: 'c11',
-    displayName: 'Bill (Yiqi) Guo',
-    username: 'loficoxmos1',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/62db0f69f5d36f21.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/loficoxmos1'
-  },
-  {
-    id: 'c12',
-    displayName: 'Imran',
-    username: 'ImranUxi',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/b218c4095252c807.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/ImranUxi'
-  },
-  {
-    id: 'c13',
-    displayName: 'xiA',
-    username: 'xiathls',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8266259c9e4c4384.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/xiathls'
-  },
-  {
-    id: 'c14',
-    displayName: 'arc.',
-    username: 'arceyul',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/657ccdf6fd99feec.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/arceyul'
-  },
-  {
-    id: 'c15',
-    displayName: 'Ayan Gfx | YouTube Editor',
-    username: 'theayangfx',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/6e91ff44b380a5e3.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/theayangfx'
-  },
-  {
-    id: 'c16',
-    displayName: 'Joseph Tsar',
-    username: 'joseph_tsar_',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8b700a235ebcffd6.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/joseph_tsar_'
-  },
-  {
-    id: 'c17',
-    displayName: 'hachimi',
-    username: 'HakimlHamizl',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/62db0f69f5d36f21.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/HakimlHamizl'
-  },
-  {
-    id: 'c18',
-    displayName: 'cova',
-    username: 'covacut',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/b218c4095252c807.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/covacut'
-  },
-  {
-    id: 'c19',
-    displayName: 'Hal',
-    username: 'hal__lee',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/8266259c9e4c4384.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/hal__lee'
-  },
-  {
-    id: 'c20',
-    displayName: 'Darel Ebuka',
-    username: 'dareltsudio',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/657ccdf6fd99feec.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/dareltsudio'
-  },
-  {
-    id: 'c21',
-    displayName: 'Aqib',
-    username: 'MAQIB135',
-    platform: 'twitter',
-    avatarUrl: '/stashr_files/6e91ff44b380a5e3.jpg',
-    bookmarkCount: 1,
-    profileUrl: 'https://x.com/MAQIB135'
-  }
-];
 
 interface CreatorsViewProps {
   bookmarks?: BookmarkItem[];
   onSelectCreator: (username: string) => void;
+  onOpenAddBookmark?: () => void;
 }
 
-export function CreatorsView({ bookmarks, onSelectCreator }: CreatorsViewProps) {
+type SortOption = 'most_bookmarks' | 'recent' | 'az' | 'za';
+
+const PLATFORM_LABELS: Record<string, string> = {
+  all: 'All platforms',
+  twitter: 'X / Twitter',
+  reddit: 'Reddit',
+  youtube: 'YouTube',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  bluesky: 'Bluesky',
+  threads: 'Threads',
+  pinterest: 'Pinterest',
+  web: 'Web'
+};
+
+export function CreatorsView({
+  bookmarks = [],
+  onSelectCreator,
+  onOpenAddBookmark
+}: CreatorsViewProps) {
   const [query, setQuery] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('most_bookmarks');
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [hoveredCreatorId, setHoveredCreatorId] = useState<string | null>(null);
 
-  // Dynamically compute all unique creators from user's actual bookmarks
-  const dynamicCreators = React.useMemo(() => {
-    if (!bookmarks || bookmarks.length === 0) return DEFAULT_CREATORS;
+  // 1. Dynamically compute all unique creators from user's actual active bookmarks
+  const dynamicCreators = useMemo(() => {
+    if (!bookmarks || bookmarks.length === 0) return [];
+    
+    // Consider non-archived bookmarks (or all if none archived)
+    const activeBookmarks = bookmarks.filter(b => !b.isArchived);
+    const sourceBookmarks = activeBookmarks.length > 0 ? activeBookmarks : bookmarks;
+
     const map = new Map<string, CreatorProfile>();
 
-    for (const b of bookmarks) {
-      const handle = b.username || b.displayName.toLowerCase().replace(/[^a-z0-9_]/g, '') || 'creator';
-      const key = `${b.platform}_${handle.toLowerCase()}`;
+    for (const b of sourceBookmarks) {
+      const rawHandle = (b.username || b.displayName || 'creator').trim();
+      const cleanHandle = rawHandle.replace(/^@+/, '').replace(/^u\//i, '').trim() || 'creator';
+      const cleanDisplayName = (b.displayName || b.username || 'Creator').trim();
+      const platform: PlatformType = b.platform || 'web';
+      
+      const key = `${platform}___${cleanHandle.toLowerCase()}`;
       const existing = map.get(key);
 
       if (existing) {
         existing.bookmarkCount += 1;
-        if (!existing.avatarUrl && b.avatarUrl) existing.avatarUrl = b.avatarUrl;
+        existing.bookmarks.push(b);
+        if (!existing.avatarUrl && b.avatarUrl) {
+          existing.avatarUrl = b.avatarUrl;
+        }
+        if (b.date && (!existing.latestBookmarkDate || new Date(b.date) > new Date(existing.latestBookmarkDate))) {
+          existing.latestBookmarkDate = b.date;
+        }
       } else {
         let profileUrl = b.url || '#';
-        if (b.platform === 'twitter') profileUrl = `https://x.com/${handle}`;
-        else if (b.platform === 'reddit') profileUrl = `https://reddit.com/u/${handle}`;
-        else if (b.platform === 'instagram') profileUrl = `https://instagram.com/${handle}`;
-        else if (b.platform === 'youtube') profileUrl = `https://youtube.com/@${handle}`;
+        if (platform === 'twitter') {
+          profileUrl = `https://x.com/${cleanHandle}`;
+        } else if (platform === 'reddit') {
+          profileUrl = `https://reddit.com/user/${cleanHandle}`;
+        } else if (platform === 'youtube') {
+          const handle = cleanHandle.startsWith('@') ? cleanHandle : `@${cleanHandle}`;
+          profileUrl = `https://youtube.com/${handle}`;
+        } else if (platform === 'instagram') {
+          profileUrl = `https://instagram.com/${cleanHandle}`;
+        } else if (platform === 'tiktok') {
+          const handle = cleanHandle.startsWith('@') ? cleanHandle : `@${cleanHandle}`;
+          profileUrl = `https://tiktok.com/${handle}`;
+        } else if (platform === 'bluesky') {
+          profileUrl = `https://bsky.app/profile/${cleanHandle}`;
+        } else if (platform === 'threads') {
+          profileUrl = `https://threads.net/@${cleanHandle}`;
+        } else if (platform === 'pinterest') {
+          profileUrl = `https://pinterest.com/${cleanHandle}`;
+        }
+
+        const initials = (cleanDisplayName || cleanHandle)
+          .split(/[\s_.-]+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(w => w[0]?.toUpperCase())
+          .join('') || cleanDisplayName.slice(0, 2).toUpperCase() || 'CR';
 
         map.set(key, {
           id: key,
-          displayName: b.displayName,
-          username: handle,
-          platform: b.platform,
+          displayName: cleanDisplayName,
+          username: cleanHandle,
+          platform,
           avatarUrl: b.avatarUrl,
-          initials: b.displayName.slice(0, 2).toUpperCase(),
+          initials,
           bookmarkCount: 1,
           profileUrl,
+          latestBookmarkDate: b.date,
+          bookmarks: [b]
         });
       }
     }
-    return Array.from(map.values()).sort((a, b) => b.bookmarkCount - a.bookmarkCount);
+
+    return Array.from(map.values());
   }, [bookmarks]);
 
-  const creators = dynamicCreators.filter(creator => {
-    const matchesQuery =
-      creator.displayName.toLowerCase().includes(query.toLowerCase()) ||
-      creator.username.toLowerCase().includes(query.toLowerCase());
-    const matchesPlatform =
-      selectedPlatform === 'all' || creator.platform === selectedPlatform;
-    return matchesQuery && matchesPlatform;
-  });
+  // 2. Count creators per platform for the filter dropdown
+  const platformCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: dynamicCreators.length };
+    for (const c of dynamicCreators) {
+      counts[c.platform] = (counts[c.platform] || 0) + 1;
+    }
+    return counts;
+  }, [dynamicCreators]);
 
-  const platforms = [
-    { id: 'all', label: 'All platforms' },
-    { id: 'twitter', label: 'X / Twitter' },
-    { id: 'reddit', label: 'Reddit' },
-    { id: 'instagram', label: 'Instagram' },
-    { id: 'tiktok', label: 'TikTok' },
-    { id: 'youtube', label: 'YouTube' }
-  ];
+  const availablePlatforms = useMemo(() => {
+    const list: { id: string; label: string; count: number }[] = [
+      { id: 'all', label: 'All platforms', count: dynamicCreators.length }
+    ];
+    const platforms: PlatformType[] = ['twitter', 'reddit', 'youtube', 'instagram', 'tiktok', 'bluesky', 'threads', 'pinterest', 'web'];
+    for (const p of platforms) {
+      const count = platformCounts[p] || 0;
+      if (count > 0) {
+        list.push({ id: p, label: PLATFORM_LABELS[p] || p, count });
+      }
+    }
+    return list;
+  }, [dynamicCreators.length, platformCounts]);
+
+  // 3. Filter and Sort
+  const filteredCreators = useMemo(() => {
+    return dynamicCreators.filter(creator => {
+      const matchesQuery =
+        creator.displayName.toLowerCase().includes(query.toLowerCase()) ||
+        creator.username.toLowerCase().includes(query.toLowerCase());
+      const matchesPlatform =
+        selectedPlatform === 'all' || creator.platform === selectedPlatform;
+      return matchesQuery && matchesPlatform;
+    });
+  }, [dynamicCreators, query, selectedPlatform]);
+
+  const sortedCreators = useMemo(() => {
+    return [...filteredCreators].sort((a, b) => {
+      if (sortBy === 'most_bookmarks') {
+        return b.bookmarkCount - a.bookmarkCount;
+      }
+      if (sortBy === 'recent') {
+        const dateA = a.latestBookmarkDate ? new Date(a.latestBookmarkDate).getTime() : 0;
+        const dateB = b.latestBookmarkDate ? new Date(b.latestBookmarkDate).getTime() : 0;
+        return dateB - dateA;
+      }
+      if (sortBy === 'az') {
+        return a.displayName.localeCompare(b.displayName);
+      }
+      if (sortBy === 'za') {
+        return b.displayName.localeCompare(a.displayName);
+      }
+      return 0;
+    });
+  }, [filteredCreators, sortBy]);
+
+  // 4. Empty State when user has 0 bookmarks/creators in vault
+  if (dynamicCreators.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[420px] bg-background">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-card border border-border/80 text-muted-foreground shadow-xs mb-4">
+          <Users className="size-6 text-muted-foreground/80" />
+        </div>
+        <h3 className="text-base font-semibold text-strong mb-1.5">No creators found</h3>
+        <p className="max-w-sm text-xs text-muted-foreground leading-relaxed mb-6">
+          Save tweets, reddit posts, YouTube videos, and web articles to organize and discover creators directly in your vault.
+        </p>
+        {onOpenAddBookmark && (
+          <button
+            type="button"
+            onClick={onOpenAddBookmark}
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all cursor-pointer"
+          >
+            <Plus className="size-3.5" />
+            <span>Add Bookmark</span>
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-background px-4 py-4 md:px-7 md:py-5 space-y-4">
-      {/* Top Filter and Search Bar (Exact Match) */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Search input */}
-        <div className="relative w-64 md:w-72">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search creators..."
-            className="h-8.5 w-full rounded-xl border border-input bg-card/60 pl-8.5 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-ring/80 focus:ring-2 focus:ring-ring/20 shadow-xs"
-          />
+      {/* Top Filter, Search & Sort Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search input */}
+          <div className="relative w-64 md:w-72">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search creators..."
+              className="h-8.5 w-full rounded-xl border border-input bg-card/60 pl-8.5 pr-8 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-ring/80 focus:ring-2 focus:ring-ring/20 shadow-xs"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Platform Dropdown Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlatformMenuOpen(!isPlatformMenuOpen);
+                setIsSortMenuOpen(false);
+              }}
+              className="flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/60 px-3 text-xs font-medium text-foreground transition-all hover:bg-accent hover:text-accent-foreground shadow-xs cursor-pointer"
+            >
+              <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+              <span>
+                {selectedPlatform === 'all'
+                  ? 'Platform'
+                  : PLATFORM_LABELS[selectedPlatform] || selectedPlatform}
+              </span>
+            </button>
+
+            {isPlatformMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsPlatformMenuOpen(false)}
+                />
+                <div className="absolute top-10 left-0 z-30 w-52 rounded-xl border border-border bg-popover p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                  {availablePlatforms.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedPlatform(p.id);
+                        setIsPlatformMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer ${
+                        selectedPlatform === p.id
+                          ? 'bg-accent text-strong font-medium'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                      }`}
+                    >
+                      <span>{p.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          {p.count}
+                        </span>
+                        {selectedPlatform === p.id && (
+                          <Check className="size-3 text-primary" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSortMenuOpen(!isSortMenuOpen);
+                setIsPlatformMenuOpen(false);
+              }}
+              className="flex h-8.5 items-center gap-1.5 rounded-xl border border-input bg-card/60 px-3 text-xs font-medium text-foreground transition-all hover:bg-accent hover:text-accent-foreground shadow-xs cursor-pointer"
+            >
+              <span className="text-muted-foreground">Sort:</span>
+              <span>
+                {sortBy === 'most_bookmarks' && 'Most bookmarks'}
+                {sortBy === 'recent' && 'Recently added'}
+                {sortBy === 'az' && 'A - Z'}
+                {sortBy === 'za' && 'Z - A'}
+              </span>
+            </button>
+
+            {isSortMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsSortMenuOpen(false)}
+                />
+                <div className="absolute top-10 left-0 z-30 w-44 rounded-xl border border-border bg-popover p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                  {[
+                    { id: 'most_bookmarks', label: 'Most bookmarks' },
+                    { id: 'recent', label: 'Recently added' },
+                    { id: 'az', label: 'Alphabetical (A - Z)' },
+                    { id: 'za', label: 'Alphabetical (Z - A)' }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setSortBy(opt.id as SortOption);
+                        setIsSortMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer ${
+                        sortBy === opt.id
+                          ? 'bg-accent text-strong font-medium'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {sortBy === opt.id && <Check className="size-3 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Platform Dropdown Button */}
-        <div className="relative">
+        {/* Total Summary */}
+        <div className="hidden sm:flex items-center text-xs text-muted-foreground font-mono">
+          <span>
+            {sortedCreators.length} {sortedCreators.length === 1 ? 'creator' : 'creators'}
+          </span>
+        </div>
+      </div>
+
+      {/* Zero matches for current search/filter */}
+      {sortedCreators.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[300px]">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-card border border-border/80 text-muted-foreground shadow-xs mb-3">
+            <Search className="size-5 text-muted-foreground/70" />
+          </div>
+          <h3 className="text-sm font-semibold text-strong mb-1">No matching creators</h3>
+          <p className="max-w-xs text-xs text-muted-foreground mb-4">
+            No creators found matching &quot;{query}&quot;
+            {selectedPlatform !== 'all' ? ` on ${PLATFORM_LABELS[selectedPlatform] || selectedPlatform}` : ''}.
+          </p>
           <button
             type="button"
-            onClick={() => setIsPlatformMenuOpen(!isPlatformMenuOpen)}
-            className="flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/60 px-3 text-xs font-medium text-foreground transition-all hover:bg-accent hover:text-accent-foreground shadow-xs"
+            onClick={() => {
+              setQuery('');
+              setSelectedPlatform('all');
+            }}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-accent transition-colors cursor-pointer"
           >
-            <SlidersHorizontal className="size-3.5 text-muted-foreground" />
-            <span>
-              {selectedPlatform === 'all'
-                ? 'Platform'
-                : platforms.find(p => p.id === selectedPlatform)?.label}
-            </span>
+            Clear filters
           </button>
-
-          {isPlatformMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setIsPlatformMenuOpen(false)}
-              />
-              <div className="absolute top-10 left-0 z-30 w-44 rounded-xl border border-border bg-popover p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100">
-                {platforms.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setSelectedPlatform(p.id);
-                      setIsPlatformMenuOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
-                      selectedPlatform === p.id
-                        ? 'bg-accent text-strong font-medium'
-                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                    }`}
-                  >
-                    <span>{p.label}</span>
-                    {selectedPlatform === p.id && <Check className="size-3 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
-      </div>
-
-      {/* 3-Column Creators Cards Grid (Exact Stashr Dark Aesthetics) */}
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        {creators.map(creator => (
-          <div
-            key={creator.id}
-            className="group relative flex h-[62px] items-center justify-between rounded-xl border border-border/80 bg-card/75 p-3 shadow-xs transition-all hover:border-border hover:bg-accent/40"
-          >
-            {/* Creator Left info: Avatar with Platform Badge + Name & Handle */}
+      ) : (
+        /* 3-Column Creators Cards Grid (Exact Stashr Dark Aesthetics) */
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {sortedCreators.map(creator => (
             <div
-              onClick={() => onSelectCreator(creator.username)}
-              className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+              key={creator.id}
+              className="group relative flex h-[62px] items-center justify-between rounded-xl border border-border/80 bg-card/75 p-3 shadow-xs transition-all hover:border-border hover:bg-accent/40"
             >
-              {/* Circular Avatar with Platform overlay badge */}
-              <div className="relative size-8.5 shrink-0">
-                <div className="size-8.5 overflow-hidden rounded-full ring-1 ring-border bg-neutral-800 flex items-center justify-center">
-                  {creator.avatarUrl ? (
-                    <Image
-                      src={creator.avatarUrl}
-                      alt={creator.displayName}
-                      width={34}
-                      height={34}
-                      className="size-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="text-[11px] font-semibold text-neutral-300">
-                      {creator.initials || creator.displayName.slice(0, 2).toUpperCase()}
-                    </span>
+              {/* Creator Left info: Avatar with Platform Badge + Name & Handle */}
+              <div
+                onClick={() => onSelectCreator(creator.username)}
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+              >
+                {/* Circular Avatar with Platform overlay badge */}
+                <div className="relative size-8.5 shrink-0">
+                  <div className="size-8.5 overflow-hidden rounded-full ring-1 ring-border bg-neutral-800 flex items-center justify-center">
+                    {creator.avatarUrl ? (
+                      <Image
+                        src={creator.avatarUrl}
+                        alt={creator.displayName}
+                        width={34}
+                        height={34}
+                        className="size-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-neutral-300">
+                        {creator.initials}
+                      </span>
+                    )}
+                  </div>
+                  {/* Platform Badge Overlay */}
+                  <div className="absolute -right-0.5 -bottom-0.5">
+                    <PlatformIcon platform={creator.platform} className="size-3.5" />
+                  </div>
+                </div>
+
+                {/* Creator Names */}
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className="truncate text-[13px] font-medium text-strong">
+                    {creator.displayName}
+                  </span>
+                  <span className="truncate text-[11px] text-muted-foreground">
+                    @{creator.username}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Action Cluster: Bookmark Count (with View bookmarks tooltip) + External Link */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Bookmark Count Button with Tooltip */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setHoveredCreatorId(creator.id)}
+                  onMouseLeave={() => setHoveredCreatorId(null)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectCreator(creator.username)}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+                  >
+                    <BookmarkIcon className="size-3.5" />
+                    <span className="font-mono text-xs">{creator.bookmarkCount}</span>
+                  </button>
+
+                  {/* Tooltip on Hover */}
+                  {hoveredCreatorId === creator.id && (
+                    <div className="absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-white shadow-md">
+                      View bookmarks
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-800" />
+                    </div>
                   )}
                 </div>
-                {/* Platform Badge Overlay */}
-                <div className="absolute -right-0.5 -bottom-0.5">
-                  <PlatformIcon platform={creator.platform} className="size-3.5" />
-                </div>
-              </div>
 
-              {/* Creator Names */}
-              <div className="flex flex-col min-w-0 leading-tight">
-                <span className="truncate text-[13px] font-medium text-strong">
-                  {creator.displayName}
-                </span>
-                <span className="truncate text-[11px] text-muted-foreground">
-                  @{creator.username}
-                </span>
-              </div>
-            </div>
-
-            {/* Right Action Cluster: Bookmark Count (with View bookmarks tooltip) + External Link */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Bookmark Count Button with Tooltip */}
-              <div
-                className="relative"
-                onMouseEnter={() => setHoveredCreatorId(creator.id)}
-                onMouseLeave={() => setHoveredCreatorId(null)}
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelectCreator(creator.username)}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                {/* External Profile Link */}
+                <a
+                  href={creator.profileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${creator.displayName}'s profile`}
+                  className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
                 >
-                  <BookmarkIcon className="size-3.5" />
-                  <span className="font-mono text-xs">{creator.bookmarkCount}</span>
-                </button>
-
-                {/* Tooltip on Hover matching reference image */}
-                {hoveredCreatorId === creator.id && (
-                  <div className="absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-white shadow-md">
-                    View bookmarks
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-800" />
-                  </div>
-                )}
+                  <ExternalLink className="size-3.5" />
+                </a>
               </div>
-
-              {/* External Profile Link */}
-              <a
-                href={creator.profileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                <ExternalLink className="size-3.5" />
-              </a>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ==========================================
-// 2. CONNECTIONS VIEW (Exact Match to Image 2)
+// 2. CONNECTIONS VIEW (Dynamic from real bookmarks)
 // ==========================================
 
-export function ConnectionsView() {
+interface ConnectionsViewProps {
+  bookmarks?: BookmarkItem[];
+}
+
+export function ConnectionsView({ bookmarks = [] }: ConnectionsViewProps) {
   const [connections, setConnections] = useState([
     {
       id: 'x',
@@ -449,12 +496,6 @@ export function ConnectionsView() {
       enabled: true,
       description:
         'Captures posts and articles the moment you bookmark them on X, plus a full import of your bookmark history.',
-      stats: [
-        { label: '37 saved' },
-        { label: '18 real-time' },
-        { label: '19 imported' }
-      ],
-      lastCapture: 'Last capture 12m ago',
       action: 'Install extension',
       actionLink: '#'
     },
@@ -466,11 +507,6 @@ export function ConnectionsView() {
       enabled: true,
       description:
         'Captures posts and comments as you save them on Reddit, plus a full import of your saved history.',
-      stats: [
-        { label: '17 saved' },
-        { label: '17 imported' }
-      ],
-      lastCapture: 'Last capture 2d ago',
       action: 'Install extension',
       actionLink: '#'
     },
@@ -482,7 +518,6 @@ export function ConnectionsView() {
       enabled: false,
       description:
         'Captures videos as you favorite them on TikTok, plus a full import of your favorites.',
-      lastCapture: 'Waiting for the extension',
       action: 'Install extension',
       actionLink: '#'
     },
@@ -494,7 +529,6 @@ export function ConnectionsView() {
       enabled: false,
       description:
         'Captures posts and reels as you save them on Instagram, plus a full import of your saved collection.',
-      lastCapture: 'Waiting for the extension',
       action: 'Install extension',
       actionLink: '#'
     },
@@ -503,10 +537,9 @@ export function ConnectionsView() {
       name: 'Web clips',
       url: 'Any website',
       platform: 'web' as PlatformType,
-      enabled: false,
+      enabled: true,
       description:
         'Clip images and text snippets from any website with a right click, straight into your library.',
-      lastCapture: 'Waiting for the extension',
       action: 'Install extension',
       actionLink: '#'
     },
@@ -515,10 +548,11 @@ export function ConnectionsView() {
       name: 'YouTube',
       url: 'youtube.com',
       platform: 'youtube' as PlatformType,
-      enabled: false,
+      enabled: true,
       description:
-        'Capture videos as you add them to Watch Later or playlists.',
-      roadmap: 'On the roadmap'
+        'Capture videos, shorts, and descriptions as you bookmark them on YouTube.',
+      action: 'Install extension',
+      actionLink: '#'
     },
     {
       id: 'pinterest',
@@ -558,99 +592,113 @@ export function ConnectionsView() {
     );
   };
 
+  // Compute platform count dynamically from user's actual bookmarks
+  const platformStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of bookmarks) {
+      if (!b.isArchived) {
+        counts[b.platform] = (counts[b.platform] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [bookmarks]);
+
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-background px-4 py-4 md:px-7 md:py-5 space-y-4">
-      {/* Top Extension Banner (Exact Match) */}
+      {/* Top Extension Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card/80 p-4 md:p-5 shadow-xs">
         <div className="flex items-start sm:items-center gap-3.5">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-accent/40 text-foreground">
             <ExtensionPuzzleIcon className="size-5" />
           </div>
           <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold text-strong">Stashr extension</h3>
+            <h3 className="text-sm font-semibold text-strong">Valut extension</h3>
             <p className="text-xs text-muted-foreground">
-              Stashr captures through the browser extension. Install it to start saving from the platforms below.
+              Valut captures bookmarks through the browser extension. Install it to start saving in 1 click from platforms below.
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          className="inline-flex h-8.5 shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+          className="inline-flex h-8.5 shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
         >
           Install extension
         </button>
       </div>
 
-      {/* 9 Platform Cards Grid (3 Columns) */}
+      {/* Platform Cards Grid */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-        {connections.map(conn => (
-          <div
-            key={conn.id}
-            className="flex flex-col justify-between rounded-2xl border border-border/80 bg-card/80 p-5 shadow-xs transition-all hover:border-border"
-          >
-            <div className="space-y-3">
-              {/* Header: Platform Icon + Name & URL + Toggle Switch */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-8 shrink-0 flex items-center justify-center">
-                    <PlatformIcon platform={conn.platform} className="size-7" />
+        {connections.map(conn => {
+          const savedCount = platformStats[conn.platform] || 0;
+
+          return (
+            <div
+              key={conn.id}
+              className="flex flex-col justify-between rounded-2xl border border-border/80 bg-card/80 p-5 shadow-xs transition-all hover:border-border"
+            >
+              <div className="space-y-3">
+                {/* Header: Platform Icon + Name & URL + Toggle Switch */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 shrink-0 flex items-center justify-center">
+                      <PlatformIcon platform={conn.platform} className="size-7" />
+                    </div>
+                    <div className="flex flex-col min-w-0 leading-tight">
+                      <span className="text-sm font-semibold text-strong">{conn.name}</span>
+                      <span className="text-xs text-muted-foreground">{conn.url}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col min-w-0 leading-tight">
-                    <span className="text-sm font-semibold text-strong">{conn.name}</span>
-                    <span className="text-xs text-muted-foreground">{conn.url}</span>
-                  </div>
+
+                  {/* Switch Toggle */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={conn.enabled}
+                    onClick={() => handleToggle(conn.id)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      conn.enabled ? 'bg-neutral-200 dark:bg-white' : 'bg-neutral-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block size-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
+                        conn.enabled ? 'translate-x-4 bg-neutral-900' : 'translate-x-0 bg-neutral-400'
+                      }`}
+                    />
+                  </button>
                 </div>
 
-                {/* Switch Toggle */}
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={conn.enabled}
-                  onClick={() => handleToggle(conn.id)}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    conn.enabled ? 'bg-neutral-200 dark:bg-white' : 'bg-neutral-700'
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block size-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
-                      conn.enabled ? 'translate-x-4 bg-neutral-900' : 'translate-x-0 bg-neutral-400'
-                    }`}
-                  />
-                </button>
+                {/* Description */}
+                <p className="text-xs leading-relaxed text-muted-foreground/90">
+                  {conn.description}
+                </p>
+
+                {/* Stats Row */}
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-muted-foreground font-medium font-mono">
+                  <span>{savedCount} saved</span>
+                  {conn.enabled && savedCount > 0 && <span>• Connected</span>}
+                </div>
               </div>
 
-              {/* Description */}
-              <p className="text-xs leading-relaxed text-muted-foreground/90">
-                {conn.description}
-              </p>
-
-              {/* Stats Row (if present) */}
-              {conn.stats && conn.stats.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-muted-foreground font-medium">
-                  {conn.stats.map((stat, idx) => (
-                    <span key={idx}>{stat.label}</span>
-                  ))}
-                </div>
-              )}
+              {/* Bottom Status / Action */}
+              <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+                <span className="text-muted-foreground">
+                  {savedCount > 0
+                    ? `Active in vault`
+                    : conn.roadmap || (conn.enabled ? 'Connected' : 'Waiting for extension')}
+                </span>
+                {conn.action && (
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-foreground hover:underline cursor-pointer"
+                  >
+                    {conn.action}
+                  </button>
+                )}
+              </div>
             </div>
-
-            {/* Bottom Status / Roadmap */}
-            <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
-              <span className="text-muted-foreground">
-                {conn.lastCapture || conn.roadmap}
-              </span>
-              {conn.action && (
-                <button
-                  type="button"
-                  className="text-xs font-medium text-foreground hover:underline"
-                >
-                  {conn.action}
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
