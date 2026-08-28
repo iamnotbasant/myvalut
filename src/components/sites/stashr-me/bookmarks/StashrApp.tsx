@@ -438,6 +438,20 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
   }, [taggingIds, user?.id]);
 
+  // Auto-Process Untagged Bookmarks with Gemini AI live on Website
+  const autoTaggedIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isLoaded) return;
+    const untagged = bookmarks.filter(
+      b => (!b.tags || b.tags.length === 0 || b.tags.some(t => t.name === 'generating...')) && !autoTaggedIdsRef.current.has(b.id)
+    );
+
+    untagged.forEach(bm => {
+      autoTaggedIdsRef.current.add(bm.id);
+      handleAutoTagBookmark(bm);
+    });
+  }, [bookmarks, isLoaded, handleAutoTagBookmark]);
+
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
     soundFx.playSaveSound();
     const created: BookmarkItem = {

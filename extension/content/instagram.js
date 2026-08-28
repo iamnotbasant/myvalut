@@ -191,17 +191,21 @@
     }
 
     try {
+      const payload = { ...postData, openWebsite: true };
+
       if (!chrome.runtime?.id) {
-        const fallbackRes = await directFallbackSave(postData);
-        handleIgSuccess(btn, toast, fallbackRes.result.tags);
+        const fallbackRes = await directFallbackSave(payload);
+        handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
+        window.open('https://myvalut.vercel.app', '_blank');
         return;
       }
 
-      chrome.runtime.sendMessage({ action: 'save-bookmark', payload: postData }, async (res) => {
+      chrome.runtime.sendMessage({ action: 'save-bookmark', payload }, async (res) => {
         if (chrome.runtime.lastError || !res || !res.success) {
           try {
-            const fallbackRes = await directFallbackSave(postData);
-            handleIgSuccess(btn, toast, fallbackRes.result.tags);
+            const fallbackRes = await directFallbackSave(payload);
+            handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
+            window.open('https://myvalut.vercel.app', '_blank');
           } catch (fbErr) {
             handleIgError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
           }
@@ -211,8 +215,9 @@
       });
     } catch (e) {
       try {
-        const fallbackRes = await directFallbackSave(postData);
-        handleIgSuccess(btn, toast, fallbackRes.result.tags);
+        const fallbackRes = await directFallbackSave({ ...postData, openWebsite: true });
+        handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
+        window.open('https://myvalut.vercel.app', '_blank');
       } catch (fbErr) {
         handleIgError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
       }

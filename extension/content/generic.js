@@ -207,11 +207,14 @@
         status: 'Saving to vault with smart tags...',
       });
 
-      chrome.runtime.sendMessage({ action: 'save-bookmark', payload: data }, async (res) => {
+      const payload = { ...data, openWebsite: true };
+
+      chrome.runtime.sendMessage({ action: 'save-bookmark', payload }, async (res) => {
         if (chrome.runtime.lastError || !res || !res.success) {
           try {
-            const fbRes = await directFallbackSave(data);
+            const fbRes = await directFallbackSave(payload);
             if (toast) toast.updateSuccess({ tags: fbRes.result?.tags || [] });
+            window.open('https://myvalut.vercel.app', '_blank');
             sendResponse({ success: true, result: fbRes.result });
           } catch (fbErr) {
             const errMsg = res?.error || chrome.runtime.lastError?.message || 'Save failed';

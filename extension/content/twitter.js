@@ -316,17 +316,21 @@
     }
 
     try {
+      const payload = { ...tweetData, openWebsite: true };
+
       if (!chrome.runtime?.id) {
-        const fallbackRes = await directFallbackSave(tweetData);
-        handleSaveSuccess(buttonElement, toast, fallbackRes.result.tags);
+        const fallbackRes = await directFallbackSave(payload);
+        handleSaveSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
+        window.open('https://myvalut.vercel.app', '_blank');
         return;
       }
 
-      chrome.runtime.sendMessage({ action: 'save-bookmark', payload: tweetData }, async (res) => {
+      chrome.runtime.sendMessage({ action: 'save-bookmark', payload }, async (res) => {
         if (chrome.runtime.lastError || !res || !res.success) {
           try {
-            const fallbackRes = await directFallbackSave(tweetData);
-            handleSaveSuccess(buttonElement, toast, fallbackRes.result.tags);
+            const fallbackRes = await directFallbackSave(payload);
+            handleSaveSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
+            window.open('https://myvalut.vercel.app', '_blank');
           } catch (fbErr) {
             handleSaveError(buttonElement, toast, 'Please refresh this tab once to connect the updated extension.');
           }
@@ -336,8 +340,9 @@
       });
     } catch (e) {
       try {
-        const fallbackRes = await directFallbackSave(tweetData);
-        handleSaveSuccess(buttonElement, toast, fallbackRes.result.tags);
+        const fallbackRes = await directFallbackSave({ ...tweetData, openWebsite: true });
+        handleSaveSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
+        window.open('https://myvalut.vercel.app', '_blank');
       } catch (fbErr) {
         handleSaveError(buttonElement, toast, 'Please refresh this tab once to connect the updated extension.');
       }

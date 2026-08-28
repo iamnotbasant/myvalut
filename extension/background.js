@@ -757,11 +757,10 @@ async function syncOfflineQueue() {
   }
 }
 
-// Master Save Flow — AI Tags First, Then Save
+// Master Save Flow — Save Instantly & Open Website for Live AI Tagging
 async function saveBookmarkCore(payload) {
   const settings = await chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'userId', 'recentSaves']);
   const userId = settings.userId || payload.userId || null;
-  const apiKey = settings.geminiApiKey || undefined;
   const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
 
   const now = new Date();
@@ -773,51 +772,7 @@ async function saveBookmarkCore(payload) {
 
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  // 1. Try to get REAL AI tags BEFORE saving (direct Gemini first if key set, then server endpoint, then local heuristics)
-  let finalTags = null;
-
-  // 1a. If user has Gemini API Key in extension settings, call Gemini directly
-  if (apiKey) {
-    try {
-      const geminiTags = await generateGeminiTags(payload, apiKey);
-      if (geminiTags && geminiTags.length >= 3) {
-        finalTags = geminiTags;
-      }
-    } catch (gemErr) {
-      // Gemini failed, try server endpoint next
-    }
-  }
-
-  // 1b. Try server-side AI tagger endpoint (uses server's Gemini key)
-  if (!finalTags || finalTags.length === 0) {
-    try {
-      const tagRes = await fetch(`${serverUrl}/api/ai/tag`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: payload.title,
-          text: payload.text || payload.title,
-          url: payload.url,
-          platform: payload.platform,
-          context: payload.context,
-        }),
-      });
-      if (tagRes.ok) {
-        const tagData = await tagRes.json();
-        if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length >= 3) {
-          finalTags = tagData.tags;
-        }
-      }
-    } catch (srvErr) {
-      // server unreachable, try next
-    }
-  }
-
-  // 1c. Final fallback: local heuristic tags
-  if (!finalTags || finalTags.length === 0) {
-    finalTags = generateLocalAiTags(payload);
-  }
-
+  // Save with empty tags initially so the website runs the AI tagger with live visual indicator
   const bookmarkItem = {
     id: bookmarkId,
     platform: payload.platform || 'web',
@@ -830,14 +785,14 @@ async function saveBookmarkCore(payload) {
     url: payload.url || null,
     date: formattedDate,
     created_at_ms: Date.now(),
-    tags: finalTags,
+    tags: [],
     is_favorite: false,
     is_archived: false,
     note: payload.note || null,
     user_id: userId,
   };
 
-  // 2. Save to Supabase with REAL AI tags (or Offline Queue if disconnected)
+  // 1. Immediate Save to Supabase (or Offline Queue)
   let savedResult = null;
   try {
     const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
@@ -855,7 +810,7 @@ async function saveBookmarkCore(payload) {
       savedResult = {
         success: true,
         bookmark: bookmarkItem,
-        tags: bookmarkItem.tags,
+        tags: [],
         savedToDatabase: true,
       };
     } else {
@@ -863,7 +818,7 @@ async function saveBookmarkCore(payload) {
       savedResult = {
         success: true,
         bookmark: bookmarkItem,
-        tags: bookmarkItem.tags,
+        tags: [],
         offlineQueued: true,
       };
     }
@@ -872,32 +827,19 @@ async function saveBookmarkCore(payload) {
     savedResult = {
       success: true,
       bookmark: bookmarkItem,
-      tags: bookmarkItem.tags,
+      tags: [],
       offlineQueued: true,
     };
   }
 
-  // 3. Upsert tags into tags table (fire-and-forget)
-  for (const t of finalTags) {
-    const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    fetch(`${SUPABASE_URL}/rest/v1/tags`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify({
-        id: tagId,
-        name: t.name,
-        color: t.color,
-        user_id: userId,
-      }),
-    }).catch(() => {});
+  // 2. Open Valut Website Tab so user sees processing and tags applied live!
+  if (payload.openWebsite !== false) {
+    try {
+      chrome.tabs.create({ url: serverUrl });
+    } catch {}
   }
 
-  // 4. Update Recent Saves list
+  // 3. Update Recent Saves list
   const recent = settings.recentSaves || [];
   const newRecent = [
     {
@@ -906,13 +848,13 @@ async function saveBookmarkCore(payload) {
       avatarUrl: bookmarkItem.avatar_url,
       imageUrl: bookmarkItem.image_url,
       createdAt: bookmarkItem.created_at_ms,
-      tags: bookmarkItem.tags,
+      tags: [],
     },
     ...recent,
   ].slice(0, 15);
   chrome.storage.local.set({ recentSaves: newRecent });
 
-  // 5. Badge notification
+  // 4. Badge notification
   chrome.action.setBadgeText({ text: '✓' });
   chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
