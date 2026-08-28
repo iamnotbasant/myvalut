@@ -183,18 +183,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function extractPreviewTags(text, platform) {
     const t = (text || '').toLowerCase();
-    const tags = [];
-    if (t.includes('ai') || t.includes('gpt') || t.includes('agent') || t.includes('claude')) tags.push({ name: 'AI', color: 'indigo' });
-    if (t.includes('react') || t.includes('next') || t.includes('web') || t.includes('code') || t.includes('ts')) tags.push({ name: 'Frontend', color: 'blue' });
-    if (t.includes('design') || t.includes('ui') || t.includes('ux') || t.includes('figma')) tags.push({ name: 'Design', color: 'pink' });
-    if (t.includes('finance') || t.includes('money') || t.includes('crypto') || t.includes('saas')) tags.push({ name: 'Product', color: 'teal' });
+    let category = 'tech';
+    const topics = [];
+    let type = 'resource';
 
-    if (platform && platform !== 'web') {
-      tags.push({ name: platform.charAt(0).toUpperCase() + platform.slice(1), color: 'amber' });
+    if (platform === 'youtube' || t.includes('premiere') || t.includes('video edit') || t.includes('davinci') || t.includes('after effects') || t.includes('capcut') || t.includes('speed ramp')) {
+      category = 'video-editing';
+      if (t.includes('premiere')) topics.push('premiere-pro');
+      else if (t.includes('davinci')) topics.push('davinci-resolve');
+      else if (t.includes('after effects')) topics.push('after-effects');
+      else topics.push('video-editing');
+      type = 'tutorial';
+    } else if (t.includes('ai') || t.includes('gpt') || t.includes('agent') || t.includes('claude') || t.includes('prompt')) {
+      category = 'ai';
+      if (t.includes('prompt')) topics.push('prompt-engineering');
+      else if (t.includes('agent')) topics.push('ai-agents');
+      else topics.push('ai-tools');
+      type = 'tool';
+    } else if (t.includes('react') || t.includes('next') || t.includes('web') || t.includes('code') || t.includes('ts')) {
+      category = 'tech';
+      if (t.includes('react')) topics.push('react');
+      else if (t.includes('next')) topics.push('next-js');
+      else topics.push('web-development');
+      type = 'tool';
+    } else if (t.includes('design') || t.includes('ui') || t.includes('ux') || t.includes('figma')) {
+      category = 'design';
+      topics.push('ui-ux');
+      type = 'showcase';
+    } else if (t.includes('calisthenics') || t.includes('fitness') || t.includes('workout')) {
+      category = 'fitness';
+      topics.push('calisthenics');
+      type = 'tutorial';
+    } else if (t.includes('finance') || t.includes('crypto') || t.includes('saas') || t.includes('startup')) {
+      if (t.includes('saas') || t.includes('startup')) {
+        category = 'business';
+        topics.push('saas');
+        type = 'case-study';
+      } else {
+        category = 'finance';
+        topics.push('crypto');
+        type = 'news';
+      }
     }
 
-    if (tags.length === 0) tags.push({ name: 'Bookmark', color: 'blue' });
-    return tags.slice(0, 3);
+    if (topics.length === 0) topics.push('resource');
+    const colorMap = {
+      'video-editing': 'violet',
+      'premiere-pro': 'violet',
+      'davinci-resolve': 'violet',
+      'after-effects': 'violet',
+      'ai': 'teal',
+      'prompt-engineering': 'teal',
+      'ai-agents': 'teal',
+      'ai-tools': 'teal',
+      'tech': 'teal',
+      'react': 'cyan',
+      'next-js': 'teal',
+      'web-development': 'teal',
+      'design': 'pink',
+      'ui-ux': 'cyan',
+      'fitness': 'green',
+      'calisthenics': 'green',
+      'business': 'cyan',
+      'saas': 'cyan',
+      'finance': 'teal',
+      'crypto': 'amber',
+      'tutorial': 'green',
+      'tool': 'cyan',
+      'resource': 'blue',
+      'showcase': 'blue',
+      'case-study': 'amber',
+      'news': 'red'
+    };
+
+    const combined = Array.from(new Set([category, ...topics, type])).slice(0, 4);
+    return combined.map(name => ({
+      name,
+      color: colorMap[name] || 'blue'
+    }));
   }
 
   // 4. Save Button Click

@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       customTags = [],
       geminiApiKey,
       note,
+      context,
     } = body;
 
     if (!url && !text) {
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Generate AI & Heuristic Tags
+    // 1. Generate AI & Heuristic Tags (3-5 strict taxonomy)
     const tags = await generateAutoTags(
       {
         title,
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
         platform,
         url,
         customTags,
+        context,
       },
       geminiApiKey || req.headers.get('x-gemini-key') || undefined
     );

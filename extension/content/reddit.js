@@ -44,47 +44,74 @@
 
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
-    const tags = [];
-    const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 4) {
-        tags.push({ name, color });
-      }
-    };
+    let category = 'tech';
+    const topics = [];
+    let type = 'guide';
 
     if (lower.includes('programming') || lower.includes('webdev') || lower.includes('react') || lower.includes('python') || lower.includes('coding') || lower.includes('javascript') || lower.includes('typescript')) {
-      add('tech', 'teal');
-      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
-      else add('web-development', 'teal');
-    }
-    if (lower.includes('github') || lower.includes('open source') || lower.includes('opensource') || lower.includes('repo')) {
-      add('open-source', 'green');
-      add('github', 'orange');
-    }
-    if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama') || lower.includes('deepseek')) {
-      add('ai', 'teal');
-      add('tool', 'cyan');
-    }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design') || lower.includes('figma')) {
-      add('ui', 'cyan');
-      add('design-inspiration', 'pink');
-    }
-    if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject') || lower.includes('indiehackers')) {
-      add('saas', 'cyan');
-      add('startup', 'green');
-    }
-    if (lower.includes('productivity') || lower.includes('workflow') || lower.includes('notion') || lower.includes('obsidian')) {
-      add('productivity', 'amber');
-      add('tool', 'cyan');
-    }
-
-    if (tags.length === 0) {
-      tags.push({ name: 'tech', color: 'teal' }, { name: 'open-source', color: 'green' }, { name: 'guide', color: 'green' });
-    } else if (tags.length === 1) {
-      if (tags[0].name === 'tech' || tags[0].name === 'ai') tags.push({ name: 'resource', color: 'blue' });
-      else tags.push({ name: 'guide', color: 'green' });
+      category = 'tech';
+      if (lower.includes('react')) topics.push('react');
+      if (lower.includes('python')) topics.push('python');
+      if (lower.includes('javascript') || lower.includes('typescript')) topics.push('web-development');
+      type = 'tutorial';
+    } else if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama') || lower.includes('deepseek')) {
+      category = 'ai';
+      topics.push('ai-tools', 'ml');
+      type = 'guide';
+    } else if (lower.includes('github') || lower.includes('open source') || lower.includes('opensource') || lower.includes('repo')) {
+      category = 'tech';
+      topics.push('open-source', 'github');
+      type = 'resource';
+    } else if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject') || lower.includes('indiehackers')) {
+      category = 'business';
+      topics.push('saas', 'startup');
+      type = 'case-study';
+    } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design') || lower.includes('figma')) {
+      category = 'design';
+      topics.push('ui-ux', 'figma');
+      type = 'showcase';
+    } else if (lower.includes('productivity') || lower.includes('workflow') || lower.includes('notion') || lower.includes('obsidian')) {
+      category = 'productivity';
+      topics.push('productivity', 'workflow');
+      type = 'tool';
     }
 
-    return tags.slice(0, 4);
+    if (topics.length === 0) {
+      topics.push('open-source', 'tech');
+    }
+
+    const tagNames = [category, ...topics.slice(0, 3), type];
+    const colorMap = {
+      'tech': 'teal',
+      'ai': 'teal',
+      'business': 'cyan',
+      'design': 'pink',
+      'productivity': 'amber',
+      'react': 'cyan',
+      'python': 'teal',
+      'web-development': 'teal',
+      'ai-tools': 'teal',
+      'ml': 'teal',
+      'open-source': 'green',
+      'github': 'orange',
+      'saas': 'cyan',
+      'startup': 'green',
+      'ui-ux': 'cyan',
+      'figma': 'pink',
+      'workflow': 'amber',
+      'guide': 'green',
+      'tutorial': 'green',
+      'resource': 'blue',
+      'case-study': 'amber',
+      'tool': 'cyan',
+      'showcase': 'blue'
+    };
+
+    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    return unique.map(name => ({
+      name,
+      color: colorMap[name] || 'blue'
+    }));
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

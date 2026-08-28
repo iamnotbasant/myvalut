@@ -138,10 +138,11 @@ const BANNED_GENERIC_TAGS = new Set([
   'page', 'today', 'daily', 'new', 'update', 'share', 'good', 'cool', 'awesome',
   'photo', 'image', 'picture', 'text', 'comment', 'discussion', 'feed', 'timeline',
   'status', 'read', 'view', 'click', 'here', 'look', 'check', 'out', 'this', 'that',
-  'stuff', 'thing', 'things', 'best', 'nice', 'great', 'amazing', 'item'
+  'stuff', 'thing', 'things', 'best', 'nice', 'great', 'amazing', 'item', 'bookmark'
 ]);
 
 const SYNONYM_MAP = {
+  // AI & ML
   'artificial-intelligence': 'ai',
   'artificialintelligence': 'ai',
   'machine-learning': 'ml',
@@ -151,21 +152,39 @@ const SYNONYM_MAP = {
   'large-language-model': 'llm',
   'llms': 'llm',
   'gpt4': 'gpt-4',
+  'gpt-4o': 'gpt-4',
   'chat-gpt': 'chatgpt',
+  'gen-ai': 'generative-ai',
+  'genai': 'generative-ai',
+  'agents': 'ai-agents',
+  'agent': 'ai-agents',
+  'ai-agent': 'ai-agents',
+  'prompting': 'prompt-engineering',
+
+  // Video & Motion
   'videoediting': 'video-editing',
   'video-edit': 'video-editing',
+  'adobe-premiere-pro': 'premiere-pro',
+  'adobe-premiere': 'premiere-pro',
   'premier-pro': 'premiere-pro',
   'premiere': 'premiere-pro',
   'premierepro': 'premiere-pro',
   'davinci': 'davinci-resolve',
+  'davinciresolve': 'davinci-resolve',
+  'aftereffects': 'after-effects',
   'motiongraphics': 'motion-design',
   'motion-graphics': 'motion-design',
   'graphicdesign': 'graphic-design',
   'visual-effects': 'fx',
   'vfx': 'fx',
+  'speed-ramp': 'speed-ramping',
+  'color-grading': 'color-grade',
+
+  // Coding & Design
   'user-interface': 'ui',
   'user-experience': 'ux',
   'ui-ux': 'ui-ux',
+  'uiux': 'ui-ux',
   'reactjs': 'react',
   'react-js': 'react',
   'nextjs': 'next-js',
@@ -174,48 +193,67 @@ const SYNONYM_MAP = {
   'typescript': 'ts',
   'tailwindcss': 'tailwind-css',
   'tailwind': 'tailwind-css',
+  'shadcn-ui': 'shadcn',
   'webdev': 'web-development',
+  'web-dev': 'web-development',
+  'node-js': 'nodejs',
+  'postgres': 'postgresql',
+  'open-source-software': 'open-source',
+  'opensource': 'open-source',
   'search-engine-optimization': 'seo',
-  'startups': 'startup',
+
+  // Fitness & Business
+  'bodyweight-training': 'calisthenics',
+  'bodyweight': 'calisthenics',
+  'personal-finance': 'finance',
   'cryptocurrency': 'crypto',
+  'startups': 'startup',
+  'micro-saas': 'saas',
 };
 
 const TOPIC_COLOR_MAP = {
+  'tech': 'teal',
+  'video-editing': 'violet',
+  'design': 'pink',
+  'finance': 'teal',
+  'fitness': 'green',
+  'business': 'cyan',
+  'marketing': 'orange',
+  'productivity': 'amber',
+  'gaming': 'indigo',
   'ai': 'teal',
   'ml': 'teal',
   'generative-ai': 'teal',
-  'video-editing': 'violet',
   'premiere-pro': 'violet',
   'after-effects': 'violet',
   'davinci-resolve': 'violet',
+  'capcut': 'violet',
   'motion-design': 'violet',
+  'fx': 'violet',
+  'speed-ramping': 'violet',
+  'color-grade': 'violet',
   'ui': 'cyan',
   'ux': 'cyan',
   'ui-ux': 'cyan',
   'figma': 'pink',
-  'design': 'pink',
-  'tech': 'teal',
   'web-development': 'teal',
   'react': 'cyan',
   'next-js': 'teal',
   'js': 'amber',
   'ts': 'teal',
   'tailwind-css': 'cyan',
+  'shadcn': 'blue',
   'python': 'teal',
   'supabase': 'green',
   'saas': 'cyan',
   'startup': 'green',
-  'marketing': 'orange',
   'seo': 'blue',
-  'finance': 'teal',
   'crypto': 'amber',
   'tutorial': 'green',
   'guide': 'green',
   'tool': 'cyan',
   'resource': 'blue',
-  'fitness': 'green',
   'calisthenics': 'green',
-  'productivity': 'amber',
 };
 
 function getTagColor(tagName, index = 0) {
@@ -225,7 +263,7 @@ function getTagColor(tagName, index = 0) {
   for (const [k, v] of Object.entries(TOPIC_COLOR_MAP)) {
     if (clean === k || clean.startsWith(k + '-') || clean.endsWith('-' + k)) return v;
   }
-  const palette = ['teal', 'amber', 'green', 'cyan', 'orange', 'red', 'violet', 'pink', 'blue', 'indigo'];
+  const palette = ['teal', 'violet', 'cyan', 'green', 'amber', 'pink', 'orange', 'blue', 'indigo', 'red'];
   let hash = 0;
   for (let i = 0; i < tagName.length; i++) hash = (hash + tagName.charCodeAt(i)) % palette.length;
   return palette[(hash + index) % palette.length];
@@ -233,14 +271,14 @@ function getTagColor(tagName, index = 0) {
 
 function cleanAndNormalizeTags(rawTags) {
   if (!Array.isArray(rawTags)) return [];
-  return rawTags
+  const cleaned = rawTags
     .map(tag => {
       if (typeof tag !== 'string') return '';
       return tag
         .toLowerCase()
         .trim()
         .replace(/^#+/, '')
-        .replace(/[_\s]+/g, '-')
+        .replace(/[_\s/]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
@@ -249,142 +287,309 @@ function cleanAndNormalizeTags(rawTags) {
     .map(tag => SYNONYM_MAP[tag] || tag)
     .filter(tag => !BANNED_GENERIC_TAGS.has(tag))
     .filter((tag, idx, arr) => arr.indexOf(tag) === idx)
-    .slice(0, 4)
-    .map((name, idx) => ({
-      name,
-      color: getTagColor(name, idx)
-    }));
+    .slice(0, 5);
+
+  return cleaned.map((name, idx) => ({
+    name,
+    color: getTagColor(name, idx)
+  }));
 }
 
-function generateLocalAiTags(payload) {
-  const textBlob = `${payload.title || ''} ${payload.text || ''} ${payload.url || ''}`.toLowerCase();
-  const rawList = [];
+// Preprocess Platform Raw Input (High Signal Truncation)
+function preprocessPlatformInput(payload) {
+  const platform = (payload.platform || 'web').toLowerCase();
+  const rawText = payload.text || '';
+  const title = payload.title ? `Title: ${payload.title.trim()}\n` : '';
+  const context = payload.context ? payload.context.trim() : '';
 
-  // 1. Hashtags extraction (if valid)
+  switch (platform) {
+    case 'youtube': {
+      const descPart = rawText.slice(0, 500);
+      const transcriptWords = context ? context.split(/\s+/).slice(0, 200).join(' ') : '';
+      const transcriptPart = transcriptWords ? `\nTranscript: ${transcriptWords}` : '';
+      return `${title}Description: ${descPart}${transcriptPart}`.trim().slice(0, 1000);
+    }
+    case 'instagram':
+    case 'reels':
+    case 'tiktok': {
+      const caption = rawText.slice(0, 400);
+      const audioText = context ? `\nAudio Transcript: ${context.slice(0, 150)}` : '';
+      return `${title}Caption: ${caption}${audioText}`.trim().slice(0, 500);
+    }
+    case 'twitter':
+    case 'x':
+    case 'threads':
+    case 'bluesky': {
+      const quoteText = context ? `\nQuoted Tweet: ${context.slice(0, 250)}` : '';
+      return `${title}Tweet: ${rawText}${quoteText}`.trim().slice(0, 500);
+    }
+    case 'reddit': {
+      return `${title}Post Body: ${rawText}`.trim().slice(0, 1000);
+    }
+    case 'web':
+    default: {
+      return `${title}Content: ${rawText}`.trim().slice(0, 1200);
+    }
+  }
+}
+
+function hasPattern(text, pattern) {
+  if (pattern.length <= 4) {
+    const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i');
+    return rx.test(text);
+  }
+  return text.includes(pattern);
+}
+
+// Local Semantic AI Classifier (Strict 3-5 Standardized Tags: 1 Category + 2-3 Topics + 1 Type)
+function generateLocalAiTags(payload) {
+  const textBlob = `${payload.title || ''} ${payload.text || ''} ${payload.url || ''} ${payload.context || ''}`.toLowerCase();
+  
+  let detectedCategory = null;
+  const detectedTopics = [];
+  let detectedType = null;
+
+  // 1. Hashtags
   const hashtagRegex = /#([a-zA-Z0-9_-]{2,25})/g;
   let match;
   while ((match = hashtagRegex.exec(payload.text || '')) !== null) {
     const rawTag = match[1].toLowerCase().replace(/_/g, '-');
-    if (!BANNED_GENERIC_TAGS.has(rawTag) && rawTag.length >= 2) {
-      rawList.push(rawTag);
+    const normalized = SYNONYM_MAP[rawTag] || rawTag;
+    if (!BANNED_GENERIC_TAGS.has(normalized) && normalized.length >= 2 && !detectedTopics.includes(normalized)) {
+      detectedTopics.push(normalized);
     }
   }
 
-  // 2. Curated Domain Taxonomy Mapping (Category + Topic + Type)
-  const domainRules = [
-    // Video Editing & Animation
-    { patterns: ['premiere pro', 'premiere', 'video edit', 'video editing', 'davinci resolve', 'davinci', 'capcut', 'after effects', 'speed ramp', 'speed ramping', 'color grading', 'lut', 'transition', 'b-roll', 'timeline edit'], tags: ['video-editing', 'premiere-pro', 'tutorial'] },
-    { patterns: ['motion design', 'motion graphics', 'framer motion', 'gsap', 'lottie', 'rive', '2d animation', '3d animation', 'smooth animation', 'keyframe'], tags: ['motion-design', 'animation', 'resource'] },
-    { patterns: ['thumbnail', 'photo editing', 'photoshop', 'lightroom', 'retouching', 'poster design', 'graphic design'], tags: ['graphic-design', 'photo-editing', 'design-inspiration'] },
-
-    // Design, UI & UX
-    { patterns: ['ui design', 'ux design', 'ui/ux', 'user interface', 'user experience', 'figma', 'figjam', 'wireframe', 'prototype', 'ui component', 'dark mode', 'design system', 'design tokens', 'typography', 'landing page design', 'hero section', 'web design'], tags: ['ui', 'ux', 'design-inspiration'] },
-    { patterns: ['3d design', 'blender', 'three.js', 'webgl', 'spline', 'cinema 4d', 'render'], tags: ['design', '3d-design', 'resource'] },
-
-    // AI, LLMs & Agents
-    { patterns: ['claude opus', 'claude sonnet', 'claude', 'anthropic', 'chatgpt', 'gpt-4', 'openai', 'gemini', 'deepseek', 'deepseek-r1', 'llm', 'large language model', 'prompt engineering', 'system prompt', 'prompting', 'ai agent', 'agents', 'crewai', 'langchain', 'langgraph', 'generative ai', 'genai', 'cursor ai', 'v0.dev', 'copilot'], tags: ['ai', 'prompt-engineering', 'tool'] },
-    { patterns: ['machine learning', 'deep learning', 'neural network', 'pytorch', 'tensorflow', 'model weights', 'rag', 'vector database'], tags: ['ai', 'ml', 'guide'] },
-
-    // Web Development & Frontend
-    { patterns: ['next.js', 'nextjs', 'react 19', 'react hooks', 'reactjs', 'react', 'tailwind css', 'tailwindcss', 'shadcn', 'shadcn/ui', 'radix', 'frontend', 'webdev', 'typescript', 'javascript', 'css grid', 'flexbox', 'html5', 'responsive design'], tags: ['tech', 'web-development', 'react'] },
-    { patterns: ['vue', 'vuejs', 'svelte', 'sveltekit', 'astro', 'remix', 'angular', 'vite'], tags: ['tech', 'web-development', 'framework'] },
-
-    // Backend, Database & Cloud
-    { patterns: ['supabase', 'postgresql', 'postgres', 'sqlite', 'prisma', 'drizzle', 'database', 'sql', 'backend', 'api', 'rest api', 'graphql'], tags: ['tech', 'supabase', 'tool'] },
-    { patterns: ['python', 'fastapi', 'flask', 'django', 'rust', 'golang', 'node.js', 'nodejs', 'bun', 'deno'], tags: ['tech', 'backend', 'tutorial'] },
-    { patterns: ['docker', 'kubernetes', 'devops', 'aws', 'gcp', 'cloudflare', 'vercel', 'deploy', 'ci/cd'], tags: ['tech', 'devops', 'resource'] },
-    { patterns: ['github', 'open source', 'opensource', 'git repo', 'repository'], tags: ['open-source', 'github', 'resource'] },
-
-    // Business, SaaS & Marketing
-    { patterns: ['micro saas', 'saas', 'mrr', 'arr', 'bootstrapped', 'indie hacker', 'build in public', 'launching', 'product hunt'], tags: ['saas', 'startup', 'case-study'] },
-    { patterns: ['marketing', 'seo', 'conversion rate', 'copywriting', 'growth hack', 'distribution', 'audience'], tags: ['marketing', 'seo', 'guide'] },
-    { patterns: ['crypto', 'bitcoin', 'ethereum', 'solana', 'investing', 'trading', 'stocks', 'personal finance'], tags: ['finance', 'crypto', 'news'] },
-
-    // Productivity & Fitness
-    { patterns: ['calisthenics', 'bodyweight', 'pullups', 'pushups', 'workout', 'fitness', 'gym'], tags: ['fitness', 'calisthenics', 'tutorial'] },
-    { patterns: ['productivity', 'workflow', 'notion', 'second brain', 'obsidian', 'time management', 'automation'], tags: ['productivity', 'workflow', 'tool'] },
-    { patterns: ['gta 6', 'gta6', 'gta', 'gaming', 'playstation', 'ps5', 'xbox', 'steam', 'gameplay'], tags: ['gaming', 'trailer', 'showcase'] },
-  ];
-
-  for (const rule of domainRules) {
-    if (rawList.length >= 4) break;
-    const isMatched = rule.patterns.some(p => textBlob.includes(p));
-    if (isMatched) {
-      for (const t of rule.tags) {
-        if (!rawList.includes(t) && rawList.length < 4) {
-          rawList.push(t);
-        }
-      }
+  // 2. Domain Taxonomy
+  if (
+    hasPattern(textBlob, 'premiere') ||
+    hasPattern(textBlob, 'video edit') ||
+    hasPattern(textBlob, 'davinci') ||
+    hasPattern(textBlob, 'after effects') ||
+    hasPattern(textBlob, 'capcut') ||
+    hasPattern(textBlob, 'speed ramp') ||
+    hasPattern(textBlob, 'color grade') ||
+    hasPattern(textBlob, 'lut') ||
+    hasPattern(textBlob, 'timeline') ||
+    hasPattern(textBlob, 'b-roll') ||
+    hasPattern(textBlob, 'transition') ||
+    hasPattern(textBlob, 'motion graphic') ||
+    hasPattern(textBlob, 'keyframe')
+  ) {
+    detectedCategory = 'video-editing';
+    if (hasPattern(textBlob, 'premiere')) detectedTopics.push('premiere-pro');
+    if (hasPattern(textBlob, 'after effects') || hasPattern(textBlob, 'ae')) detectedTopics.push('after-effects');
+    if (hasPattern(textBlob, 'davinci')) detectedTopics.push('davinci-resolve');
+    if (hasPattern(textBlob, 'capcut')) detectedTopics.push('capcut');
+    if (hasPattern(textBlob, 'speed ramp')) detectedTopics.push('speed-ramping');
+    if (hasPattern(textBlob, 'color grade') || hasPattern(textBlob, 'lut')) detectedTopics.push('color-grade');
+    if (hasPattern(textBlob, 'motion') || hasPattern(textBlob, 'animation')) detectedTopics.push('motion-design');
+    if (hasPattern(textBlob, 'fx') || hasPattern(textBlob, 'vfx')) detectedTopics.push('fx');
+  } else if (
+    hasPattern(textBlob, 'calisthenics') ||
+    hasPattern(textBlob, 'bodyweight') ||
+    hasPattern(textBlob, 'pullup') ||
+    hasPattern(textBlob, 'pushup') ||
+    hasPattern(textBlob, 'workout') ||
+    hasPattern(textBlob, 'fitness') ||
+    hasPattern(textBlob, 'gym')
+  ) {
+    detectedCategory = 'fitness';
+    if (hasPattern(textBlob, 'calisthenics') || hasPattern(textBlob, 'bodyweight') || hasPattern(textBlob, 'pullup')) {
+      detectedTopics.push('calisthenics');
+    }
+  } else if (
+    hasPattern(textBlob, 'claude') ||
+    hasPattern(textBlob, 'chatgpt') ||
+    hasPattern(textBlob, 'gpt-4') ||
+    hasPattern(textBlob, 'openai') ||
+    hasPattern(textBlob, 'gemini') ||
+    hasPattern(textBlob, 'deepseek') ||
+    hasPattern(textBlob, 'llm') ||
+    hasPattern(textBlob, 'prompt') ||
+    hasPattern(textBlob, 'prompting') ||
+    hasPattern(textBlob, 'agent') ||
+    hasPattern(textBlob, 'generative ai') ||
+    hasPattern(textBlob, 'genai') ||
+    hasPattern(textBlob, 'machine learning')
+  ) {
+    detectedCategory = 'ai';
+    if (hasPattern(textBlob, 'chatgpt') || hasPattern(textBlob, 'gpt')) detectedTopics.push('chatgpt');
+    if (hasPattern(textBlob, 'claude')) detectedTopics.push('claude');
+    if (hasPattern(textBlob, 'deepseek')) detectedTopics.push('deepseek');
+    if (hasPattern(textBlob, 'agent')) detectedTopics.push('ai-agents');
+    if (hasPattern(textBlob, 'prompt') || hasPattern(textBlob, 'prompting')) detectedTopics.push('prompt-engineering');
+    if (hasPattern(textBlob, 'machine learning')) detectedTopics.push('ml');
+  } else if (
+    hasPattern(textBlob, 'next.js') ||
+    hasPattern(textBlob, 'nextjs') ||
+    hasPattern(textBlob, 'react') ||
+    hasPattern(textBlob, 'tailwind') ||
+    hasPattern(textBlob, 'shadcn') ||
+    hasPattern(textBlob, 'typescript') ||
+    hasPattern(textBlob, 'javascript') ||
+    hasPattern(textBlob, 'supabase') ||
+    hasPattern(textBlob, 'python') ||
+    hasPattern(textBlob, 'docker') ||
+    hasPattern(textBlob, 'github') ||
+    hasPattern(textBlob, 'web dev')
+  ) {
+    detectedCategory = 'tech';
+    if (hasPattern(textBlob, 'react')) detectedTopics.push('react');
+    if (hasPattern(textBlob, 'next') || hasPattern(textBlob, 'nextjs') || hasPattern(textBlob, 'next.js')) detectedTopics.push('next-js');
+    if (hasPattern(textBlob, 'tailwind')) detectedTopics.push('tailwind-css');
+    if (hasPattern(textBlob, 'shadcn')) detectedTopics.push('shadcn');
+    if (hasPattern(textBlob, 'typescript') || hasPattern(textBlob, 'ts')) detectedTopics.push('ts');
+    if (hasPattern(textBlob, 'javascript') || hasPattern(textBlob, 'js')) detectedTopics.push('js');
+    if (hasPattern(textBlob, 'supabase')) detectedTopics.push('supabase');
+    if (hasPattern(textBlob, 'python')) detectedTopics.push('python');
+    if (hasPattern(textBlob, 'github') || hasPattern(textBlob, 'open source')) detectedTopics.push('open-source');
+    if (detectedTopics.length === 0) detectedTopics.push('web-development');
+  } else if (
+    hasPattern(textBlob, 'ui') ||
+    hasPattern(textBlob, 'ux') ||
+    hasPattern(textBlob, 'figma') ||
+    hasPattern(textBlob, 'design system') ||
+    hasPattern(textBlob, 'graphic design') ||
+    hasPattern(textBlob, 'typography') ||
+    hasPattern(textBlob, 'blender') ||
+    hasPattern(textBlob, '3d')
+  ) {
+    detectedCategory = 'design';
+    if (hasPattern(textBlob, 'ui') || hasPattern(textBlob, 'ux')) detectedTopics.push('ui-ux');
+    if (hasPattern(textBlob, 'figma')) detectedTopics.push('figma');
+    if (hasPattern(textBlob, 'typography') || hasPattern(textBlob, 'font')) detectedTopics.push('typography');
+    if (hasPattern(textBlob, 'graphic')) detectedTopics.push('graphic-design');
+    if (hasPattern(textBlob, '3d') || hasPattern(textBlob, 'blender')) detectedTopics.push('3d-design');
+  } else if (
+    hasPattern(textBlob, 'crypto') ||
+    hasPattern(textBlob, 'bitcoin') ||
+    hasPattern(textBlob, 'finance') ||
+    hasPattern(textBlob, 'saas') ||
+    hasPattern(textBlob, 'startup') ||
+    hasPattern(textBlob, 'seo')
+  ) {
+    if (hasPattern(textBlob, 'saas') || hasPattern(textBlob, 'startup')) {
+      detectedCategory = 'business';
+      if (hasPattern(textBlob, 'saas')) detectedTopics.push('saas');
+      if (hasPattern(textBlob, 'startup')) detectedTopics.push('startup');
+    } else if (hasPattern(textBlob, 'seo')) {
+      detectedCategory = 'marketing';
+      detectedTopics.push('seo');
+    } else {
+      detectedCategory = 'finance';
+      if (hasPattern(textBlob, 'crypto') || hasPattern(textBlob, 'bitcoin')) detectedTopics.push('crypto');
     }
   }
 
-  // Include user custom tags if provided
+  // Fallback category
+  if (!detectedCategory) {
+    const platform = (payload.platform || 'web').toLowerCase();
+    if (platform === 'youtube') detectedCategory = 'video-editing';
+    else if (platform === 'instagram') detectedCategory = 'design';
+    else detectedCategory = 'tech';
+  }
+
+  // Content type
+  if (
+    hasPattern(textBlob, 'tutorial') ||
+    hasPattern(textBlob, 'how to') ||
+    hasPattern(textBlob, 'learn') ||
+    hasPattern(textBlob, 'course')
+  ) {
+    detectedType = 'tutorial';
+  } else if (
+    hasPattern(textBlob, 'tool') ||
+    hasPattern(textBlob, 'app') ||
+    hasPattern(textBlob, 'software') ||
+    hasPattern(textBlob, 'plugin')
+  ) {
+    detectedType = 'tool';
+  } else if (
+    hasPattern(textBlob, 'guide') ||
+    hasPattern(textBlob, 'cheatsheet')
+  ) {
+    detectedType = 'guide';
+  } else if (
+    hasPattern(textBlob, 'case study') ||
+    hasPattern(textBlob, 'breakdown')
+  ) {
+    detectedType = 'case-study';
+  } else if (
+    hasPattern(textBlob, 'news') ||
+    hasPattern(textBlob, 'launch') ||
+    hasPattern(textBlob, 'release')
+  ) {
+    detectedType = 'news';
+  } else if (
+    hasPattern(textBlob, 'framework') ||
+    hasPattern(textBlob, 'template')
+  ) {
+    detectedType = 'framework';
+  } else {
+    detectedType = detectedCategory === 'video-editing' ? 'tutorial' : 'resource';
+  }
+
+  // User custom tags
   if (payload.customTags && Array.isArray(payload.customTags)) {
     for (const ct of payload.customTags) {
-      if (!rawList.includes(ct) && rawList.length < 4) {
-        rawList.push(ct);
-      }
+      if (!detectedTopics.includes(ct)) detectedTopics.push(ct);
     }
   }
 
-  // Smart Platform-Aware Multi-Tag Fallback (Guarantees strictly 2-3 accurate tags)
-  if (rawList.length < 2) {
-    const platform = (payload.platform || 'web').toLowerCase();
-    if (platform === 'youtube') {
-      rawList.push('video-editing', 'tutorial', 'resource');
-    } else if (platform === 'instagram' || platform === 'reels') {
-      rawList.push('design-inspiration', 'photo-editing', 'showcase');
-    } else if (platform === 'twitter' || platform === 'x' || platform === 'threads') {
-      rawList.push('tech', 'web-development', 'resource');
-    } else if (platform === 'reddit') {
-      rawList.push('tech', 'open-source', 'guide');
-    } else if (platform === 'tiktok') {
-      rawList.push('motion-design', 'video-editing', 'showcase');
-    } else {
-      rawList.push('tech', 'resource', 'guide');
-    }
+  // Ensure topics
+  if (detectedTopics.length === 0) {
+    if (detectedCategory === 'video-editing') detectedTopics.push('premiere-pro', 'video-editing');
+    else if (detectedCategory === 'ai') detectedTopics.push('ai-tools', 'prompt-engineering');
+    else if (detectedCategory === 'tech') detectedTopics.push('web-development', 'react');
+    else if (detectedCategory === 'design') detectedTopics.push('ui-ux', 'figma');
+    else if (detectedCategory === 'fitness') detectedTopics.push('calisthenics', 'fitness');
+    else detectedTopics.push('resource');
   }
 
-  const result = cleanAndNormalizeTags(rawList);
-  return result.length >= 2 ? result : cleanAndNormalizeTags(['tech', 'resource']);
+  const combined = [detectedCategory, ...detectedTopics.slice(0, 3), detectedType];
+  const normalized = cleanAndNormalizeTags(combined);
+  return normalized.length >= 3 ? normalized.slice(0, 5) : cleanAndNormalizeTags([detectedCategory, 'resource', 'guide', detectedType]);
 }
 
-// Background Gemini Tag Generator (Runs Asynchronously)
+// Background Gemini Tag Generator (Structured JSON Schema)
 async function generateGeminiTags(payload, apiKey) {
   if (!apiKey) return null;
 
   const models = [
-    'gemini-3.6-flash',
-    'gemini-3.7-flash',
-    'gemini-3.5-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash-lite',
     'gemini-flash-latest'
   ];
 
-  const prompt = `You are an automated categorization and tagging engine for a personal knowledge vault.
+  const systemInstruction = `You are an automated categorization and tagging engine for a personal knowledge vault.
 Analyze the provided content metadata and generate clean, standardized tags in JSON format.
 
 RULES FOR TAG GENERATION:
-1. Generate strictly 2 to 4 tags total.
-2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "premiere-pro", "speed-ramping", "tutorial").
-3. NO duplicate or near-synonym tags (e.g., do not use both "ai" and "artificial-intelligence").
+1. Generate minimum 3 and maximum 5 tags.
+2. Format: STRICTLY lowercase, kebab-case (e.g., "video-editing", "ai-tools", "trading-strategy").
+3. NO duplicates or near-synonyms (e.g., do not use both "ai" and "artificial-intelligence").
 4. ALWAYS prefer shorter, industry-standard acronyms over long descriptions (e.g., use "ai" instead of "artificial-intelligence", "seo" instead of "search-engine-optimization", "fx" instead of "visual-effects").
 5. Structure output:
-   - "category": 1 broad domain (e.g. "tech", "video-editing", "design", "ai", "business", "finance", "fitness", "productivity")
-   - "topics": 1-2 specific subject matter or tools (e.g. ["premiere-pro", "speed-ramping"] or ["next-js", "supabase"])
-   - "type": 1 format (e.g. "tutorial", "tool", "resource", "guide", "case-study", "showcase", "inspiration")
-   - "all_tags": Ordered array [category, ...topics, type]
+   - "category": Broad domain (1 item: e.g., "tech", "video-editing", "design", "finance", "fitness", "productivity", "marketing", "business")
+   - "topics": Core subject or tools mentioned (2-3 items: e.g., ["premiere-pro", "speed-ramping"])
+   - "type": Nature of content (1 item: e.g., "tutorial", "tool", "resource", "news", "guide", "framework")
+   - "all_tags": Combined ordered list of tags (strictly 3 to 5 items)
 
-Platform: ${payload.platform || 'web'}
-Title: ${payload.title || ''}
-Content: ${(payload.text || payload.title || '').slice(0, 800)}
-
-Return ONLY valid JSON:
+OUTPUT FORMAT (JSON ONLY):
 {
   "category": "string",
   "topics": ["string", "string"],
   "type": "string",
-  "all_tags": ["string", "string", "string"]
+  "all_tags": ["string", "string", "string", "string"]
 }`;
+
+  const preprocessed = preprocessPlatformInput(payload);
+  const userContent = `Platform: ${payload.platform || 'web'}\nTitle: ${payload.title || ''}\nContent/Context: ${preprocessed}`;
 
   for (const model of models) {
     try {
@@ -392,11 +597,15 @@ Return ONLY valid JSON:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [
+            {
+              parts: [{ text: `${systemInstruction}\n\nINPUT:\n${userContent}\n\nOUTPUT (JSON ONLY):` }]
+            }
+          ],
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.1,
-            maxOutputTokens: 250,
+            maxOutputTokens: 300,
           },
         }),
       });
@@ -413,7 +622,7 @@ Return ONLY valid JSON:
         ...(parsed.type ? [parsed.type] : [])
       ];
       const normalized = cleanAndNormalizeTags(tagArray);
-      if (normalized.length >= 2) return normalized;
+      if (normalized.length >= 3) return normalized.slice(0, 5);
     } catch (err) {
       // try next model
     }
@@ -440,11 +649,12 @@ async function enrichTagsInBackground(bookmarkId, payload, apiKey, serverUrl = D
             text: payload.text || payload.title,
             url: payload.url,
             platform: payload.platform,
+            context: payload.context,
           }),
         });
         if (tagRes.ok) {
           const tagData = await tagRes.json();
-          if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length > 0) {
+          if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length >= 3) {
             aiTags = tagData.tags;
           }
         }
@@ -543,7 +753,7 @@ async function saveBookmarkCore(payload) {
     year: 'numeric',
   });
 
-  // 1. Generate Instant Local AI Tags in 0ms
+  // 1. Generate Instant Local AI Tags (3-5 strict taxonomy) in 0ms
   const initialTags = generateLocalAiTags(payload);
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 

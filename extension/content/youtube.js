@@ -23,6 +23,14 @@
     let text = '';
     let imageUrl = '';
     let pageUrl = window.location.href;
+    let extractedKeywords = '';
+    let transcriptText = '';
+
+    // Extract meta keywords (contains video tags from creator)
+    const metaKeywords = document.querySelector('meta[name="keywords"]')?.getAttribute('content');
+    if (metaKeywords) {
+      extractedKeywords = metaKeywords;
+    }
 
     if (isShorts) {
       const activeReel = document.querySelector('ytd-reel-video-renderer[is-active]') || document;
@@ -37,7 +45,7 @@
       }
     } else {
       const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1 yt-formatted-string, h1.title yt-formatted-string, #container h1');
-      title = titleEl?.textContent?.trim() || document.title.replace(' - YouTube', '');
+      title = titleEl?.textContent?.trim() || document.querySelector('meta[name="title"]')?.getAttribute('content') || document.title.replace(' - YouTube', '');
 
       const channelEl = document.querySelector('#owner #channel-name a, ytd-video-owner-renderer #channel-name a, #upload-info #channel-name a, ytd-channel-name a');
       authorName = channelEl?.textContent?.trim() || 'YouTube Creator';
@@ -47,7 +55,20 @@
       avatarUrl = avatarEl?.getAttribute('src') || avatarEl?.getAttribute('data-src') || '';
 
       const descEl = document.querySelector('#description-inline-expander yt-attributed-string, #description yt-formatted-string, #description-text');
-      text = descEl?.textContent?.trim()?.slice(0, 800) || title;
+      const rawDesc = descEl?.textContent?.trim() || document.querySelector('meta[name="description"]')?.getAttribute('content') || document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
+      
+      // High-signal text combining description and creator tags
+      text = rawDesc.slice(0, 600);
+      if (extractedKeywords) {
+        text = `${text}\nKeywords: ${extractedKeywords.slice(0, 300)}`.trim();
+      }
+
+      // Check if transcript drawer is open
+      const transcriptSegments = document.querySelectorAll('ytd-transcript-segment-renderer yt-formatted-string, #segments-container yt-formatted-string');
+      if (transcriptSegments.length > 0) {
+        const words = Array.from(transcriptSegments).map(s => s.textContent.trim()).filter(Boolean).slice(0, 200).join(' ');
+        if (words) transcriptText = words;
+      }
 
       if (videoId) {
         imageUrl = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
@@ -59,6 +80,7 @@
       platform: 'youtube',
       title: title || 'YouTube Video',
       text: text || title || 'Saved YouTube Video',
+      context: transcriptText || extractedKeywords || undefined,
       displayName: authorName || 'YouTube Creator',
       username: authorHandle || 'youtube',
       avatarUrl: avatarUrl || undefined,
@@ -66,55 +88,83 @@
     };
   }
 
+  // Smart 3-5 Tag Taxonomy (Category + 2-3 Topics + 1 Type)
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
-    const tags = [];
-    const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 4) {
-        tags.push({ name, color });
+    let category = 'video-editing';
+    const topics = [];
+    let type = 'tutorial';
+
+    if (lower.includes('premiere')) topics.push('premiere-pro');
+    if (lower.includes('after effects') || lower.includes('ae')) topics.push('after-effects');
+    if (lower.includes('davinci')) topics.push('davinci-resolve');
+    if (lower.includes('capcut')) topics.push('capcut');
+    if (lower.includes('speed ramp')) topics.push('speed-ramping');
+    if (lower.includes('color grade') || lower.includes('lut')) topics.push('color-grade');
+    if (lower.includes('motion') || lower.includes('animation')) topics.push('motion-design');
+    if (lower.includes('transition') || lower.includes('fx') || lower.includes('vfx')) topics.push('fx');
+
+    if (topics.length === 0) {
+      if (lower.includes('ai') || lower.includes('chatgpt') || lower.includes('claude') || lower.includes('prompt') || lower.includes('agent')) {
+        category = 'ai';
+        topics.push('ai-tools', 'prompt-engineering');
+      } else if (lower.includes('code') || lower.includes('react') || lower.includes('next.js') || lower.includes('web dev') || lower.includes('programming')) {
+        category = 'tech';
+        topics.push('web-development', 'react');
+      } else if (lower.includes('design') || lower.includes('figma') || lower.includes('ui') || lower.includes('ux')) {
+        category = 'design';
+        topics.push('ui-ux', 'figma');
+      } else if (lower.includes('calisthenics') || lower.includes('workout') || lower.includes('fitness')) {
+        category = 'fitness';
+        topics.push('calisthenics', 'fitness');
+      } else {
+        topics.push('premiere-pro', 'video-editing');
       }
+    }
+
+    if (lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
+      type = 'tutorial';
+    } else if (lower.includes('tool') || lower.includes('plugin') || lower.includes('extension') || lower.includes('preset')) {
+      type = 'tool';
+    } else if (lower.includes('case study') || lower.includes('breakdown')) {
+      type = 'case-study';
+    } else {
+      type = 'tutorial';
+    }
+
+    const tagNames = [category, ...topics.slice(0, 3), type];
+    const colorMap = {
+      'video-editing': 'violet',
+      'premiere-pro': 'violet',
+      'after-effects': 'violet',
+      'davinci-resolve': 'violet',
+      'capcut': 'violet',
+      'speed-ramping': 'violet',
+      'color-grade': 'violet',
+      'motion-design': 'violet',
+      'fx': 'violet',
+      'ai': 'teal',
+      'ai-tools': 'teal',
+      'prompt-engineering': 'teal',
+      'tech': 'teal',
+      'web-development': 'teal',
+      'react': 'cyan',
+      'design': 'pink',
+      'ui-ux': 'cyan',
+      'figma': 'pink',
+      'fitness': 'green',
+      'calisthenics': 'green',
+      'tutorial': 'green',
+      'tool': 'cyan',
+      'case-study': 'amber',
+      'resource': 'blue'
     };
 
-    if (lower.includes('premiere') || lower.includes('video edit') || lower.includes('davinci') || lower.includes('after effects') || lower.includes('capcut') || lower.includes('speed ramp') || lower.includes('color grade')) {
-      add('video-editing', 'violet');
-      if (lower.includes('premiere')) add('premiere-pro', 'violet');
-      else if (lower.includes('after effects')) add('after-effects', 'violet');
-      else if (lower.includes('davinci')) add('davinci-resolve', 'violet');
-    }
-    if (lower.includes('motion') || lower.includes('animation') || lower.includes('gsap') || lower.includes('framer')) {
-      add('motion-design', 'violet');
-      add('animation', 'violet');
-    }
-    if (lower.includes('ai') || lower.includes('llm') || lower.includes('gpt') || lower.includes('agent') || lower.includes('claude') || lower.includes('deepseek')) {
-      add('ai', 'teal');
-      if (lower.includes('prompt')) add('prompt-engineering', 'teal');
-    }
-    if (lower.includes('code') || lower.includes('programming') || lower.includes('react') || lower.includes('next.js') || lower.includes('developer') || lower.includes('web dev') || lower.includes('javascript') || lower.includes('typescript')) {
-      add('tech', 'teal');
-      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
-      else add('web-development', 'teal');
-    }
-    if (lower.includes('figma') || lower.includes('ui') || lower.includes('ux') || lower.includes('design') || lower.includes('3d') || lower.includes('blender')) {
-      add('design', 'pink');
-      if (lower.includes('ui') || lower.includes('ux')) add('ui-ux', 'cyan');
-    }
-    if (lower.includes('tutorial') || lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
-      add('tutorial', 'green');
-    }
-    if (lower.includes('finance') || lower.includes('crypto') || lower.includes('stock') || lower.includes('investing')) {
-      add('finance', 'teal');
-      add('crypto', 'amber');
-    }
-
-    if (tags.length === 0) {
-      tags.push({ name: 'video-editing', color: 'violet' }, { name: 'tutorial', color: 'green' }, { name: 'resource', color: 'blue' });
-    } else if (tags.length === 1) {
-      if (tags[0].name === 'video-editing') tags.push({ name: 'tutorial', color: 'green' });
-      else if (tags[0].name === 'tech' || tags[0].name === 'ai') tags.push({ name: 'resource', color: 'blue' });
-      else tags.push({ name: 'showcase', color: 'blue' });
-    }
-
-    return tags.slice(0, 4);
+    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    return unique.map(name => ({
+      name,
+      color: colorMap[name] || 'blue'
+    }));
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';
@@ -127,7 +177,7 @@
       year: 'numeric',
     });
 
-    const smartTags = extractSmartTags(payload.text + ' ' + payload.title);
+    const smartTags = extractSmartTags(payload.text + ' ' + payload.title + ' ' + (payload.context || ''));
 
     const bookmarkItem = {
       id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,

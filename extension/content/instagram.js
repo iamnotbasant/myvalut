@@ -48,50 +48,71 @@
 
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
-    const tags = [];
-    const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 4) {
-        tags.push({ name, color });
-      }
-    };
+    let category = 'design';
+    const topics = [];
+    let type = 'showcase';
 
     if (lower.includes('photo') || lower.includes('preset') || lower.includes('lightroom') || lower.includes('photoshop') || lower.includes('camera') || lower.includes('portrait') || lower.includes('retouch')) {
-      add('photo-editing', 'violet');
-      add('design-inspiration', 'pink');
+      topics.push('photo-editing', 'graphic-design');
     }
     if (lower.includes('motion') || lower.includes('animation') || lower.includes('reels') || lower.includes('transition') || lower.includes('vfx') || lower.includes('render')) {
-      add('motion-design', 'violet');
-      add('animation', 'violet');
+      category = 'video-editing';
+      topics.push('motion-design', 'animation');
     }
     if (lower.includes('graphic') || lower.includes('poster') || lower.includes('branding') || lower.includes('logo') || lower.includes('typography') || lower.includes('font')) {
-      add('graphic-design', 'pink');
-      add('design-inspiration', 'pink');
+      topics.push('graphic-design', 'typography');
     }
     if (lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('interface') || lower.includes('wireframe') || lower.includes('design system')) {
-      add('ui', 'cyan');
-      add('ux', 'cyan');
+      topics.push('ui-ux', 'figma');
     }
     if (lower.includes('ai') || lower.includes('midjourney') || lower.includes('genai') || lower.includes('chatgpt') || lower.includes('flux')) {
-      add('ai', 'teal');
-      add('tool', 'cyan');
+      category = 'ai';
+      topics.push('ai-tools', 'prompt-engineering');
+      type = 'tool';
     }
     if (lower.includes('setup') || lower.includes('workspace') || lower.includes('desk') || lower.includes('minimal')) {
-      add('design-inspiration', 'pink');
-      add('productivity', 'amber');
+      topics.push('design-system', 'productivity');
     }
     if (lower.includes('growth') || lower.includes('business') || lower.includes('marketing') || lower.includes('founder') || lower.includes('creator')) {
-      add('marketing', 'orange');
-      add('startup', 'green');
+      category = 'marketing';
+      topics.push('startup', 'seo');
+      type = 'guide';
     }
 
-    if (tags.length === 0) {
-      tags.push({ name: 'design-inspiration', color: 'pink' }, { name: 'photo-editing', color: 'violet' }, { name: 'showcase', color: 'blue' });
-    } else if (tags.length === 1) {
-      if (tags[0].name === 'ui' || tags[0].name === 'graphic-design') tags.push({ name: 'design-inspiration', color: 'pink' });
-      else tags.push({ name: 'showcase', color: 'blue' });
+    if (topics.length === 0) {
+      topics.push('design-inspiration', 'photo-editing');
     }
 
-    return tags.slice(0, 4);
+    const tagNames = [category, ...topics.slice(0, 3), type];
+    const colorMap = {
+      'design': 'pink',
+      'video-editing': 'violet',
+      'ai': 'teal',
+      'marketing': 'orange',
+      'photo-editing': 'violet',
+      'graphic-design': 'pink',
+      'motion-design': 'violet',
+      'animation': 'violet',
+      'typography': 'amber',
+      'ui-ux': 'cyan',
+      'figma': 'pink',
+      'ai-tools': 'teal',
+      'prompt-engineering': 'teal',
+      'design-system': 'violet',
+      'productivity': 'amber',
+      'startup': 'green',
+      'seo': 'blue',
+      'design-inspiration': 'pink',
+      'showcase': 'blue',
+      'tool': 'cyan',
+      'guide': 'green'
+    };
+
+    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    return unique.map(name => ({
+      name,
+      color: colorMap[name] || 'blue'
+    }));
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

@@ -49,55 +49,92 @@
 
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
-    const tags = [];
-    const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 4) {
-        tags.push({ name, color });
-      }
-    };
+    let category = 'tech';
+    const topics = [];
+    let type = 'resource';
 
     if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai') || lower.includes('prompt')) {
-      add('ai', 'teal');
-      if (lower.includes('agent') || lower.includes('crewai')) add('ai-agents', 'teal');
-      else if (lower.includes('prompt')) add('prompt-engineering', 'teal');
-      else add('tool', 'cyan');
+      category = 'ai';
+      if (lower.includes('agent') || lower.includes('crewai')) topics.push('ai-agents');
+      if (lower.includes('prompt')) topics.push('prompt-engineering');
+      if (lower.includes('chatgpt') || lower.includes('gpt')) topics.push('chatgpt');
+      if (lower.includes('claude')) topics.push('claude');
+      if (topics.length === 0) topics.push('ai-tools');
+      type = 'tool';
+    } else if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript')) {
+      category = 'tech';
+      if (lower.includes('react')) topics.push('react');
+      if (lower.includes('next')) topics.push('next-js');
+      if (lower.includes('tailwind')) topics.push('tailwind-css');
+      if (lower.includes('typescript')) topics.push('ts');
+      if (topics.length === 0) topics.push('web-development');
+      type = 'tool';
+    } else if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie')) {
+      category = 'business';
+      topics.push('saas', 'startup');
+      type = 'case-study';
+    } else if (lower.includes('motion') || lower.includes('animation')) {
+      category = 'video-editing';
+      topics.push('motion-design', 'animation');
+      type = 'resource';
+    } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma')) {
+      category = 'design';
+      topics.push('ui-ux', 'figma');
+      type = 'showcase';
+    } else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('solana') || lower.includes('finance')) {
+      category = 'finance';
+      topics.push('crypto', 'investing');
+      type = 'news';
     }
-    if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript')) {
-      add('tech', 'teal');
-      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
-      else add('web-development', 'teal');
-    }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('animation') || lower.includes('motion')) {
-      if (lower.includes('motion') || lower.includes('animation')) {
-        add('motion-design', 'violet');
-        add('animation', 'violet');
-      } else {
-        add('ui', 'cyan');
-        add('design-inspiration', 'pink');
-      }
-    }
-    if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie')) {
-      add('saas', 'cyan');
-      add('startup', 'green');
-    }
-    if (lower.includes('supabase') || lower.includes('postgres') || lower.includes('database') || lower.includes('backend') || lower.includes('python') || lower.includes('api')) {
-      add('tech', 'teal');
-      if (lower.includes('supabase')) add('supabase', 'green');
-      else add('backend', 'teal');
-    }
+
     if (lower.includes('guide') || lower.includes('how to') || lower.includes('thread') || lower.includes('tutorial') || lower.includes('tips')) {
-      add('guide', 'green');
+      type = 'guide';
     }
 
-    if (tags.length === 0) {
-      tags.push({ name: 'tech', color: 'teal' }, { name: 'web-development', color: 'teal' }, { name: 'resource', color: 'blue' });
-    } else if (tags.length === 1) {
-      if (tags[0].name === 'ai' || tags[0].name === 'tech') tags.push({ name: 'resource', color: 'blue' });
-      else if (tags[0].name === 'saas') tags.push({ name: 'case-study', color: 'amber' });
-      else tags.push({ name: 'guide', color: 'green' });
+    if (topics.length === 0) {
+      topics.push('web-development', 'open-source');
     }
 
-    return tags.slice(0, 4);
+    const tagNames = [category, ...topics.slice(0, 3), type];
+    const colorMap = {
+      'tech': 'teal',
+      'ai': 'teal',
+      'business': 'cyan',
+      'video-editing': 'violet',
+      'design': 'pink',
+      'finance': 'teal',
+      'ai-agents': 'teal',
+      'prompt-engineering': 'teal',
+      'chatgpt': 'teal',
+      'claude': 'teal',
+      'ai-tools': 'teal',
+      'react': 'cyan',
+      'next-js': 'teal',
+      'tailwind-css': 'cyan',
+      'ts': 'teal',
+      'web-development': 'teal',
+      'saas': 'cyan',
+      'startup': 'green',
+      'motion-design': 'violet',
+      'animation': 'violet',
+      'ui-ux': 'cyan',
+      'figma': 'pink',
+      'crypto': 'amber',
+      'investing': 'teal',
+      'open-source': 'green',
+      'tool': 'cyan',
+      'resource': 'blue',
+      'guide': 'green',
+      'case-study': 'amber',
+      'news': 'red',
+      'showcase': 'blue'
+    };
+
+    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    return unique.map(name => ({
+      name,
+      color: colorMap[name] || 'blue'
+    }));
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

@@ -16,7 +16,7 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { title, text, platform = 'web', url, customTags = [], geminiApiKey } = body;
+    const { title, text, platform = 'web', url, customTags = [], geminiApiKey, context } = body;
 
     const tags = await generateAutoTags(
       {
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
         platform,
         url,
         customTags,
+        context,
       },
       geminiApiKey || req.headers.get('x-gemini-key') || undefined
     );
