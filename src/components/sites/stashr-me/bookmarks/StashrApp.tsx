@@ -438,15 +438,26 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
   }, [taggingIds, user?.id]);
 
-  // Auto-Process Untagged Bookmarks with Gemini AI live on Website
+  // Auto-Process Untagged Bookmarks & Fix Generic Placeholders with Gemini AI live on Website
   const autoTaggedIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!isLoaded) return;
-    const untagged = bookmarks.filter(
-      b => (!b.tags || b.tags.length === 0 || b.tags.some(t => t.name === 'generating...')) && !autoTaggedIdsRef.current.has(b.id)
+
+    const isGenericTagSet = (tags?: { name: string }[], text?: string) => {
+      if (!tags || tags.length === 0) return true;
+      if (tags.some(t => t.name === 'generating...')) return true;
+      const tagNames = tags.map(t => t.name.toLowerCase());
+      const hasGenericDev = tagNames.includes('web-development') && (tagNames.includes('open-source') || tagNames.includes('resource'));
+      const textLower = (text || '').toLowerCase();
+      const hasDevKeyword = textLower.includes('react') || textLower.includes('html') || textLower.includes('javascript') || textLower.includes('code') || textLower.includes('github') || textLower.includes('frontend') || textLower.includes('next.js');
+      return hasGenericDev && !hasDevKeyword;
+    };
+
+    const needsTagging = bookmarks.filter(
+      b => isGenericTagSet(b.tags, b.text) && !autoTaggedIdsRef.current.has(b.id)
     );
 
-    untagged.forEach(bm => {
+    needsTagging.forEach(bm => {
       autoTaggedIdsRef.current.add(bm.id);
       handleAutoTagBookmark(bm);
     });
