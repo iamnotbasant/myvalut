@@ -197,10 +197,10 @@ export function BookmarkDetailModal({
         <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
           {/* Tags */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300 animate-pulse">
-                <Sparkles className="size-3 text-neutral-400 animate-spin" />
-                <span>Generating AI Tags...</span>
+            {isTagging || (!bookmark.tags || bookmark.tags.length === 0) ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.25)] animate-pulse">
+                <Sparkles className="size-3 text-purple-400 animate-spin" />
+                <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">✦ Generating AI Tags...</span>
               </div>
             ) : bookmark.tags && bookmark.tags.length > 0 ? (
               <>

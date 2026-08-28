@@ -300,10 +300,10 @@ export function BookmarkCard({
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-neutral-300 animate-pulse">
-                <Sparkles className="size-3 text-neutral-400 animate-spin" />
-                <span>AI Tagging...</span>
+            {isTagging || (!bookmark.tags || bookmark.tags.length === 0) ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.25)] animate-pulse">
+                <Sparkles className="size-3 text-purple-400 animate-spin" />
+                <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">✦ AI Tagging...</span>
               </div>
             ) : bookmark.tags && bookmark.tags.length > 0 ? (
               <>
@@ -756,10 +756,10 @@ export function BookmarkCard({
       {/* Footer with Tags and Date/Platform */}
       <div className="flex items-center justify-between gap-2 mt-auto pt-1">
         <div className="flex min-w-0 flex-1 items-center">
-          {isTagging ? (
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300 animate-pulse">
-              <Sparkles className="size-3 text-neutral-400 animate-spin" />
-              <span>AI Tagging...</span>
+          {isTagging || (!bookmark.tags || bookmark.tags.length === 0) ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.25)] animate-pulse">
+              <Sparkles className="size-3 text-purple-400 animate-spin" />
+              <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">✦ AI Tagging...</span>
             </div>
           ) : bookmark.tags && bookmark.tags.length > 0 ? (
             <div className="flex min-w-0 items-center gap-1.5">
