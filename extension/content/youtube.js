@@ -75,88 +75,109 @@
       }
     }
 
+    // Extract chapters/timestamps if available
+    const chapterEls = document.querySelectorAll('ytd-macro-markers-list-item-renderer #details h4, ytd-chapter-renderer #details h4, .ytd-macro-markers-list-item-renderer h4');
+    let chapters = [];
+    if (chapterEls.length > 0) {
+      chapters = Array.from(chapterEls).map(el => el.textContent?.trim()).filter(Boolean).slice(0, 5);
+    }
+
     return {
       url: pageUrl,
       platform: 'youtube',
       title: title || 'YouTube Video',
       text: text || title || 'Saved YouTube Video',
       context: transcriptText || extractedKeywords || undefined,
+      chapters: chapters.length > 0 ? chapters : undefined,
       displayName: authorName || 'YouTube Creator',
       username: authorHandle || 'youtube',
       avatarUrl: avatarUrl || undefined,
       imageUrl: imageUrl || undefined,
+      openWebsite: true,
     };
   }
 
-  // Smart 3-5 Tag Taxonomy (Category + 2-3 Topics + 1 Type)
+  // Smart Dynamic Tag Taxonomy (Natural Spaced Tags)
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
-    let category = 'video-editing';
+    let category = 'video editing';
     const topics = [];
     let type = 'tutorial';
 
-    if (lower.includes('premiere')) topics.push('premiere-pro');
-    if (lower.includes('after effects') || lower.includes('ae')) topics.push('after-effects');
-    if (lower.includes('davinci')) topics.push('davinci-resolve');
+    if (lower.includes('premiere')) topics.push('premiere pro');
+    if (lower.includes('after effects') || lower.includes('ae')) topics.push('after effects');
+    if (lower.includes('davinci')) topics.push('davinci resolve');
     if (lower.includes('capcut')) topics.push('capcut');
-    if (lower.includes('speed ramp')) topics.push('speed-ramping');
-    if (lower.includes('color grade') || lower.includes('lut')) topics.push('color-grade');
-    if (lower.includes('motion') || lower.includes('animation')) topics.push('motion-design');
-    if (lower.includes('transition') || lower.includes('fx') || lower.includes('vfx')) topics.push('fx');
+    if (lower.includes('ffmpeg')) topics.push('ffmpeg');
+    if (lower.includes('speed ramp')) topics.push('speed ramping');
+    if (lower.includes('color grade') || lower.includes('lut')) topics.push('color grade');
+    if (lower.includes('motion') || lower.includes('animation')) topics.push('motion design');
+    if (lower.includes('transition') || lower.includes('fx') || lower.includes('vfx')) topics.push('vfx');
 
     if (topics.length === 0) {
       if (lower.includes('ai') || lower.includes('chatgpt') || lower.includes('claude') || lower.includes('prompt') || lower.includes('agent')) {
         category = 'ai';
-        topics.push('ai-tools', 'prompt-engineering');
+        if (lower.includes('chatgpt')) topics.push('chatgpt');
+        if (lower.includes('claude')) topics.push('claude');
+        if (topics.length === 0) topics.push('ai agents', 'prompt engineering');
       } else if (lower.includes('code') || lower.includes('react') || lower.includes('next.js') || lower.includes('web dev') || lower.includes('programming')) {
         category = 'tech';
-        topics.push('web-development', 'react');
+        if (lower.includes('react')) topics.push('react');
+        if (lower.includes('next')) topics.push('next js');
+        if (topics.length === 0) topics.push('web dev');
       } else if (lower.includes('design') || lower.includes('figma') || lower.includes('ui') || lower.includes('ux')) {
         category = 'design';
-        topics.push('ui-ux', 'figma');
+        topics.push('ui ux', 'figma');
       } else if (lower.includes('calisthenics') || lower.includes('workout') || lower.includes('fitness')) {
         category = 'fitness';
-        topics.push('calisthenics', 'fitness');
+        topics.push('calisthenics');
       } else {
-        topics.push('premiere-pro', 'video-editing');
+        topics.push('premiere pro');
       }
     }
 
-    if (lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
+    if (lower.includes('workflow')) {
+      type = 'workflow';
+    } else if (lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
       type = 'tutorial';
     } else if (lower.includes('tool') || lower.includes('plugin') || lower.includes('extension') || lower.includes('preset')) {
       type = 'tool';
     } else if (lower.includes('case study') || lower.includes('breakdown')) {
-      type = 'case-study';
+      type = 'case study';
     } else {
       type = 'tutorial';
     }
 
-    const tagNames = [category, ...topics.slice(0, 3), type];
+    const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
-      'video-editing': 'violet',
-      'premiere-pro': 'violet',
-      'after-effects': 'violet',
-      'davinci-resolve': 'violet',
+      'video editing': 'violet',
+      'premiere pro': 'violet',
+      'after effects': 'violet',
+      'davinci resolve': 'violet',
       'capcut': 'violet',
-      'speed-ramping': 'violet',
-      'color-grade': 'violet',
-      'motion-design': 'violet',
-      'fx': 'violet',
+      'ffmpeg': 'indigo',
+      'speed ramping': 'violet',
+      'color grade': 'violet',
+      'motion design': 'violet',
+      'vfx': 'violet',
       'ai': 'teal',
-      'ai-tools': 'teal',
-      'prompt-engineering': 'teal',
+      'chatgpt': 'teal',
+      'claude': 'teal',
+      'ai agents': 'teal',
+      'prompt engineering': 'teal',
       'tech': 'teal',
-      'web-development': 'teal',
+      'web dev': 'teal',
       'react': 'cyan',
+      'next js': 'teal',
       'design': 'pink',
-      'ui-ux': 'cyan',
+      'ui ux': 'cyan',
       'figma': 'pink',
       'fitness': 'green',
       'calisthenics': 'green',
+      'workflow': 'amber',
       'tutorial': 'green',
       'tool': 'cyan',
-      'case-study': 'amber',
+      'case study': 'amber',
       'resource': 'blue'
     };
 

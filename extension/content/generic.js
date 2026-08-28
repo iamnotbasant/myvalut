@@ -63,15 +63,22 @@
     else if (hostname.includes('threads.net')) platform = 'threads';
     else if (hostname.includes('bsky.app')) platform = 'bluesky';
 
+    const headings = Array.from(document.querySelectorAll('h1, h2, h3'))
+      .map(h => h.textContent?.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+
     return {
       url,
       platform,
       title,
       text,
+      headings: headings.length > 0 ? headings : undefined,
       displayName: siteName,
       username: hostname,
       avatarUrl,
       imageUrl: imageUrl || undefined,
+      openWebsite: true,
     };
   }
 
@@ -83,65 +90,78 @@
 
     if (lower.includes('ai') || lower.includes('gpt') || lower.includes('llm') || lower.includes('agent') || lower.includes('claude') || lower.includes('deepseek')) {
       category = 'ai';
-      topics.push('ai-tools', 'prompt-engineering');
+      if (lower.includes('chatgpt') || lower.includes('gpt')) topics.push('chatgpt');
+      if (lower.includes('claude')) topics.push('claude');
+      if (lower.includes('cursor')) topics.push('cursor');
+      if (topics.length === 0) topics.push('ai agents', 'prompt engineering');
       type = 'tool';
     } else if (lower.includes('github') || lower.includes('open source') || lower.includes('opensource') || lower.includes('repo')) {
       category = 'tech';
-      topics.push('open-source', 'github');
+      topics.push('open source', 'github');
       type = 'resource';
     } else if (lower.includes('react') || lower.includes('next.js') || lower.includes('tailwind') || lower.includes('typescript') || lower.includes('javascript') || lower.includes('webdev') || lower.includes('frontend')) {
       category = 'tech';
       if (lower.includes('react')) topics.push('react');
-      if (lower.includes('next')) topics.push('next-js');
-      if (lower.includes('tailwind')) topics.push('tailwind-css');
-      if (topics.length === 0) topics.push('web-development');
+      if (lower.includes('next')) topics.push('next js');
+      if (lower.includes('tailwind')) topics.push('tailwind');
+      if (topics.length === 0) topics.push('web dev');
       type = 'tool';
+    } else if (lower.includes('video edit') || lower.includes('premiere') || lower.includes('after effects') || lower.includes('davinci')) {
+      category = 'video editing';
+      if (lower.includes('premiere')) topics.push('premiere pro');
+      if (lower.includes('after effects')) topics.push('after effects');
+      type = 'workflow';
     } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('typography')) {
       category = 'design';
-      topics.push('ui-ux', 'figma');
+      topics.push('ui ux', 'figma');
       type = 'showcase';
     } else if (lower.includes('saas') || lower.includes('startup') || lower.includes('pricing') || lower.includes('business')) {
       category = 'business';
       topics.push('saas', 'startup');
-      type = 'case-study';
+      type = 'case study';
     } else if (lower.includes('productivity') || lower.includes('workflow') || lower.includes('notion')) {
       category = 'productivity';
-      topics.push('productivity', 'workflow');
+      topics.push('workflow');
       type = 'tool';
     }
 
     if (topics.length === 0) {
-      topics.push('web-development', 'resource');
+      topics.push('resource');
     }
 
-    const tagNames = [category, ...topics.slice(0, 3), type];
+    const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
       'tech': 'teal',
       'ai': 'teal',
       'design': 'pink',
       'business': 'cyan',
       'productivity': 'amber',
-      'ai-tools': 'teal',
-      'prompt-engineering': 'teal',
-      'open-source': 'green',
+      'video editing': 'violet',
+      'premiere pro': 'violet',
+      'after effects': 'violet',
+      'chatgpt': 'teal',
+      'claude': 'teal',
+      'cursor': 'cyan',
+      'ai agents': 'teal',
+      'prompt engineering': 'teal',
+      'open source': 'green',
       'github': 'orange',
       'react': 'cyan',
-      'next-js': 'teal',
-      'tailwind-css': 'cyan',
-      'web-development': 'teal',
-      'ui-ux': 'cyan',
+      'next js': 'teal',
+      'tailwind': 'cyan',
+      'web dev': 'teal',
+      'ui ux': 'cyan',
       'figma': 'pink',
       'saas': 'cyan',
       'startup': 'green',
       'workflow': 'amber',
       'resource': 'blue',
       'tool': 'cyan',
-      'guide': 'green',
-      'showcase': 'blue',
-      'case-study': 'amber'
+      'case study': 'amber',
+      'showcase': 'blue'
     };
 
-    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    const unique = Array.from(new Set(tagNames)).slice(0, 6);
     return unique.map(name => ({
       name,
       color: colorMap[name] || 'blue'

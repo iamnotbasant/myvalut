@@ -31,14 +31,23 @@
       postUrl = permalink.startsWith('http') ? permalink : `https://www.reddit.com${permalink}`;
     }
 
+    // Extract subreddit name for high-signal context
+    let subreddit = '';
+    const subMatch = postUrl.match(/reddit\.com\/r\/([^/]+)/i);
+    if (subMatch) {
+      subreddit = subMatch[1];
+    }
+
     return {
       url: postUrl,
       platform: 'reddit',
       title: title || 'Reddit Post',
       text: text || title || 'Saved Reddit Post',
+      subreddit: subreddit || undefined,
       displayName: authorName ? `u/${authorName}` : 'Redditor',
       username: authorName || 'redditor',
       imageUrl: imageUrl || undefined,
+      openWebsite: true,
     };
   }
 
@@ -46,41 +55,41 @@
     const lower = (text || '').toLowerCase();
     let category = 'tech';
     const topics = [];
-    let type = 'guide';
+    let type = 'resource';
 
     if (lower.includes('programming') || lower.includes('webdev') || lower.includes('react') || lower.includes('python') || lower.includes('coding') || lower.includes('javascript') || lower.includes('typescript')) {
       category = 'tech';
       if (lower.includes('react')) topics.push('react');
       if (lower.includes('python')) topics.push('python');
-      if (lower.includes('javascript') || lower.includes('typescript')) topics.push('web-development');
+      if (lower.includes('javascript') || lower.includes('typescript')) topics.push('web dev');
       type = 'tutorial';
     } else if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama') || lower.includes('deepseek')) {
       category = 'ai';
-      topics.push('ai-tools', 'ml');
-      type = 'guide';
+      topics.push('ai agents', 'ml');
+      type = 'tool';
     } else if (lower.includes('github') || lower.includes('open source') || lower.includes('opensource') || lower.includes('repo')) {
       category = 'tech';
-      topics.push('open-source', 'github');
+      topics.push('open source', 'github');
       type = 'resource';
     } else if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject') || lower.includes('indiehackers')) {
       category = 'business';
       topics.push('saas', 'startup');
-      type = 'case-study';
-    } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design') || lower.includes('figma')) {
+      type = 'case study';
+    } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma')) {
       category = 'design';
-      topics.push('ui-ux', 'figma');
+      topics.push('ui ux', 'figma');
       type = 'showcase';
     } else if (lower.includes('productivity') || lower.includes('workflow') || lower.includes('notion') || lower.includes('obsidian')) {
       category = 'productivity';
-      topics.push('productivity', 'workflow');
+      topics.push('workflow');
       type = 'tool';
     }
 
     if (topics.length === 0) {
-      topics.push('open-source', 'tech');
+      topics.push('open source');
     }
 
-    const tagNames = [category, ...topics.slice(0, 3), type];
+    const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
       'tech': 'teal',
       'ai': 'teal',
@@ -89,25 +98,24 @@
       'productivity': 'amber',
       'react': 'cyan',
       'python': 'teal',
-      'web-development': 'teal',
-      'ai-tools': 'teal',
+      'web dev': 'teal',
+      'ai agents': 'teal',
       'ml': 'teal',
-      'open-source': 'green',
+      'open source': 'green',
       'github': 'orange',
       'saas': 'cyan',
       'startup': 'green',
-      'ui-ux': 'cyan',
+      'ui ux': 'cyan',
       'figma': 'pink',
       'workflow': 'amber',
-      'guide': 'green',
       'tutorial': 'green',
-      'resource': 'blue',
-      'case-study': 'amber',
       'tool': 'cyan',
+      'resource': 'blue',
+      'case study': 'amber',
       'showcase': 'blue'
     };
 
-    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    const unique = Array.from(new Set(tagNames)).slice(0, 6);
     return unique.map(name => ({
       name,
       color: colorMap[name] || 'blue'

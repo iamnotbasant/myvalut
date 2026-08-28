@@ -147,66 +147,80 @@
     else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('solana') || lower.includes('eth') || lower.includes('trading') || lower.includes('stocks') || lower.includes('finance')) {
       category = 'finance';
       topics.push('crypto', 'investing');
-      type = 'news';
-    }
+  function extractSmartTags(text) {
+    const lower = (text || '').toLowerCase();
+    let category = 'tech';
+    const topics = [];
+    let type = 'resource';
 
-    if (lower.includes('guide') || lower.includes('how to') || lower.includes('thread') || lower.includes('tutorial') || lower.includes('step by step')) {
-      type = 'guide';
-    } else if (lower.includes('tool') || lower.includes('app') || lower.includes('software')) {
+    if (lower.includes('gta') || lower.includes('game') || lower.includes('watch dogs') || lower.includes('playstation') || lower.includes('steam')) {
+      category = 'gaming';
+      if (lower.includes('gta')) topics.push('gta 6');
+      if (lower.includes('watch dogs')) topics.push('watch dogs 2');
+      if (lower.includes('playstation') || lower.includes('ps5')) topics.push('playstation');
+      if (lower.includes('gameplay')) type = 'gameplay';
+    } else if (lower.includes('ai') || lower.includes('gpt') || lower.includes('llm') || lower.includes('agent') || lower.includes('claude') || lower.includes('deepseek')) {
+      category = 'ai';
+      if (lower.includes('chatgpt') || lower.includes('gpt')) topics.push('chatgpt');
+      if (lower.includes('claude')) topics.push('claude');
+      if (lower.includes('cursor')) topics.push('cursor');
+      if (topics.length === 0) topics.push('ai agents', 'prompt engineering');
       type = 'tool';
+    } else if (lower.includes('video edit') || lower.includes('premiere') || lower.includes('after effects') || lower.includes('capcut')) {
+      category = 'video editing';
+      if (lower.includes('premiere')) topics.push('premiere pro');
+      if (lower.includes('after effects')) topics.push('after effects');
+      if (lower.includes('capcut')) topics.push('capcut');
+      type = 'workflow';
+    } else if (lower.includes('react') || lower.includes('next.js') || lower.includes('tailwind') || lower.includes('typescript') || lower.includes('coding')) {
+      category = 'tech';
+      if (lower.includes('react')) topics.push('react');
+      if (lower.includes('next')) topics.push('next js');
+      if (lower.includes('tailwind')) topics.push('tailwind');
+      if (topics.length === 0) topics.push('web dev');
+      type = 'tool';
+    } else if (lower.includes('meme') || lower.includes('funny') || lower.includes('joke')) {
+      category = 'entertainment';
+      topics.push('meme');
+      type = 'meme';
     }
 
-    if (topics.length === 0) {
-      topics.push('resource', 'discussion');
+    if (lower.includes('guide') || lower.includes('how to') || lower.includes('tutorial')) {
+      type = 'tutorial';
+    } else if (lower.includes('workflow')) {
+      type = 'workflow';
     }
 
-    const tagNames = [category, ...topics.slice(0, 3), type];
+    const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
       'tech': 'teal',
       'ai': 'teal',
-      'business': 'cyan',
-      'video-editing': 'violet',
-      'premiere-pro': 'violet',
-      'after-effects': 'violet',
-      'davinci-resolve': 'violet',
-      'capcut': 'violet',
-      'speed-ramping': 'violet',
-      'color-grade': 'violet',
-      'design': 'pink',
-      'finance': 'teal',
-      'fitness': 'green',
-      'calisthenics': 'green',
-      'ai-agents': 'teal',
-      'prompt-engineering': 'teal',
+      'gaming': 'indigo',
+      'entertainment': 'amber',
+      'video editing': 'violet',
+      'premiere pro': 'violet',
+      'after effects': 'violet',
+      'gta 6': 'indigo',
+      'watch dogs 2': 'indigo',
+      'playstation': 'blue',
+      'gameplay': 'indigo',
       'chatgpt': 'teal',
       'claude': 'teal',
-      'deepseek': 'teal',
-      'ai-tools': 'teal',
+      'cursor': 'cyan',
+      'ai agents': 'teal',
+      'prompt engineering': 'teal',
       'react': 'cyan',
-      'next-js': 'teal',
-      'tailwind-css': 'cyan',
-      'ts': 'teal',
-      'python': 'teal',
-      'supabase': 'green',
-      'web-development': 'teal',
-      'saas': 'cyan',
-      'startup': 'green',
-      'ui-ux': 'cyan',
-      'figma': 'pink',
-      'crypto': 'amber',
-      'investing': 'teal',
-      'open-source': 'green',
-      'tool': 'cyan',
-      'resource': 'blue',
-      'guide': 'green',
+      'next js': 'teal',
+      'tailwind': 'cyan',
+      'web dev': 'teal',
+      'meme': 'amber',
+      'workflow': 'amber',
       'tutorial': 'green',
-      'case-study': 'amber',
-      'news': 'red',
-      'showcase': 'blue',
-      'discussion': 'blue'
+      'tool': 'cyan',
+      'resource': 'blue'
     };
 
-    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    const unique = Array.from(new Set(tagNames)).slice(0, 6);
     return unique.map(name => ({
       name,
       color: colorMap[name] || 'blue'

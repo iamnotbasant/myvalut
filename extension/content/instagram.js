@@ -52,63 +52,50 @@
     const topics = [];
     let type = 'showcase';
 
-    if (lower.includes('photo') || lower.includes('preset') || lower.includes('lightroom') || lower.includes('photoshop') || lower.includes('camera') || lower.includes('portrait') || lower.includes('retouch')) {
-      topics.push('photo-editing', 'graphic-design');
+    if (lower.includes('photo') || lower.includes('preset') || lower.includes('lightroom') || lower.includes('photoshop') || lower.includes('portrait')) {
+      topics.push('photo editing', 'graphic design');
     }
-    if (lower.includes('motion') || lower.includes('animation') || lower.includes('reels') || lower.includes('transition') || lower.includes('vfx') || lower.includes('render')) {
-      category = 'video-editing';
-      topics.push('motion-design', 'animation');
+    if (lower.includes('motion') || lower.includes('animation') || lower.includes('reels') || lower.includes('transition') || lower.includes('vfx')) {
+      category = 'video editing';
+      topics.push('motion design', 'animation');
     }
-    if (lower.includes('graphic') || lower.includes('poster') || lower.includes('branding') || lower.includes('logo') || lower.includes('typography') || lower.includes('font')) {
-      topics.push('graphic-design', 'typography');
+    if (lower.includes('graphic') || lower.includes('poster') || lower.includes('branding') || lower.includes('typography') || lower.includes('font')) {
+      topics.push('graphic design', 'typography');
     }
-    if (lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('interface') || lower.includes('wireframe') || lower.includes('design system')) {
-      topics.push('ui-ux', 'figma');
+    if (lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('interface')) {
+      topics.push('ui ux', 'figma');
     }
-    if (lower.includes('ai') || lower.includes('midjourney') || lower.includes('genai') || lower.includes('chatgpt') || lower.includes('flux')) {
+    if (lower.includes('ai') || lower.includes('midjourney') || lower.includes('genai') || lower.includes('chatgpt')) {
       category = 'ai';
-      topics.push('ai-tools', 'prompt-engineering');
+      topics.push('ai tools', 'prompt engineering');
       type = 'tool';
-    }
-    if (lower.includes('setup') || lower.includes('workspace') || lower.includes('desk') || lower.includes('minimal')) {
-      topics.push('design-system', 'productivity');
-    }
-    if (lower.includes('growth') || lower.includes('business') || lower.includes('marketing') || lower.includes('founder') || lower.includes('creator')) {
-      category = 'marketing';
-      topics.push('startup', 'seo');
-      type = 'guide';
     }
 
     if (topics.length === 0) {
-      topics.push('design-inspiration', 'photo-editing');
+      topics.push('design inspiration');
     }
 
-    const tagNames = [category, ...topics.slice(0, 3), type];
+    const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
       'design': 'pink',
-      'video-editing': 'violet',
+      'video editing': 'violet',
       'ai': 'teal',
       'marketing': 'orange',
-      'photo-editing': 'violet',
-      'graphic-design': 'pink',
-      'motion-design': 'violet',
+      'photo editing': 'violet',
+      'graphic design': 'pink',
+      'motion design': 'violet',
       'animation': 'violet',
       'typography': 'amber',
-      'ui-ux': 'cyan',
+      'ui ux': 'cyan',
       'figma': 'pink',
-      'ai-tools': 'teal',
-      'prompt-engineering': 'teal',
-      'design-system': 'violet',
-      'productivity': 'amber',
-      'startup': 'green',
-      'seo': 'blue',
-      'design-inspiration': 'pink',
+      'ai tools': 'teal',
+      'prompt engineering': 'teal',
+      'design inspiration': 'pink',
       'showcase': 'blue',
-      'tool': 'cyan',
-      'guide': 'green'
+      'tool': 'cyan'
     };
 
-    const unique = Array.from(new Set(tagNames)).slice(0, 5);
+    const unique = Array.from(new Set(tagNames)).slice(0, 6);
     return unique.map(name => ({
       name,
       color: colorMap[name] || 'blue'

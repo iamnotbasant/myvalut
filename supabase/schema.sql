@@ -58,13 +58,15 @@ BEGIN
   END IF;
 END $$;
 
--- Indexes for performance
+-- Indexes for high-performance multi-tag querying
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON public.bookmarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_platform ON public.bookmarks(platform);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_is_favorite ON public.bookmarks(is_favorite);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_is_archived ON public.bookmarks(is_archived);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at_ms ON public.bookmarks(created_at_ms DESC);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_collection_id ON public.bookmarks(collection_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_tags_gin ON public.bookmarks USING GIN (tags);
+CREATE INDEX IF NOT EXISTS idx_tags_user_name ON public.tags(user_id, name);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
