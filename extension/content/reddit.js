@@ -241,15 +241,9 @@
     posts.forEach(post => {
       if (post.querySelector('.valut-reddit-btn')) return;
 
-      let actionBar = post.querySelector('div[slot="actions"], shreddit-post-overflow-menu, [slot="flatlist"], div.flat-list.buttons');
-      if (!actionBar) {
-        actionBar = post.querySelector('div.flex.items-center.gap-x-1, div[data-testid="post-action-bar"]');
-      }
-
-      if (!actionBar || post.querySelector('.valut-reddit-btn')) return;
-
       const btn = document.createElement('button');
       btn.className = 'valut-reddit-btn';
+      btn.type = 'button';
       btn.innerHTML = `${VALUT_ICON_SVG} <span>Valut</span>`;
       btn.title = 'Save to Valut with AI Tags';
 
@@ -259,11 +253,27 @@
         saveRedditPost(post, btn);
       });
 
-      const shareBtn = actionBar.querySelector('shreddit-post-share-button, button[aria-label*="Share"], div[data-testid="post-share-button"]');
-      if (shareBtn && shareBtn.nextSibling) {
-        actionBar.insertBefore(btn, shareBtn.nextSibling);
-      } else {
-        actionBar.appendChild(btn);
+      // 1. Target the Share button in the bottom action bar (modern Reddit)
+      const shareBtn = post.querySelector('shreddit-post-share-button, share-button, button[aria-label*="Share"], [data-testid="post-share-button"], div[data-testid="post-share-button"]');
+      if (shareBtn && shareBtn.parentElement) {
+        shareBtn.parentElement.insertBefore(btn, shareBtn.nextSibling);
+        return;
+      }
+
+      // 2. Target the interaction bar / bottom action container
+      const bottomBar = post.querySelector(
+        'shreddit-interaction-bar, div[slot="bottom-bar"], div[slot="credit-bar"], [data-testid="post-action-bar"], div.flex.flex-row.items-center.gap-x-1, div.flat-list.buttons, [slot="flatlist"]'
+      );
+      if (bottomBar) {
+        bottomBar.appendChild(btn);
+        return;
+      }
+
+      // 3. Fallback to comments container
+      const commentsBtn = post.querySelector('a[data-click-id="comments"], button[aria-label*="comments"], [slot="comment-button"]');
+      if (commentsBtn && commentsBtn.parentElement) {
+        commentsBtn.parentElement.appendChild(btn);
+        return;
       }
     });
   }
