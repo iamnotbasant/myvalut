@@ -384,13 +384,10 @@ export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Pr
 
   // Active Google Gemini model endpoints in order of preference
   const models = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-lite',
-    'gemini-flash-latest',
+    'gemini-3.6-flash',
     'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
   ];
 
   const systemInstruction = `You are an automated categorization and tagging engine for a personal knowledge vault.
@@ -449,11 +446,15 @@ Content/Context: ${preprocessedContent}`;
 
       const data = await response.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      if (!rawText) continue;
 
       let rawTagList: string[] = [];
 
+      // Clean markdown code blocks if present (```json ... ```)
+      let cleanedJson = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
       try {
-        const parsed: GeminiTagResponse = JSON.parse(rawText);
+        const parsed: GeminiTagResponse = JSON.parse(cleanedJson);
         if (Array.isArray(parsed.all_tags) && parsed.all_tags.length >= 3) {
           rawTagList = parsed.all_tags;
         } else {
@@ -464,11 +465,27 @@ Content/Context: ${preprocessedContent}`;
           rawTagList = list;
         }
       } catch {
-        const match = rawText.match(/\[[\s\S]*\]/);
-        if (match) {
+        const objMatch = rawText.match(/\{[\s\S]*\}/);
+        if (objMatch) {
           try {
-            rawTagList = JSON.parse(match[0]);
+            const parsed = JSON.parse(objMatch[0]);
+            if (Array.isArray(parsed.all_tags)) rawTagList = parsed.all_tags;
+            else {
+              const list: string[] = [];
+              if (parsed.category) list.push(parsed.category);
+              if (Array.isArray(parsed.topics)) list.push(...parsed.topics);
+              if (parsed.type) list.push(parsed.type);
+              rawTagList = list;
+            }
           } catch {}
+        }
+        if (rawTagList.length === 0) {
+          const arrMatch = rawText.match(/\[[\s\S]*\]/);
+          if (arrMatch) {
+            try {
+              rawTagList = JSON.parse(arrMatch[0]);
+            } catch {}
+          }
         }
       }
 
@@ -481,7 +498,8 @@ Content/Context: ${preprocessedContent}`;
         }));
       }
     } catch {
-      // try next model
+      // Try next model fallback
+      continue;
     }
   }
 

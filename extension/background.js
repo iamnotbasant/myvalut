@@ -558,11 +558,9 @@ async function generateGeminiTags(payload, apiKey) {
   if (!apiKey) return null;
 
   const models = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
     'gemini-flash-latest'
   ];
 
@@ -612,15 +610,33 @@ OUTPUT FORMAT (JSON ONLY):
 
       if (!res.ok) continue;
       const data = await res.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
       if (!rawText) continue;
 
-      const parsed = JSON.parse(rawText);
-      const tagArray = parsed.all_tags || [
-        ...(parsed.category ? [parsed.category] : []),
-        ...(Array.isArray(parsed.topics) ? parsed.topics : []),
-        ...(parsed.type ? [parsed.type] : [])
-      ];
+      let tagArray = [];
+      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      try {
+        const parsed = JSON.parse(cleaned);
+        tagArray = parsed.all_tags || [
+          ...(parsed.category ? [parsed.category] : []),
+          ...(Array.isArray(parsed.topics) ? parsed.topics : []),
+          ...(parsed.type ? [parsed.type] : [])
+        ];
+      } catch {
+        const objMatch = rawText.match(/\{[\s\S]*\}/);
+        if (objMatch) {
+          try {
+            const parsed = JSON.parse(objMatch[0]);
+            tagArray = parsed.all_tags || [
+              ...(parsed.category ? [parsed.category] : []),
+              ...(Array.isArray(parsed.topics) ? parsed.topics : []),
+              ...(parsed.type ? [parsed.type] : [])
+            ];
+          } catch {}
+        }
+      }
+
       const normalized = cleanAndNormalizeTags(tagArray);
       if (normalized.length >= 3) return normalized.slice(0, 5);
     } catch (err) {
@@ -741,10 +757,12 @@ async function syncOfflineQueue() {
   }
 }
 
-// Master Fast Ingestion (< 50ms Response)
+// Master Save Flow — AI Tags First, Then Save
 async function saveBookmarkCore(payload) {
   const settings = await chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'userId', 'recentSaves']);
   const userId = settings.userId || payload.userId || null;
+  const apiKey = settings.geminiApiKey || undefined;
+  const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
 
   const now = new Date();
   const formattedDate = now.toLocaleDateString('en-US', {
@@ -753,9 +771,52 @@ async function saveBookmarkCore(payload) {
     year: 'numeric',
   });
 
-  // 1. Generate Instant Local AI Tags (3-5 strict taxonomy) in 0ms
-  const initialTags = generateLocalAiTags(payload);
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  // 1. Try to get REAL AI tags BEFORE saving (direct Gemini first if key set, then server endpoint, then local heuristics)
+  let finalTags = null;
+
+  // 1a. If user has Gemini API Key in extension settings, call Gemini directly
+  if (apiKey) {
+    try {
+      const geminiTags = await generateGeminiTags(payload, apiKey);
+      if (geminiTags && geminiTags.length >= 3) {
+        finalTags = geminiTags;
+      }
+    } catch (gemErr) {
+      // Gemini failed, try server endpoint next
+    }
+  }
+
+  // 1b. Try server-side AI tagger endpoint (uses server's Gemini key)
+  if (!finalTags || finalTags.length === 0) {
+    try {
+      const tagRes = await fetch(`${serverUrl}/api/ai/tag`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
+          text: payload.text || payload.title,
+          url: payload.url,
+          platform: payload.platform,
+          context: payload.context,
+        }),
+      });
+      if (tagRes.ok) {
+        const tagData = await tagRes.json();
+        if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length >= 3) {
+          finalTags = tagData.tags;
+        }
+      }
+    } catch (srvErr) {
+      // server unreachable, try next
+    }
+  }
+
+  // 1c. Final fallback: local heuristic tags
+  if (!finalTags || finalTags.length === 0) {
+    finalTags = generateLocalAiTags(payload);
+  }
 
   const bookmarkItem = {
     id: bookmarkId,
@@ -769,14 +830,14 @@ async function saveBookmarkCore(payload) {
     url: payload.url || null,
     date: formattedDate,
     created_at_ms: Date.now(),
-    tags: initialTags,
+    tags: finalTags,
     is_favorite: false,
     is_archived: false,
     note: payload.note || null,
     user_id: userId,
   };
 
-  // 2. Immediate Save to Supabase (or Offline Queue if disconnected)
+  // 2. Save to Supabase with REAL AI tags (or Offline Queue if disconnected)
   let savedResult = null;
   try {
     const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
@@ -816,10 +877,25 @@ async function saveBookmarkCore(payload) {
     };
   }
 
-  // 3. Fire-and-forget background Gemini AI tag enrichment
-  const apiKey = settings.geminiApiKey || undefined;
-  const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
-  enrichTagsInBackground(bookmarkId, payload, apiKey, serverUrl);
+  // 3. Upsert tags into tags table (fire-and-forget)
+  for (const t of finalTags) {
+    const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    fetch(`${SUPABASE_URL}/rest/v1/tags`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({
+        id: tagId,
+        name: t.name,
+        color: t.color,
+        user_id: userId,
+      }),
+    }).catch(() => {});
+  }
 
   // 4. Update Recent Saves list
   const recent = settings.recentSaves || [];

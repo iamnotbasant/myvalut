@@ -14,6 +14,7 @@
     let text = '';
     let imageUrl = '';
     let tweetUrl = window.location.href;
+    let contextParts = [];
 
     const userEl = tweetArticle.querySelector('div[data-testid="User-Name"]');
     if (userEl) {
@@ -26,20 +27,53 @@
     const avatarEl = tweetArticle.querySelector('div[data-testid="Tweet-User-Avatar"] img');
     if (avatarEl) avatarUrl = avatarEl.getAttribute('src') || '';
 
-    const textEl = tweetArticle.querySelector('div[data-testid="tweetText"]');
-    if (textEl) text = textEl.innerText.trim();
+    // Collect all tweetText blocks (both main tweet and quoted tweet)
+    const textEls = tweetArticle.querySelectorAll('div[data-testid="tweetText"]');
+    if (textEls.length > 0) {
+      text = textEls[0].innerText.trim();
+      if (textEls.length > 1) {
+        contextParts.push(`Quoted Tweet: ${textEls[1].innerText.trim()}`);
+      }
+    }
 
+    // Extract photo & image alt description
     const photoEl = tweetArticle.querySelector('div[data-testid="tweetPhoto"] img');
-    if (photoEl) imageUrl = photoEl.getAttribute('src') || '';
+    if (photoEl) {
+      imageUrl = photoEl.getAttribute('src') || '';
+      const altText = photoEl.getAttribute('alt');
+      if (altText && altText !== 'Image' && altText.length > 5) {
+        contextParts.push(`Image: ${altText}`);
+      }
+    }
+
+    // Extract card previews (link preview card titles, e.g. YouTube, GitHub, articles)
+    const cardTitleEl = tweetArticle.querySelector('div[data-testid="card.layoutLarge.detail"] span, div[data-testid="card.layoutSmall.detail"] span, [data-testid="card.wrapper"]');
+    if (cardTitleEl && cardTitleEl.textContent) {
+      const cardText = cardTitleEl.textContent.trim();
+      if (cardText && !text.includes(cardText)) {
+        contextParts.push(`Linked: ${cardText}`);
+      }
+    }
+
+    // Extract hashtags
+    const hashtags = Array.from(tweetArticle.querySelectorAll('a[href*="/hashtag/"]'))
+      .map(a => a.textContent.trim())
+      .filter(Boolean);
+    if (hashtags.length > 0) {
+      contextParts.push(`Tags: ${hashtags.join(', ')}`);
+    }
 
     const timeLink = tweetArticle.querySelector('time')?.closest('a');
     if (timeLink) tweetUrl = timeLink.href;
 
+    const fullContext = contextParts.join('\n').slice(0, 500);
+
     return {
       url: tweetUrl,
       platform: 'twitter',
-      title: `${displayName || username || 'Tweet'} on X`,
-      text: text || 'Saved Tweet from X',
+      title: displayName ? `${displayName} (@${username}) on X` : `Tweet on X`,
+      text: text || fullContext || 'Saved Tweet from X',
+      context: fullContext || undefined,
       displayName: displayName || 'X Creator',
       username: username || 'user',
       avatarUrl: avatarUrl || undefined,
@@ -53,46 +87,77 @@
     const topics = [];
     let type = 'resource';
 
-    if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai') || lower.includes('prompt')) {
+    // 1. AI & Machine Learning
+    if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai') || lower.includes('prompt') || lower.includes('gemini') || lower.includes('openai') || lower.includes('genai')) {
       category = 'ai';
       if (lower.includes('agent') || lower.includes('crewai')) topics.push('ai-agents');
       if (lower.includes('prompt')) topics.push('prompt-engineering');
       if (lower.includes('chatgpt') || lower.includes('gpt')) topics.push('chatgpt');
       if (lower.includes('claude')) topics.push('claude');
+      if (lower.includes('deepseek')) topics.push('deepseek');
       if (topics.length === 0) topics.push('ai-tools');
       type = 'tool';
-    } else if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript')) {
+    } 
+    // 2. Video Editing & Motion
+    else if (lower.includes('premiere') || lower.includes('after effects') || lower.includes('davinci') || lower.includes('capcut') || lower.includes('video edit') || lower.includes('speed ramp') || lower.includes('color grade') || lower.includes('vfx') || lower.includes('lut') || lower.includes('transition') || lower.includes('keyframes') || lower.includes('motion graphic')) {
+      category = 'video-editing';
+      if (lower.includes('premiere')) topics.push('premiere-pro');
+      if (lower.includes('after effects') || lower.includes('ae')) topics.push('after-effects');
+      if (lower.includes('davinci')) topics.push('davinci-resolve');
+      if (lower.includes('capcut')) topics.push('capcut');
+      if (lower.includes('speed ramp')) topics.push('speed-ramping');
+      if (lower.includes('color grade')) topics.push('color-grade');
+      if (topics.length === 0) topics.push('video-editing');
+      type = 'tutorial';
+    }
+    // 3. Coding & Web Dev
+    else if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript') || lower.includes('python') || lower.includes('supabase') || lower.includes('github') || lower.includes('css') || lower.includes('html')) {
       category = 'tech';
       if (lower.includes('react')) topics.push('react');
-      if (lower.includes('next')) topics.push('next-js');
+      if (lower.includes('next') || lower.includes('nextjs') || lower.includes('next.js')) topics.push('next-js');
       if (lower.includes('tailwind')) topics.push('tailwind-css');
-      if (lower.includes('typescript')) topics.push('ts');
+      if (lower.includes('typescript') || lower.includes('ts')) topics.push('ts');
+      if (lower.includes('python')) topics.push('python');
+      if (lower.includes('supabase')) topics.push('supabase');
       if (topics.length === 0) topics.push('web-development');
       type = 'tool';
-    } else if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie')) {
-      category = 'business';
-      topics.push('saas', 'startup');
-      type = 'case-study';
-    } else if (lower.includes('motion') || lower.includes('animation')) {
-      category = 'video-editing';
-      topics.push('motion-design', 'animation');
-      type = 'resource';
-    } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma')) {
+    }
+    // 4. Design & UI/UX
+    else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('typography') || lower.includes('layout') || lower.includes('landing page')) {
       category = 'design';
-      topics.push('ui-ux', 'figma');
+      if (lower.includes('figma')) topics.push('figma');
+      topics.push('ui-ux');
       type = 'showcase';
-    } else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('solana') || lower.includes('finance')) {
+    }
+    // 5. Business & SaaS
+    else if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie') || lower.includes('revenue') || lower.includes('marketing') || lower.includes('sales')) {
+      category = 'business';
+      if (lower.includes('saas')) topics.push('saas');
+      topics.push('startup');
+      type = 'case-study';
+    }
+    // 6. Fitness & Workout
+    else if (lower.includes('calisthenics') || lower.includes('pullup') || lower.includes('pushup') || lower.includes('workout') || lower.includes('gym') || lower.includes('fitness') || lower.includes('bodyweight')) {
+      category = 'fitness';
+      if (lower.includes('calisthenics')) topics.push('calisthenics');
+      topics.push('fitness');
+      type = 'tutorial';
+    }
+    // 7. Finance & Crypto
+    else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('solana') || lower.includes('eth') || lower.includes('trading') || lower.includes('stocks') || lower.includes('finance')) {
       category = 'finance';
       topics.push('crypto', 'investing');
       type = 'news';
     }
 
-    if (lower.includes('guide') || lower.includes('how to') || lower.includes('thread') || lower.includes('tutorial') || lower.includes('tips')) {
+    if (lower.includes('guide') || lower.includes('how to') || lower.includes('thread') || lower.includes('tutorial') || lower.includes('step by step')) {
       type = 'guide';
+    } else if (lower.includes('tool') || lower.includes('app') || lower.includes('software')) {
+      type = 'tool';
     }
 
     if (topics.length === 0) {
-      topics.push('web-development', 'open-source');
+      topics.push('resource', 'discussion');
     }
 
     const tagNames = [category, ...topics.slice(0, 3), type];
@@ -101,22 +166,31 @@
       'ai': 'teal',
       'business': 'cyan',
       'video-editing': 'violet',
+      'premiere-pro': 'violet',
+      'after-effects': 'violet',
+      'davinci-resolve': 'violet',
+      'capcut': 'violet',
+      'speed-ramping': 'violet',
+      'color-grade': 'violet',
       'design': 'pink',
       'finance': 'teal',
+      'fitness': 'green',
+      'calisthenics': 'green',
       'ai-agents': 'teal',
       'prompt-engineering': 'teal',
       'chatgpt': 'teal',
       'claude': 'teal',
+      'deepseek': 'teal',
       'ai-tools': 'teal',
       'react': 'cyan',
       'next-js': 'teal',
       'tailwind-css': 'cyan',
       'ts': 'teal',
+      'python': 'teal',
+      'supabase': 'green',
       'web-development': 'teal',
       'saas': 'cyan',
       'startup': 'green',
-      'motion-design': 'violet',
-      'animation': 'violet',
       'ui-ux': 'cyan',
       'figma': 'pink',
       'crypto': 'amber',
@@ -125,9 +199,11 @@
       'tool': 'cyan',
       'resource': 'blue',
       'guide': 'green',
+      'tutorial': 'green',
       'case-study': 'amber',
       'news': 'red',
-      'showcase': 'blue'
+      'showcase': 'blue',
+      'discussion': 'blue'
     };
 
     const unique = Array.from(new Set(tagNames)).slice(0, 5);
@@ -147,7 +223,33 @@
       year: 'numeric',
     });
 
-    const smartTags = extractSmartTags(payload.text);
+    // Try server-side AI tags first for accurate tagging
+    let tags = null;
+    try {
+      const tagRes = await fetch('https://myvalut.vercel.app/api/ai/tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
+          text: payload.text || payload.title,
+          url: payload.url,
+          platform: payload.platform,
+        }),
+      });
+      if (tagRes.ok) {
+        const tagData = await tagRes.json();
+        if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length >= 3) {
+          tags = tagData.tags;
+        }
+      }
+    } catch (e) {
+      // server unreachable
+    }
+
+    // Fallback to local heuristic tags
+    if (!tags || tags.length === 0) {
+      tags = extractSmartTags(payload.text);
+    }
 
     const bookmarkItem = {
       id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -161,7 +263,7 @@
       url: payload.url || null,
       date: formattedDate,
       created_at_ms: Date.now(),
-      tags: smartTags,
+      tags: tags,
       is_favorite: false,
       is_archived: false,
     };
