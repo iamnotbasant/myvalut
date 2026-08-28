@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           btnSave.style.color = '';
         }, 2500);
       } else {
-        btnSaveText.textContent = '✓ Saved to Valut!';
+        btnSaveText.textContent = '✓ Saved! Opening Valut...';
         btnSave.style.background = '#22c55e';
         btnSave.style.color = '#ffffff';
 
@@ -296,6 +296,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             .map(t => `<span class="tag-pill"><span class="tag-dot bg-${t.color || 'blue'}"></span>${t.name}</span>`)
             .join('');
         }
+
+        // Open the website so user can see the saved post with tags
+        const dashboardUrl = inputServerUrl.value.trim() || 'https://myvalut.vercel.app';
+        chrome.tabs.create({ url: dashboardUrl });
 
         setTimeout(() => {
           btnSave.disabled = false;
