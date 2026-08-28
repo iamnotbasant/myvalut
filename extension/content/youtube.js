@@ -70,33 +70,51 @@
     const lower = (text || '').toLowerCase();
     const tags = [];
     const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 3) {
+      if (!tags.some(t => t.name === name) && tags.length < 4) {
         tags.push({ name, color });
       }
     };
 
-    if (lower.includes('tutorial') || lower.includes('course') || lower.includes('how to') || lower.includes('guide')) {
+    if (lower.includes('premiere') || lower.includes('video edit') || lower.includes('davinci') || lower.includes('after effects') || lower.includes('capcut') || lower.includes('speed ramp') || lower.includes('color grade')) {
+      add('video-editing', 'violet');
+      if (lower.includes('premiere')) add('premiere-pro', 'violet');
+      else if (lower.includes('after effects')) add('after-effects', 'violet');
+      else if (lower.includes('davinci')) add('davinci-resolve', 'violet');
+    }
+    if (lower.includes('motion') || lower.includes('animation') || lower.includes('gsap') || lower.includes('framer')) {
+      add('motion-design', 'violet');
+      add('animation', 'violet');
+    }
+    if (lower.includes('ai') || lower.includes('llm') || lower.includes('gpt') || lower.includes('agent') || lower.includes('claude') || lower.includes('deepseek')) {
+      add('ai', 'teal');
+      if (lower.includes('prompt')) add('prompt-engineering', 'teal');
+    }
+    if (lower.includes('code') || lower.includes('programming') || lower.includes('react') || lower.includes('next.js') || lower.includes('developer') || lower.includes('web dev') || lower.includes('javascript') || lower.includes('typescript')) {
+      add('tech', 'teal');
+      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
+      else add('web-development', 'teal');
+    }
+    if (lower.includes('figma') || lower.includes('ui') || lower.includes('ux') || lower.includes('design') || lower.includes('3d') || lower.includes('blender')) {
+      add('design', 'pink');
+      if (lower.includes('ui') || lower.includes('ux')) add('ui-ux', 'cyan');
+    }
+    if (lower.includes('tutorial') || lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
       add('tutorial', 'green');
     }
-    if (lower.includes('premiere') || lower.includes('video edit') || lower.includes('davinci') || lower.includes('after effects')) {
-      add('video-editing', 'violet');
-    }
-    if (lower.includes('ai') || lower.includes('llm') || lower.includes('gpt') || lower.includes('agent') || lower.includes('claude')) {
-      add('ai', 'teal');
-    }
-    if (lower.includes('code') || lower.includes('programming') || lower.includes('react') || lower.includes('next.js') || lower.includes('developer')) {
-      add('tech', 'teal');
-    }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('animation') || lower.includes('3d')) {
-      add('design', 'pink');
-    }
-    if (lower.includes('finance') || lower.includes('stock') || lower.includes('money') || lower.includes('crypto')) {
+    if (lower.includes('finance') || lower.includes('crypto') || lower.includes('stock') || lower.includes('investing')) {
       add('finance', 'teal');
+      add('crypto', 'amber');
     }
+
     if (tags.length === 0) {
-      tags.push({ name: 'video-editing', color: 'violet' });
+      tags.push({ name: 'video-editing', color: 'violet' }, { name: 'tutorial', color: 'green' }, { name: 'resource', color: 'blue' });
+    } else if (tags.length === 1) {
+      if (tags[0].name === 'video-editing') tags.push({ name: 'tutorial', color: 'green' });
+      else if (tags[0].name === 'tech' || tags[0].name === 'ai') tags.push({ name: 'resource', color: 'blue' });
+      else tags.push({ name: 'showcase', color: 'blue' });
     }
-    return tags;
+
+    return tags.slice(0, 4);
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

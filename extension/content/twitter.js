@@ -51,30 +51,53 @@
     const lower = (text || '').toLowerCase();
     const tags = [];
     const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 3) {
+      if (!tags.some(t => t.name === name) && tags.length < 4) {
         tags.push({ name, color });
       }
     };
 
-    if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai')) {
+    if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai') || lower.includes('prompt')) {
       add('ai', 'teal');
+      if (lower.includes('agent') || lower.includes('crewai')) add('ai-agents', 'teal');
+      else if (lower.includes('prompt')) add('prompt-engineering', 'teal');
+      else add('tool', 'cyan');
     }
-    if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind')) {
+    if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript')) {
       add('tech', 'teal');
+      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
+      else add('web-development', 'teal');
     }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('animation')) {
-      add('design', 'pink');
+    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('animation') || lower.includes('motion')) {
+      if (lower.includes('motion') || lower.includes('animation')) {
+        add('motion-design', 'violet');
+        add('animation', 'violet');
+      } else {
+        add('ui', 'cyan');
+        add('design-inspiration', 'pink');
+      }
     }
-    if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('growth')) {
+    if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie')) {
       add('saas', 'cyan');
+      add('startup', 'green');
     }
-    if (lower.includes('python') || lower.includes('backend') || lower.includes('database') || lower.includes('supabase')) {
+    if (lower.includes('supabase') || lower.includes('postgres') || lower.includes('database') || lower.includes('backend') || lower.includes('python') || lower.includes('api')) {
       add('tech', 'teal');
+      if (lower.includes('supabase')) add('supabase', 'green');
+      else add('backend', 'teal');
     }
+    if (lower.includes('guide') || lower.includes('how to') || lower.includes('thread') || lower.includes('tutorial') || lower.includes('tips')) {
+      add('guide', 'green');
+    }
+
     if (tags.length === 0) {
-      tags.push({ name: 'tech', color: 'teal' });
+      tags.push({ name: 'tech', color: 'teal' }, { name: 'web-development', color: 'teal' }, { name: 'resource', color: 'blue' });
+    } else if (tags.length === 1) {
+      if (tags[0].name === 'ai' || tags[0].name === 'tech') tags.push({ name: 'resource', color: 'blue' });
+      else if (tags[0].name === 'saas') tags.push({ name: 'case-study', color: 'amber' });
+      else tags.push({ name: 'guide', color: 'green' });
     }
-    return tags;
+
+    return tags.slice(0, 4);
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

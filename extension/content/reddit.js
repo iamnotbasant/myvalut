@@ -46,30 +46,45 @@
     const lower = (text || '').toLowerCase();
     const tags = [];
     const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 3) {
+      if (!tags.some(t => t.name === name) && tags.length < 4) {
         tags.push({ name, color });
       }
     };
 
-    if (lower.includes('programming') || lower.includes('webdev') || lower.includes('react') || lower.includes('python') || lower.includes('coding')) {
+    if (lower.includes('programming') || lower.includes('webdev') || lower.includes('react') || lower.includes('python') || lower.includes('coding') || lower.includes('javascript') || lower.includes('typescript')) {
       add('tech', 'teal');
+      if (lower.includes('react') || lower.includes('next')) add('react', 'cyan');
+      else add('web-development', 'teal');
     }
-    if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama')) {
+    if (lower.includes('github') || lower.includes('open source') || lower.includes('opensource') || lower.includes('repo')) {
+      add('open-source', 'green');
+      add('github', 'orange');
+    }
+    if (lower.includes('artificial') || lower.includes('machinelearning') || lower.includes('chatgpt') || lower.includes('ai') || lower.includes('localllama') || lower.includes('deepseek')) {
       add('ai', 'teal');
+      add('tool', 'cyan');
     }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design')) {
-      add('design', 'pink');
+    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('web_design') || lower.includes('figma')) {
+      add('ui', 'cyan');
+      add('design-inspiration', 'pink');
     }
-    if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject')) {
+    if (lower.includes('saas') || lower.includes('startups') || lower.includes('entrepreneur') || lower.includes('sideproject') || lower.includes('indiehackers')) {
       add('saas', 'cyan');
+      add('startup', 'green');
     }
-    if (lower.includes('productivity') || lower.includes('selfimprovement') || lower.includes('books')) {
+    if (lower.includes('productivity') || lower.includes('workflow') || lower.includes('notion') || lower.includes('obsidian')) {
       add('productivity', 'amber');
+      add('tool', 'cyan');
     }
+
     if (tags.length === 0) {
-      tags.push({ name: 'resource', color: 'blue' });
+      tags.push({ name: 'tech', color: 'teal' }, { name: 'open-source', color: 'green' }, { name: 'guide', color: 'green' });
+    } else if (tags.length === 1) {
+      if (tags[0].name === 'tech' || tags[0].name === 'ai') tags.push({ name: 'resource', color: 'blue' });
+      else tags.push({ name: 'guide', color: 'green' });
     }
-    return tags;
+
+    return tags.slice(0, 4);
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

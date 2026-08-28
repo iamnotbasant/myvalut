@@ -50,27 +50,48 @@
     const lower = (text || '').toLowerCase();
     const tags = [];
     const add = (name, color) => {
-      if (!tags.some(t => t.name === name) && tags.length < 3) {
+      if (!tags.some(t => t.name === name) && tags.length < 4) {
         tags.push({ name, color });
       }
     };
 
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('graphic') || lower.includes('art')) {
-      add('design', 'pink');
+    if (lower.includes('photo') || lower.includes('preset') || lower.includes('lightroom') || lower.includes('photoshop') || lower.includes('camera') || lower.includes('portrait') || lower.includes('retouch')) {
+      add('photo-editing', 'violet');
+      add('design-inspiration', 'pink');
     }
-    if (lower.includes('tech') || lower.includes('code') || lower.includes('setup') || lower.includes('developer')) {
-      add('tech', 'teal');
+    if (lower.includes('motion') || lower.includes('animation') || lower.includes('reels') || lower.includes('transition') || lower.includes('vfx') || lower.includes('render')) {
+      add('motion-design', 'violet');
+      add('animation', 'violet');
     }
-    if (lower.includes('ai') || lower.includes('robot') || lower.includes('future') || lower.includes('model')) {
+    if (lower.includes('graphic') || lower.includes('poster') || lower.includes('branding') || lower.includes('logo') || lower.includes('typography') || lower.includes('font')) {
+      add('graphic-design', 'pink');
+      add('design-inspiration', 'pink');
+    }
+    if (lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('interface') || lower.includes('wireframe') || lower.includes('design system')) {
+      add('ui', 'cyan');
+      add('ux', 'cyan');
+    }
+    if (lower.includes('ai') || lower.includes('midjourney') || lower.includes('genai') || lower.includes('chatgpt') || lower.includes('flux')) {
       add('ai', 'teal');
+      add('tool', 'cyan');
     }
-    if (lower.includes('growth') || lower.includes('business') || lower.includes('marketing') || lower.includes('founder')) {
+    if (lower.includes('setup') || lower.includes('workspace') || lower.includes('desk') || lower.includes('minimal')) {
+      add('design-inspiration', 'pink');
+      add('productivity', 'amber');
+    }
+    if (lower.includes('growth') || lower.includes('business') || lower.includes('marketing') || lower.includes('founder') || lower.includes('creator')) {
       add('marketing', 'orange');
+      add('startup', 'green');
     }
+
     if (tags.length === 0) {
-      tags.push({ name: 'design', color: 'pink' });
+      tags.push({ name: 'design-inspiration', color: 'pink' }, { name: 'photo-editing', color: 'violet' }, { name: 'showcase', color: 'blue' });
+    } else if (tags.length === 1) {
+      if (tags[0].name === 'ui' || tags[0].name === 'graphic-design') tags.push({ name: 'design-inspiration', color: 'pink' });
+      else tags.push({ name: 'showcase', color: 'blue' });
     }
-    return tags;
+
+    return tags.slice(0, 4);
   }
 
   const SUPABASE_URL = 'https://fsouhiafooeybyftkpsy.supabase.co';

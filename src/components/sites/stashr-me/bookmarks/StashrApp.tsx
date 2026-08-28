@@ -649,6 +649,38 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     });
   }, [bookmarks, filterState]);
 
+  const allAvailableTags = useMemo<Tag[]>(() => {
+    const map = new Map<string, Tag>();
+
+    // First populate from initial/fetched tags state
+    tags.forEach(t => {
+      map.set(t.name.toLowerCase(), { ...t, count: 0 });
+    });
+
+    // Compute live counts and discover any tags from saved bookmarks
+    bookmarks.forEach(bm => {
+      if (bm.tags && Array.isArray(bm.tags)) {
+        bm.tags.forEach(t => {
+          if (!t || !t.name) return;
+          const key = t.name.toLowerCase();
+          const existing = map.get(key);
+          if (existing) {
+            existing.count = (existing.count || 0) + 1;
+          } else {
+            map.set(key, {
+              id: `tag_${key.replace(/[^a-z0-9]/g, '_')}`,
+              name: t.name,
+              color: t.color || 'teal',
+              count: 1,
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tags, bookmarks]);
+
   const activeBookmarksCount = bookmarks.filter(b => !b.isArchived).length;
   const archivedBookmarksCount = bookmarks.filter(b => b.isArchived).length;
   const uniqueCreatorsCount = useMemo(() => {
@@ -669,7 +701,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         filterState={filterState}
         onFilterChange={handleFilterChange}
         collections={collections}
-        tags={tags}
+        tags={allAvailableTags}
         bookmarksCount={activeBookmarksCount}
         archivedCount={archivedBookmarksCount}
         creatorsCount={uniqueCreatorsCount}
@@ -702,7 +734,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           }}
           onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
           onShuffle={handleShuffle}
-          tags={tags}
+          tags={allAvailableTags}
           collections={collections}
           isDark={isDark}
           onToggleTheme={handleToggleTheme}
@@ -758,7 +790,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 }}
                 onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
                 onShuffle={handleShuffle}
-                tags={tags}
+                tags={allAvailableTags}
                 platforms={[
                   { key: 'twitter', label: 'Twitter / X' },
                   { key: 'reddit', label: 'Reddit' },
@@ -828,7 +860,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onFilterChange={handleFilterChange}
         bookmarks={bookmarks}
         collections={collections}
-        tags={tags}
+        tags={allAvailableTags}
         onToggleTheme={handleToggleTheme}
         isDark={isDark}
       />
@@ -837,7 +869,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         isOpen={isAddBookmarkOpen}
         onClose={() => setIsAddBookmarkOpen(false)}
         onAdd={handleAddBookmark}
-        availableTags={tags}
+        availableTags={allAvailableTags}
       />
 
       <AddCollectionModal
