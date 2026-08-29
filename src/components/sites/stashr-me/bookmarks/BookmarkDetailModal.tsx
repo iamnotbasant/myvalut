@@ -1,15 +1,13 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
-import { TagDot, PlatformIcon, RedditIcon, Sparkles, ExternalLink } from '@/components/icons';
+import { TagDot, PlatformIcon, RedditIcon, ExternalLink } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkDetailModalProps {
   bookmark: BookmarkItem | null;
   isOpen: boolean;
   onClose: () => void;
-  isTagging?: boolean;
-  onAutoTag?: () => void;
   onSelectTag?: (tagName: string) => void;
 }
 
@@ -17,8 +15,6 @@ export function BookmarkDetailModal({
   bookmark,
   isOpen,
   onClose,
-  isTagging = false,
-  onAutoTag,
   onSelectTag
 }: BookmarkDetailModalProps) {
   useEffect(() => {
@@ -185,58 +181,27 @@ export function BookmarkDetailModal({
           </div>
         )}
 
-        {/* Note if available */}
-        {bookmark.note && (
-          <div className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-neutral-300">
-            <span className="font-semibold text-white">Note:</span>
-            <span>{bookmark.note}</span>
-          </div>
-        )}
-
-        {/* Footer with ALL Tags (untruncated) and Date / Platform Badge */}
-        <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
-          {/* Tags */}
+        {/* Footer: Tags and Platform */}
+        <div className="flex items-center justify-between border-t border-white/10 px-5 py-3 bg-black/40">
+          {/* Tags list */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
-                <Sparkles className="size-3 text-white animate-spin" />
-                <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
-              </div>
-            ) : bookmark.tags && bookmark.tags.length > 0 ? (
-              <>
-                {bookmark.tags.map((tag, idx) => (
-                  <button
-                    type="button"
-                    key={idx}
-                    onClick={() => {
-                      onSelectTag?.(tag.name);
-                      onClose();
-                    }}
-                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
-                  >
-                    <TagDot color={tag.color} />
-                    <span>{tag.name}</span>
-                  </button>
-                ))}
+            {bookmark.tags && bookmark.tags.length > 0 ? (
+              bookmark.tags.map((tag, idx) => (
                 <button
                   type="button"
-                  onClick={onAutoTag}
-                  title="Re-generate tags with AI"
-                  className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 px-2 py-0.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer active:scale-95"
+                  key={idx}
+                  onClick={() => {
+                    onSelectTag?.(tag.name);
+                    onClose();
+                  }}
+                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
                 >
-                  <Sparkles className="size-3 text-neutral-400" />
-                  <span>Re-Tag AI</span>
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
                 </button>
-              </>
+              ))
             ) : (
-              <button
-                type="button"
-                onClick={onAutoTag}
-                className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer active:scale-95"
-              >
-                <Sparkles className="size-3 text-neutral-400" />
-                <span>✦ Auto-Tag with AI</span>
-              </button>
+              <span className="text-xs text-neutral-500">No tags</span>
             )}
           </div>
 

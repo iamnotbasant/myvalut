@@ -21,13 +21,10 @@ interface BookmarksContainerProps {
   onDelete: (id: string) => void;
   onArchiveSelected: () => void;
   onDeleteSelected: () => void;
-  onAutoTagSelected?: () => void;
   onResetFilters: () => void;
   onOpenAddBookmark: () => void;
   onOpenImage: (url: string) => void;
   onOpenDetail: (bookmark: BookmarkItem) => void;
-  taggingIds?: Set<string>;
-  onAutoTag?: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
 }
 
@@ -47,13 +44,10 @@ export function BookmarksContainer({
   onDelete,
   onArchiveSelected,
   onDeleteSelected,
-  onAutoTagSelected,
   onResetFilters,
   onOpenAddBookmark,
   onOpenImage,
   onOpenDetail,
-  taggingIds,
-  onAutoTag,
   onSelectTag
 }: BookmarksContainerProps) {
   // Empty State
@@ -129,8 +123,6 @@ export function BookmarksContainer({
               onDelete={onDelete}
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
-              isTagging={taggingIds?.has(bm.id)}
-              onAutoTag={() => onAutoTag?.(bm)}
               onSelectTag={onSelectTag}
             />
           ))}
@@ -154,8 +146,6 @@ export function BookmarksContainer({
               onDelete={onDelete}
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
-              isTagging={taggingIds?.has(bm.id)}
-              onAutoTag={() => onAutoTag?.(bm)}
               onSelectTag={onSelectTag}
             />
           ))}
@@ -196,8 +186,6 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
-                  isTagging={taggingIds?.has(bm.id)}
-                  onAutoTag={() => onAutoTag?.(bm)}
                   onSelectTag={onSelectTag}
                 />
               ))}
@@ -219,8 +207,6 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
-                  isTagging={taggingIds?.has(bm.id)}
-                  onAutoTag={() => onAutoTag?.(bm)}
                   onSelectTag={onSelectTag}
                 />
               ))}
@@ -242,8 +228,6 @@ export function BookmarksContainer({
                   onDelete={onDelete}
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
-                  isTagging={taggingIds?.has(bm.id)}
-                  onAutoTag={() => onAutoTag?.(bm)}
                   onSelectTag={onSelectTag}
                 />
               ))}
@@ -274,8 +258,6 @@ export function BookmarksContainer({
                     onDelete={onDelete}
                     onOpenImage={onOpenImage}
                     onOpenDetail={onOpenDetail}
-                    isTagging={taggingIds?.has(bm.id)}
-                    onAutoTag={() => onAutoTag?.(bm)}
                     onSelectTag={onSelectTag}
                   />
                 ))}
@@ -305,15 +287,6 @@ export function BookmarksContainer({
             Clear
           </button>
           <div className="h-4 w-px bg-border" />
-          {onAutoTagSelected && (
-            <button
-              onClick={onAutoTagSelected}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20 transition-colors shadow-xs font-medium cursor-pointer"
-            >
-              <Sparkles className="size-3.5" />
-              <span>✦ AI Tag Selected</span>
-            </button>
-          )}
           <button
             onClick={onArchiveSelected}
             className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:bg-accent transition-colors shadow-xs cursor-pointer"

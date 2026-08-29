@@ -14,14 +14,12 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY);
   return NextResponse.json(
     {
       status: 'online',
-      app: 'Valut - AI Bookmark Vault',
+      app: 'Valut - Bookmark Vault',
       version: '1.0.0',
       supabaseConnected: isSupabaseConfigured,
-      geminiConfigured: hasGeminiKey,
       timestamp: Date.now(),
     },
     { headers: corsHeaders() }

@@ -13,7 +13,6 @@ import {
   Trash2,
   Copy,
   Check,
-  Sparkles,
   ExternalLink
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
@@ -31,8 +30,6 @@ interface BookmarkCardProps {
   onDelete: (id: string) => void;
   onOpenImage?: (url: string) => void;
   onOpenDetail?: (bookmark: BookmarkItem) => void;
-  isTagging?: boolean;
-  onAutoTag?: () => void;
   onSelectTag?: (tagName: string) => void;
 }
 
@@ -54,8 +51,6 @@ export function BookmarkCard({
   onDelete,
   onOpenImage,
   onOpenDetail,
-  isTagging = false,
-  onAutoTag,
   onSelectTag
 }: BookmarkCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -141,12 +136,6 @@ export function BookmarkCard({
       onClick: () => onOpenNote(bookmark)
     },
     {
-      id: 'autotag',
-      label: 'Auto-Tag with AI',
-      icon: <Sparkles className="size-3.5 text-primary" />,
-      onClick: () => onAutoTag?.()
-    },
-    {
       id: 'copy',
       label: copied ? 'Copied Link!' : 'Copy Link',
       icon: copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />,
@@ -180,7 +169,7 @@ export function BookmarkCard({
     },
     {
       id: 'delete',
-      label: 'Delete Bookmark',
+      label: 'Delete',
       icon: <Trash2 className="size-3.5" />,
       danger: true,
       onClick: () => onDelete(bookmark.id)
@@ -195,7 +184,7 @@ export function BookmarkCard({
     bookmark.text?.toLowerCase().includes('animation') ||
     bookmark.text?.toLowerCase().includes('video');
 
-  // 1. ROW VIEW VARIANT (Horizontal Feed Card - Image 1 Match)
+  // 1. ROW VIEW VARIANT
   if (viewMode === 'row') {
     return (
       <article
@@ -211,15 +200,8 @@ export function BookmarkCard({
         }}
         className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
-        } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
+        }`}
       >
-        {/* Animated Laser Border Beam during AI Tagging */}
-        {isTagging && (
-          <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
-            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
-            <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
-          </div>
-        )}
 
         {/* Top Header: Avatar, Name, Handle, Selection Checkbox */}
         <div className="relative z-10 flex items-center justify-between gap-3">
@@ -308,12 +290,7 @@ export function BookmarkCard({
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
-                <Sparkles className="size-3 text-white animate-spin" />
-                <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
-              </div>
-            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+            {bookmark.tags && bookmark.tags.length > 0 ? (
               <>
                 {bookmark.tags.slice(0, 4).map((tag, idx) => (
                   <button
@@ -335,19 +312,7 @@ export function BookmarkCard({
                   </span>
                 )}
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={e => {
-                  e.stopPropagation();
-                  onAutoTag?.();
-                }}
-                className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-300 transition-colors py-0.5 cursor-pointer"
-              >
-                <Sparkles className="size-3 text-neutral-400" />
-                <span>✦ Auto-Tag</span>
-              </button>
-            )}
+            ) : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -383,15 +348,8 @@ export function BookmarkCard({
         }}
         className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
-        } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
+        }`}
       >
-        {/* Animated Laser Border Beam during AI Tagging */}
-        {isTagging && (
-          <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
-            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
-            <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
-          </div>
-        )}
 
         {/* Top Header: Avatar, Name, Handle, Menu & Actions */}
         <div className="relative z-10 flex items-center justify-between gap-3">
@@ -477,12 +435,7 @@ export function BookmarkCard({
         {/* Footer: Tags & Date */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
-                <Sparkles className="size-3 text-white animate-spin" />
-                <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
-              </div>
-            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+            {bookmark.tags && bookmark.tags.length > 0 ? (
               bookmark.tags.map((tag, idx) => (
                 <button
                   type="button"
@@ -497,19 +450,7 @@ export function BookmarkCard({
                   <span>{tag.name}</span>
                 </button>
               ))
-            ) : (
-              <button
-                type="button"
-                onClick={e => {
-                  e.stopPropagation();
-                  onAutoTag?.();
-                }}
-                className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-300 transition-colors py-0.5 cursor-pointer"
-              >
-                <Sparkles className="size-3 text-neutral-400" />
-                <span>✦ Auto-Tag with AI</span>
-              </button>
-            )}
+            ) : null}
           </div>
           <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
         </div>
@@ -539,15 +480,8 @@ export function BookmarkCard({
       }}
       className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
         isSelected ? 'ring-primary ring-2 border-primary' : ''
-      } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
+      }`}
     >
-      {/* Animated Laser Border Beam during AI Tagging */}
-      {isTagging && (
-        <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
-          <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
-          <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
-        </div>
-      )}
       {/* Top Right Floating Hover Action Bar */}
       <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-0.5">
         <div className="flex items-center gap-0.5 rounded-lg bg-gradient-to-l from-[#0d0d0d] from-60% to-transparent pl-8 opacity-0 transition-opacity group-hover/bookmarkcard:opacity-100 has-[:focus-visible]:opacity-100">
@@ -590,17 +524,6 @@ export function BookmarkCard({
                 >
                   <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
                   <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
-                </button>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    setIsMenuOpen(false);
-                    onAutoTag?.();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
-                >
-                  <Sparkles className="size-3.5 text-neutral-400" />
-                  <span>Re-Tag with AI</span>
                 </button>
                 <button
                   onClick={e => {
@@ -798,12 +721,7 @@ export function BookmarkCard({
       {/* Footer with Tags and Date/Platform */}
       <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-1">
         <div className="flex min-w-0 flex-1 items-center">
-          {isTagging ? (
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
-              <Sparkles className="size-3 text-white animate-spin" />
-              <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
-            </div>
-          ) : bookmark.tags && bookmark.tags.length > 0 ? (
+          {bookmark.tags && bookmark.tags.length > 0 ? (
             <div className="flex min-w-0 items-center gap-1.5">
               {bookmark.tags.slice(0, 3).map((tag, idx) => (
                 <button
@@ -851,20 +769,7 @@ export function BookmarkCard({
                 </div>
               )}
             </div>
-          ) : (
-            /* + Add tags button when no tags */
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                onAutoTag?.();
-              }}
-              className="group/addtag inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-white transition-colors py-0.5 cursor-pointer"
-            >
-              <Sparkles className="size-3 text-neutral-400" />
-              <span className="font-medium text-[11px]">✦ Auto-Tag with AI</span>
-            </button>
-          )}
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

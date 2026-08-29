@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateAutoTags } from '@/lib/ai-tagger';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
 
@@ -8,7 +7,7 @@ function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-gemini-key',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
@@ -30,9 +29,7 @@ export async function POST(req: NextRequest) {
       imageUrl,
       userId,
       customTags = [],
-      geminiApiKey,
       note,
-      context,
     } = body;
 
     if (!url && !text) {
@@ -42,18 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Generate AI & Heuristic Tags (3-5 strict taxonomy)
-    const tags = await generateAutoTags(
-      {
-        title,
-        text: text || title || url,
-        platform,
-        url,
-        customTags,
-        context,
-      },
-      geminiApiKey || req.headers.get('x-gemini-key') || undefined
-    );
+    const tags = Array.isArray(customTags) ? customTags : [];
 
     // 2. Format Date
     const now = new Date();

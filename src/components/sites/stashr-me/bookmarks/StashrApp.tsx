@@ -370,90 +370,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     });
   };
 
-  // Tagging State for Individual Card Animation
-  const [taggingIds, setTaggingIds] = useState<Set<string>>(new Set());
-
-  const handleAutoTagBookmark = useCallback(async (bookmark: BookmarkItem) => {
-    if (taggingIds.has(bookmark.id)) return;
-    setTaggingIds(prev => new Set([...prev, bookmark.id]));
-
-    try {
-      const storedKey =
-        typeof window !== 'undefined'
-          ? localStorage.getItem('valut_gemini_key') || localStorage.getItem('gemini_api_key') || undefined
-          : undefined;
-
-      const res = await fetch('/api/ai/tag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(storedKey ? { 'x-gemini-key': storedKey } : {}),
-        },
-        body: JSON.stringify({
-          title: bookmark.title || bookmark.displayName,
-          text: bookmark.text,
-          url: bookmark.url,
-          platform: bookmark.platform,
-          geminiApiKey: storedKey,
-        }),
-      });
-
-      if (!res.ok) throw new Error('AI tag endpoint error');
-      const data = await res.json();
-
-      if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
-        soundFx.playAiSuccessSound();
-        setBookmarks(prev =>
-          prev.map(b => (b.id === bookmark.id ? { ...b, tags: data.tags } : b))
-        );
-        updateBookmarkInDb(bookmark.id, { tags: data.tags });
-
-        // Update tags list if new tags were introduced
-        setTags(prev => {
-          const existingNames = new Set(prev.map(t => t.name));
-          const newTags: Tag[] = (data.tags as Array<{ name: string; color?: string }>)
-            .filter(t => !existingNames.has(t.name))
-            .map(t => ({
-              id: `t_${Date.now()}_${t.name}`,
-              name: t.name,
-              color: (t.color as Tag['color']) || 'blue',
-              count: 1,
-            }));
-
-          if (newTags.length > 0) {
-            newTags.forEach(t => insertTagToDb(t, user?.id));
-            return [...prev, ...newTags];
-          }
-          return prev;
-        });
-      }
-    } catch (err) {
-      console.error('Failed to auto-tag bookmark:', err);
-    } finally {
-      setTaggingIds(prev => {
-        const next = new Set(prev);
-        next.delete(bookmark.id);
-        return next;
-      });
-    }
-  }, [taggingIds, user?.id]);
-
-  // Auto-Process Only Truly Untagged New Bookmarks (Runs once per bookmark)
-  const autoTaggedIdsRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    // Only process bookmarks that have zero tags and haven't been tagged in this session
-    const untaggedBookmarks = bookmarks.filter(
-      b => (!b.tags || b.tags.length === 0) && !autoTaggedIdsRef.current.has(b.id)
-    );
-
-    untaggedBookmarks.forEach(bm => {
-      autoTaggedIdsRef.current.add(bm.id);
-      handleAutoTagBookmark(bm);
-    });
-  }, [bookmarks, isLoaded, handleAutoTagBookmark]);
-
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
     soundFx.playSaveSound();
     const created: BookmarkItem = {
@@ -464,11 +380,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     };
     setBookmarks(prev => [created, ...prev]);
     insertBookmarkToDb(created, user?.id);
-
-    // If new bookmark has no tags, auto-tag it once
-    if (!created.tags || created.tags.length === 0) {
-      handleAutoTagBookmark(created);
-    }
 
     // Update tags list if new tags were introduced
     setTags(prev => {
@@ -607,17 +518,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     const ids = Array.from(selectedIds);
     setBookmarks(prev => prev.filter(b => !selectedIds.has(b.id)));
     deleteMultipleBookmarksFromDb(ids);
-    setSelectedIds(new Set());
-    setIsSelectionMode(false);
-  };
-
-  const handleAutoTagSelected = async () => {
-    const targets = bookmarks.filter(b => selectedIds.has(b.id));
-    if (targets.length === 0) return;
-    soundFx.playAiSuccessSound();
-    for (const bm of targets) {
-      await handleAutoTagBookmark(bm);
-    }
     setSelectedIds(new Set());
     setIsSelectionMode(false);
   };
@@ -836,7 +736,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onDelete={handleDelete}
                 onArchiveSelected={handleArchiveSelected}
                 onDeleteSelected={handleDeleteSelected}
-                onAutoTagSelected={handleAutoTagSelected}
                 onResetFilters={() =>
                   setFilterState({
                     query: '',
@@ -850,8 +749,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
                 onOpenImage={setActiveLightboxImage}
                 onOpenDetail={setActiveDetailBookmark}
-                taggingIds={taggingIds}
-                onAutoTag={handleAutoTagBookmark}
                 onSelectTag={handleSelectTag}
               />
             </div>
@@ -864,8 +761,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         bookmark={activeDetailBookmark}
         isOpen={!!activeDetailBookmark}
         onClose={() => setActiveDetailBookmark(null)}
-        isTagging={activeDetailBookmark ? taggingIds.has(activeDetailBookmark.id) : false}
-        onAutoTag={() => activeDetailBookmark && handleAutoTagBookmark(activeDetailBookmark)}
         onSelectTag={handleSelectTag}
       />
 
