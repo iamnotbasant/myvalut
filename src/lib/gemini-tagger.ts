@@ -101,21 +101,46 @@ export function normalizeAndCleanTags(rawTags: string[]): Array<{ name: string; 
   });
 }
 
-// 4. Safe Backend Assembly (Prompt Fail-Safe)
-export function assembleFinalTags(aiJson: any): Array<{ name: string; color: TagColor }> {
-  if (!aiJson || typeof aiJson !== 'object') return [];
+// 4. Safe Backend Processing (Safe-Pass & Sanitization)
+export function processIncomingTags(tagsArray: any[]): Array<{ name: string; color: TagColor }> {
+  if (!Array.isArray(tagsArray)) return [];
 
-  const category = (aiJson.category || '').toLowerCase().trim();
-  const format = (aiJson.content_format || '').toLowerCase().trim();
-  const tools = Array.isArray(aiJson.tools) ? aiJson.tools : [];
-  const topics = Array.isArray(aiJson.topics) ? aiJson.topics : [];
-  const finalTags = Array.isArray(aiJson.final_tags) ? aiJson.final_tags : [];
+  const sanitized = tagsArray
+    .map(tag => {
+      return String(tag)
+        .toLowerCase()
+        .replace(/[-_]/g, ' ')           // Convert hyphens/underscores to spaces
+        .replace(/[^a-z0-9\s]/g, '')     // Strip special chars (#, @, etc.)
+        .replace(/\s+/g, ' ')            // Normalize multiple spaces
+        .trim();
+    })
+    .map(tag => SYNONYM_MAP[tag] || tag)
+    .filter(tag => tag.length >= 2);     // Strip meaningless 1-letter noise
 
-  // Merge: Category + Tools + Topics + Content Format + final_tags
-  const rawList = [category, ...tools, ...topics, format, ...finalTags];
+  // Deduplicate and hard-cap at 6
+  const uniqueTagNames = Array.from(new Set(sanitized)).slice(0, 6);
 
-  return normalizeAndCleanTags(rawList);
+  return uniqueTagNames.map((name, index) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % TAG_COLORS.length;
+    return {
+      name,
+      color: TAG_COLORS[colorIndex] || TAG_COLORS[index % TAG_COLORS.length]
+    };
+  });
 }
+
+// Alias for backward compatibility
+export const assembleFinalTags = (aiJson: any) => {
+  if (!aiJson || typeof aiJson !== 'object') return [];
+  const tags = Array.isArray(aiJson.tags)
+    ? aiJson.tags
+    : [aiJson.category, ...(Array.isArray(aiJson.tools) ? aiJson.tools : []), ...(Array.isArray(aiJson.topics) ? aiJson.topics : []), aiJson.content_format, ...(Array.isArray(aiJson.final_tags) ? aiJson.final_tags : [])];
+  return processIncomingTags(tags);
+};
 
 // 5. Platform Detection
 export function detectPlatformFromUrl(url: string): PlatformType {
@@ -335,21 +360,22 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
   };
 }
 
-// 7. Gemini System Prompt & Caller
-const GEMINI_SYSTEM_PROMPT = `You are the core categorization engine for a knowledge curation app (Vault).
-Analyze the provided content and generate strictly structured, high-utility searchable tags in JSON format.
+// 7. Open-World Gemini System Prompt & Caller
+const GEMINI_SYSTEM_PROMPT = `You are an autonomous, high-precision content indexing engine for a personal knowledge vault.
+Analyze the given content and extract between 2 to 6 high-utility search tags based strictly on its actual substance.
 
-TAG COMPOSITION RULES (MANDATORY HIERARCHY):
-1. Every item MUST have 3 layers of tags:
-   - Layer 1 (Broad Category - Exactly 1): High-level domain for global sidebar navigation. Must be one of: "ai", "tech", "video editing", "coding", "finance", "fitness", "productivity", "marketing", "design", "general".
-   - Layer 2 (Tools & Topics - 1 to 4): The exact names of software, apps, tools, frameworks, or core subjects (e.g., "calliope", "chatgpt", "premiere pro", "cursor", "faceless video", "2d animation", "ffmpeg"). NEVER use generic words like "tips", "video", "software", or "tricks".
-   - Layer 3 (Content Format - Exactly 1): The nature of the content for type-filtering. Must be one of: "tool", "tutorial", "workflow", "resource", "case study", "opinion", "news".
-
-2. FORMATTING RULES:
-   - STRICTLY lowercase with natural spaces.
-   - DO NOT use hyphens ("-"), underscores ("_"), or hashtags ("#"). (e.g., write "faceless video", NOT "faceless-video").
-   - Max 6 tags total, Min 3 tags total.
-   - Deduplicate near-synonyms.
+EXTRACTION PRINCIPLES:
+1. True Subject Identification: Detect the actual domain or primary theme organically without forcing pre-defined categories.
+2. Entity Priority: If a specific software, tool, framework, person, device, method, or named concept is central to the content, tag it directly by name.
+3. Depth-Driven Scaling (Dynamic 2-6):
+   - Low information density (simple remark, short quote, basic image): Output 2-3 tags.
+   - High information density (detailed guide, deep breakdown, technical post, multi-step process): Output 4-6 tags.
+4. Search Utility: Every tag must be a phrase or term a user would naturally search to find this content later.
+5. Strict Format Constraints:
+   - Output must be purely lowercase words with normal spaces.
+   - Strictly NO hyphens (-), NO hashtags (#), NO underscores (_).
+   - Strictly NO duplicate tags or trivial variations (e.g., do not output both "chatgpt" and "gpt").
+   - Maximum 6 tags, Minimum 2 tags.
 
 INPUT:
 Platform: {platform}
@@ -358,19 +384,13 @@ Context: {content_text}
 
 OUTPUT FORMAT (JSON ONLY):
 {
-  "category": "ai",
-  "tools": ["calliope"],
-  "topics": ["faceless video", "2d animation"],
-  "content_format": "tool",
-  "final_tags": ["ai", "calliope", "faceless video", "2d animation", "tool"]
+  "content_density": "low" | "medium" | "high",
+  "tags": ["string", "string", "string"]
 }`;
 
 export interface GeminiTagResponse {
-  category: string;
-  tools: string[];
-  topics: string[];
-  content_format: string;
-  final_tags: string[];
+  content_density: 'low' | 'medium' | 'high';
+  tags: string[];
 }
 
 export async function generateGeminiTags(params: {
@@ -397,7 +417,7 @@ export async function generateGeminiTags(params: {
       .replace(/[^a-z0-9\s]/g, '')
       .split(/\s+/)
       .filter(w => w.length > 3 && !['this', 'that', 'with', 'from', 'have', 'what'].includes(w));
-    const fallbackTags = normalizeAndCleanTags([platform, ...fallbackWords.slice(0, 3)]);
+    const fallbackTags = processIncomingTags([platform, ...fallbackWords.slice(0, 3)]);
     return {
       tags: fallbackTags,
       rawDetails: null,
@@ -460,7 +480,8 @@ Context: ${text.slice(0, 3000)}`;
     }
 
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
-    const cleanTags = assembleFinalTags(parsed);
+    const tagsToProcess = Array.isArray(parsed.tags) ? parsed.tags : [];
+    const cleanTags = processIncomingTags(tagsToProcess);
 
     return {
       tags: cleanTags,
@@ -468,7 +489,7 @@ Context: ${text.slice(0, 3000)}`;
     };
   } catch (err: any) {
     console.error('Gemini tag generation error:', err);
-    const fallback = normalizeAndCleanTags([platform, ...title.toLowerCase().split(/\s+/).slice(0, 3)]);
+    const fallback = processIncomingTags([platform, ...title.toLowerCase().split(/\s+/).slice(0, 3)]);
     return {
       tags: fallback,
       rawDetails: null,
