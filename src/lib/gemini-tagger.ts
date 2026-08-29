@@ -374,79 +374,57 @@ export async function generateGeminiTags(params: {
 Title: ${title}
 Context: ${text.slice(0, 1500)}`;
 
+  const modelCandidates = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest'
+  ];
+
   try {
-    // Call Gemini 2.5 Flash / 1.5 Flash via REST API with JSON response mime type
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    let rawJsonText = '';
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: GEMINI_SYSTEM_PROMPT }],
-        },
-        contents: [
-          {
-            parts: [{ text: promptContent }],
+    for (const model of modelCandidates) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      // Fallback to gemini-1.5-flash
-      const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      const fallbackRes = await fetch(fallbackEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: GEMINI_SYSTEM_PROMPT }],
-          },
-          contents: [
-            {
-              parts: [{ text: promptContent }],
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: GEMINI_SYSTEM_PROMPT }],
             },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-          },
-        }),
-      });
+            contents: [
+              {
+                parts: [{ text: promptContent }],
+              },
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.2,
+            },
+          }),
+        });
 
-      if (!fallbackRes.ok) {
-        const errText = await fallbackRes.text();
-        throw new Error(`Gemini API error: ${fallbackRes.status} - ${errText}`);
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            rawJsonText = text;
+            break;
+          }
+        }
+      } catch (innerErr) {
+        console.warn(`Model ${model} attempt failed:`, innerErr);
       }
-
-      const fbData = await fallbackRes.json();
-      const fbRawJsonText = fbData?.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsed: GeminiTagResponse = JSON.parse(fbRawJsonText);
-      const candidateTags: string[] = [];
-      if (Array.isArray(parsed.final_tags) && parsed.final_tags.length > 0) {
-        candidateTags.push(...parsed.final_tags);
-      } else {
-        if (parsed.category) candidateTags.push(parsed.category);
-        if (Array.isArray(parsed.tools_and_entities)) candidateTags.push(...parsed.tools_and_entities);
-        if (Array.isArray(parsed.core_topics)) candidateTags.push(...parsed.core_topics);
-        if (parsed.content_format) candidateTags.push(parsed.content_format);
-      }
-      const cleanTags = normalizeAndCleanTags(candidateTags);
-      return {
-        tags: cleanTags,
-        rawDetails: parsed,
-      };
     }
 
-    const data = await res.json();
-    const rawJsonText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawJsonText) {
+      throw new Error('All Gemini model endpoints failed');
+    }
+
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
 
     // Collect tags from final_tags, category, and tools_and_entities

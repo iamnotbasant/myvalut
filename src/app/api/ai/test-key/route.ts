@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ping Gemini endpoint with a tiny prompt
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keyToTest}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${keyToTest}`;
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Gemini API Key is valid and connected!',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-latest',
       });
     }
 
-    // Try gemini-1.5-flash
-    const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToTest}`;
+    // Try gemini-3.6-flash
+    const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${keyToTest}`;
     const fallbackRes = await fetch(fallbackEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Gemini API Key is valid and connected!',
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.6-flash',
       });
     }
 
