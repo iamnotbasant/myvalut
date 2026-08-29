@@ -1,0 +1,117 @@
+/* Valut Injected Toast & Common Styles */
+.valut-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.valut-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 18, 18, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(16px);
+  animation: valutSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.2s ease;
+}
+
+.valut-toast.valut-toast-success {
+  border-left: 3px solid #10b981;
+}
+
+.valut-toast.valut-toast-error {
+  border-left: 3px solid #ef4444;
+}
+
+.valut-toast.valut-toast-hide {
+  animation: valutSlideOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.valut-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.valut-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.valut-toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.valut-toast-desc {
+  font-size: 11.5px;
+  color: #a1a1aa;
+}
+
+.valut-tags-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.valut-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: #e4e4e7;
+}
+
+@keyframes valutSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes valutSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+}
+
+.valut-spin {
+  animation: valutRotate 0.9s linear infinite;
+}
+
+@keyframes valutRotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}

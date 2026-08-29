@@ -1,0 +1,86 @@
+{
+  "manifest_version": 3,
+  "name": "Valut - AI Bookmark & Knowledge Capture",
+  "version": "1.0.0",
+  "description": "1-click smart bookmarking for YouTube, X (Twitter), Reddit, and web articles with AI categorization.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Save to Valut",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://youtube.com/*"
+      ],
+      "js": ["content/youtube.js"],
+      "css": ["content/common.css", "content/youtube.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://twitter.com/*",
+        "https://x.com/*"
+      ],
+      "js": ["content/twitter.js"],
+      "css": ["content/common.css", "content/twitter.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.reddit.com/*",
+        "https://reddit.com/*"
+      ],
+      "js": ["content/reddit.js"],
+      "css": ["content/common.css", "content/reddit.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "exclude_matches": [
+        "https://www.youtube.com/*",
+        "https://youtube.com/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://www.reddit.com/*",
+        "https://reddit.com/*"
+      ],
+      "js": ["content/generic.js"],
+      "css": ["content/common.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "save-page": {
+      "suggested_key": {
+        "default": "Alt+V",
+        "mac": "Alt+V"
+      },
+      "description": "Save current page to Valut"
+    }
+  }
+}

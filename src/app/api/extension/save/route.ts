@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
+import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl } from '@/lib/gemini-tagger';
 
 // Helper for CORS headers
 function corsHeaders() {
@@ -18,18 +19,19 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
+    let {
       url,
-      platform = 'web',
+      platform,
       title,
       text = '',
-      displayName = 'Web User',
-      username = 'user',
+      displayName,
+      username,
       avatarUrl,
       imageUrl,
       userId,
       customTags = [],
       note,
+      apiKey,
     } = body;
 
     if (!url && !text) {
@@ -39,9 +41,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const tags = Array.isArray(customTags) ? customTags : [];
+    // 1. Auto-detect platform and scrape metadata if URL provided and fields missing
+    const detectedPlatform = url ? detectPlatformFromUrl(url) : ((platform || 'web') as PlatformType);
+    let finalPlatform: PlatformType = (platform as PlatformType) || detectedPlatform;
 
-    // 2. Format Date
+    if (url && (!title || !imageUrl || !avatarUrl || !text)) {
+      try {
+        const scraped = await scrapeUrlMetadata(url);
+        title = title || scraped.title;
+        text = text || scraped.text;
+        displayName = displayName || scraped.displayName;
+        username = username || scraped.username;
+        avatarUrl = avatarUrl || scraped.avatarUrl;
+        imageUrl = imageUrl || scraped.imageUrl;
+        finalPlatform = scraped.platform || finalPlatform;
+      } catch (scrapeErr) {
+        console.warn('Extension save auto-scrape warning:', scrapeErr);
+      }
+    }
+
+    // 2. Generate Gemini AI Tags if no custom tags supplied
+    let tags = Array.isArray(customTags) ? customTags : [];
+    if (tags.length === 0) {
+      try {
+        const tagResult = await generateGeminiTags({
+          platform: finalPlatform,
+          title: title || '',
+          text: text || title || url || '',
+          apiKey,
+        });
+        tags = tagResult.tags;
+      } catch (tagErr) {
+        console.warn('Extension save AI tag generation warning:', tagErr);
+      }
+    }
+
+    // 3. Format Date
     const now = new Date();
     const formattedDate = now.toLocaleDateString('en-US', {
       month: 'short',
@@ -53,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     const bookmarkItem: BookmarkItem = {
       id: bookmarkId,
-      platform: (platform.toLowerCase() as PlatformType) || 'web',
+      platform: finalPlatform,
       displayName: displayName || 'Creator',
       username: username ? (username.startsWith('@') ? username.slice(1) : username) : 'creator',
       avatarUrl: avatarUrl || undefined,

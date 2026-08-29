@@ -1,0 +1,29 @@
+/* X / Twitter Injected Button */
+.valut-x-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: rgb(113, 118, 123);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+}
+
+.valut-x-btn:hover {
+  background-color: rgba(29, 155, 240, 0.1);
+  color: rgb(29, 155, 240);
+}
+
+.valut-x-btn.valut-saved {
+  color: #10b981 !important;
+}
+
+.valut-x-btn svg {
+  width: 18px;
+  height: 18px;
+}
