@@ -289,10 +289,10 @@ export function BookmarkCard({
 
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
             {bookmark.tags && bookmark.tags.length > 0 ? (
               <>
-                {bookmark.tags.slice(0, 4).map((tag, idx) => (
+                {bookmark.tags.slice(0, 3).map((tag, idx) => (
                   <button
                     type="button"
                     key={idx}
@@ -300,15 +300,15 @@ export function BookmarkCard({
                       e.stopPropagation();
                       onSelectTag?.(tag.name);
                     }}
-                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                    className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
                   >
                     <TagDot color={tag.color} />
-                    <span>{tag.name}</span>
+                    <span className="whitespace-nowrap">{tag.name}</span>
                   </button>
                 ))}
-                {bookmark.tags.length > 4 && (
-                  <span className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-400 px-2 py-0.5">
-                    +{bookmark.tags.length - 4}
+                {bookmark.tags.length > 3 && (
+                  <span className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-400 px-2 py-0.5">
+                    +{bookmark.tags.length - 3}
                   </span>
                 )}
               </>
@@ -720,9 +720,9 @@ export function BookmarkCard({
 
       {/* Footer with Tags and Date/Platform */}
       <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-1">
-        <div className="flex min-w-0 flex-1 items-center">
+        <div className="flex min-w-0 flex-1 items-center overflow-hidden">
           {bookmark.tags && bookmark.tags.length > 0 ? (
-            <div className="flex min-w-0 items-center gap-1.5">
+            <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
               {bookmark.tags.slice(0, 3).map((tag, idx) => (
                 <button
                   key={idx}
@@ -731,17 +731,17 @@ export function BookmarkCard({
                     e.stopPropagation();
                     onSelectTag?.(tag.name);
                   }}
-                  className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 min-w-0 shrink transition-all cursor-pointer active:scale-95"
+                  className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 transition-all cursor-pointer active:scale-95"
                 >
                   <TagDot color={tag.color} />
-                  <span className="truncate">{tag.name}</span>
+                  <span className="whitespace-nowrap">{tag.name}</span>
                 </button>
               ))}
               {bookmark.tags.length > 3 && (
-                <div className="relative group/tagtooltip">
+                <div className="relative group/tagtooltip shrink-0">
                   <button
                     type="button"
-                    className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 gap-1 px-2 py-0.5 shrink-0 transition-colors cursor-pointer"
+                    className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 gap-1 px-2 py-0.5 transition-colors cursor-pointer"
                   >
                     +{bookmark.tags.length - 3}
                   </button>
@@ -756,7 +756,7 @@ export function BookmarkCard({
                             e.stopPropagation();
                             onSelectTag?.(tag.name);
                           }}
-                          className="flex items-center gap-1.5 font-medium hover:text-white cursor-pointer"
+                          className="flex items-center gap-1.5 font-medium hover:text-white cursor-pointer whitespace-nowrap"
                         >
                           <TagDot color={tag.color} />
                           <span>{tag.name}</span>
