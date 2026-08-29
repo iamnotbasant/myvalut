@@ -179,7 +179,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
 
   try {
     if (platform === 'youtube') {
-      // YouTube oEmbed & video details
+      // 1. YouTube oEmbed & video details
       try {
         const oembedRes = await fetch(
           `https://www.youtube.com/oembed?url=${encodeURIComponent(inputUrl)}&format=json`,
@@ -189,33 +189,68 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           const data = await oembedRes.json();
           title = data.title || '';
           displayName = data.author_name || 'YouTube Creator';
-          username = (data.author_name || 'youtube').toLowerCase().replace(/\s+/g, '');
+          if (data.author_url) {
+            const handleMatch = data.author_url.match(/@([^/?]+)/);
+            if (handleMatch) {
+              username = handleMatch[1].toLowerCase();
+            } else {
+              username = (data.author_name || 'youtube').toLowerCase().replace(/[^a-z0-9_]/g, '');
+            }
+          } else {
+            username = (data.author_name || 'youtube').toLowerCase().replace(/[^a-z0-9_]/g, '');
+          }
           imageUrl = data.thumbnail_url || '';
         }
       } catch (e) {
         console.warn('YouTube oembed fallback:', e);
       }
 
-      // YouTube HTML scraping for rich context description / chapters
+      // 2. YouTube HTML scraping for Channel Avatar & Real Description
       try {
         const pageRes = await fetch(inputUrl, {
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
           },
         });
         if (pageRes.ok) {
           const html = await pageRes.text();
           const $ = cheerio.load(html);
+
           if (!title) title = $('meta[name="title"]').attr('content') || $('title').text() || '';
-          const metaDesc =
+
+          // Extract Channel Avatar from YouTube CDN
+          const avatarRegex = /https:\/\/yt3\.ggpht\.com\/[a-zA-Z0-9_\-]+(=s[0-9]+-c-k-c0x[a-f0-9]+-no-rj)?/g;
+          const avatars = html.match(avatarRegex);
+          if (avatars && avatars.length > 0) {
+            avatarUrl = avatars[0];
+          }
+
+          // Extract real video description (bypass generic YouTube meta description)
+          let metaDesc =
             $('meta[name="description"]').attr('content') ||
             $('meta[property="og:description"]').attr('content') ||
             '';
-          text = metaDesc.slice(0, 1000);
+
+          if (!metaDesc || metaDesc.includes('Enjoy the videos and music you love')) {
+            const descMatch = html.match(/"description":\{"simpleText":"(.*?)"\}/);
+            if (descMatch) {
+              metaDesc = descMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"');
+            } else {
+              const shortDescMatch = html.match(/"shortDescription":"(.*?)"/);
+              if (shortDescMatch) {
+                metaDesc = shortDescMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"');
+              }
+            }
+          }
+
+          text = metaDesc.trim().slice(0, 1500);
           if (!imageUrl) imageUrl = $('meta[property="og:image"]').attr('content') || '';
         }
-      } catch {}
+      } catch (err) {
+        console.warn('YouTube page scraping fallback:', err);
+      }
     } else if (platform === 'reddit') {
       // Reddit JSON endpoint for public posts
       try {
@@ -223,7 +258,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         if (!cleanRedditUrl.endsWith('.json')) cleanRedditUrl += '.json';
 
         const redditRes = await fetch(cleanRedditUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         });
 
         if (redditRes.ok) {
@@ -237,9 +272,13 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             text = post.selftext ? post.selftext.slice(0, 1000) : title;
             imageUrl =
               post.preview?.images?.[0]?.source?.url?.replace(/&amp;/g, '&') ||
-              post.thumbnail?.startsWith('http')
-                ? post.thumbnail
-                : '';
+              (post.thumbnail?.startsWith('http') ? post.thumbnail : '');
+
+            // Subreddit Icon
+            avatarUrl =
+              post.sr_detail?.community_icon?.replace(/&amp;/g, '&') ||
+              post.sr_detail?.icon_img?.replace(/&amp;/g, '&') ||
+              `https://unavatar.io/reddit/${post.subreddit}`;
           }
         }
       } catch (e) {
@@ -259,7 +298,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             text = tweet.text || '';
             displayName = tweet.author?.name || 'X User';
             username = tweet.author?.screen_name || 'xuser';
-            avatarUrl = tweet.author?.avatar_url || '';
+            avatarUrl = tweet.author?.avatar_url || `https://unavatar.io/x/${username}`;
             imageUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url || '';
             title = text.length > 60 ? `${text.slice(0, 60)}...` : text;
           }
@@ -280,6 +319,13 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             const $ = cheerio.load(data.html || '');
             text = $('p').text() || '';
             title = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+            if (data.author_url) {
+              const handle = data.author_url.split('/').filter(Boolean).pop();
+              if (handle) {
+                username = handle;
+                avatarUrl = `https://unavatar.io/x/${handle}`;
+              }
+            }
           }
         } catch {}
       }
@@ -329,6 +375,28 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
 
         displayName = siteName;
         username = new URL(inputUrl).hostname.replace(/^www\./, '');
+
+        // GitHub Avatar or High-Res Web Favicon
+        if (inputUrl.includes('github.com')) {
+          const userSegment = new URL(inputUrl).pathname.split('/').filter(Boolean)[0];
+          if (userSegment) {
+            username = userSegment;
+            avatarUrl = `https://github.com/${userSegment}.png`;
+          }
+        }
+
+        if (!avatarUrl) {
+          avatarUrl =
+            $('link[rel="apple-touch-icon"]').attr('href') ||
+            $('link[rel="icon"]').attr('href') ||
+            `https://www.google.com/s2/favicons?domain=${new URL(inputUrl).hostname}&sz=128`;
+          
+          if (avatarUrl && !avatarUrl.startsWith('http')) {
+            try {
+              avatarUrl = new URL(avatarUrl, inputUrl).toString();
+            } catch {}
+          }
+        }
       }
     }
   } catch (err) {
