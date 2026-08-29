@@ -87,72 +87,6 @@
     const topics = [];
     let type = 'resource';
 
-    // 1. AI & Machine Learning
-    if (lower.includes('agent') || lower.includes('claude') || lower.includes('gpt') || lower.includes('llm') || lower.includes('deepseek') || lower.includes('ai') || lower.includes('prompt') || lower.includes('gemini') || lower.includes('openai') || lower.includes('genai')) {
-      category = 'ai';
-      if (lower.includes('agent') || lower.includes('crewai')) topics.push('ai-agents');
-      if (lower.includes('prompt')) topics.push('prompt-engineering');
-      if (lower.includes('chatgpt') || lower.includes('gpt')) topics.push('chatgpt');
-      if (lower.includes('claude')) topics.push('claude');
-      if (lower.includes('deepseek')) topics.push('deepseek');
-      if (topics.length === 0) topics.push('ai-tools');
-      type = 'tool';
-    } 
-    // 2. Video Editing & Motion
-    else if (lower.includes('premiere') || lower.includes('after effects') || lower.includes('davinci') || lower.includes('capcut') || lower.includes('video edit') || lower.includes('speed ramp') || lower.includes('color grade') || lower.includes('vfx') || lower.includes('lut') || lower.includes('transition') || lower.includes('keyframes') || lower.includes('motion graphic')) {
-      category = 'video-editing';
-      if (lower.includes('premiere')) topics.push('premiere-pro');
-      if (lower.includes('after effects') || lower.includes('ae')) topics.push('after-effects');
-      if (lower.includes('davinci')) topics.push('davinci-resolve');
-      if (lower.includes('capcut')) topics.push('capcut');
-      if (lower.includes('speed ramp')) topics.push('speed-ramping');
-      if (lower.includes('color grade')) topics.push('color-grade');
-      if (topics.length === 0) topics.push('video-editing');
-      type = 'tutorial';
-    }
-    // 3. Coding & Web Dev
-    else if (lower.includes('react') || lower.includes('next.js') || lower.includes('nextjs') || lower.includes('frontend') || lower.includes('tailwind') || lower.includes('javascript') || lower.includes('typescript') || lower.includes('python') || lower.includes('supabase') || lower.includes('github') || lower.includes('css') || lower.includes('html')) {
-      category = 'tech';
-      if (lower.includes('react')) topics.push('react');
-      if (lower.includes('next') || lower.includes('nextjs') || lower.includes('next.js')) topics.push('next-js');
-      if (lower.includes('tailwind')) topics.push('tailwind-css');
-      if (lower.includes('typescript') || lower.includes('ts')) topics.push('ts');
-      if (lower.includes('python')) topics.push('python');
-      if (lower.includes('supabase')) topics.push('supabase');
-      if (topics.length === 0) topics.push('web-development');
-      type = 'tool';
-    }
-    // 4. Design & UI/UX
-    else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('figma') || lower.includes('typography') || lower.includes('layout') || lower.includes('landing page')) {
-      category = 'design';
-      if (lower.includes('figma')) topics.push('figma');
-      topics.push('ui-ux');
-      type = 'showcase';
-    }
-    // 5. Business & SaaS
-    else if (lower.includes('saas') || lower.includes('startup') || lower.includes('mrr') || lower.includes('arr') || lower.includes('founder') || lower.includes('indie') || lower.includes('revenue') || lower.includes('marketing') || lower.includes('sales')) {
-      category = 'business';
-      if (lower.includes('saas')) topics.push('saas');
-      topics.push('startup');
-      type = 'case-study';
-    }
-    // 6. Fitness & Workout
-    else if (lower.includes('calisthenics') || lower.includes('pullup') || lower.includes('pushup') || lower.includes('workout') || lower.includes('gym') || lower.includes('fitness') || lower.includes('bodyweight')) {
-      category = 'fitness';
-      if (lower.includes('calisthenics')) topics.push('calisthenics');
-      topics.push('fitness');
-      type = 'tutorial';
-    }
-    // 7. Finance & Crypto
-    else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('solana') || lower.includes('eth') || lower.includes('trading') || lower.includes('stocks') || lower.includes('finance')) {
-      category = 'finance';
-      topics.push('crypto', 'investing');
-  function extractSmartTags(text) {
-    const lower = (text || '').toLowerCase();
-    let category = 'tech';
-    const topics = [];
-    let type = 'resource';
-
     if (lower.includes('gta') || lower.includes('game') || lower.includes('watch dogs') || lower.includes('playstation') || lower.includes('steam')) {
       category = 'gaming';
       if (lower.includes('gta')) topics.push('gta 6');
@@ -183,6 +117,9 @@
       category = 'entertainment';
       topics.push('meme');
       type = 'meme';
+    } else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('finance') || lower.includes('investing')) {
+      category = 'finance';
+      topics.push('investing');
     }
 
     if (lower.includes('guide') || lower.includes('how to') || lower.includes('tutorial')) {
