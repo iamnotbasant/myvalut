@@ -467,8 +467,11 @@ export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Pr
   if (!geminiKey) return null;
 
   const models = [
-    'gemini-3.6-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
     'gemini-flash-latest',
+    'gemini-3.6-flash',
     'gemini-3.1-pro-preview',
   ];
 

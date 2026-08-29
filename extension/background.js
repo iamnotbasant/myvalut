@@ -540,8 +540,11 @@ async function generateGeminiTags(payload, apiKey) {
   if (!effectiveKey) return null;
 
   const models = [
-    'gemini-3.6-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
     'gemini-flash-latest',
+    'gemini-3.6-flash',
     'gemini-3.1-pro-preview'
   ];
 
@@ -696,10 +699,11 @@ async function saveBookmarkCore(payload) {
 
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  // 1. Generate Smart Tags Immediately in the Background Worker
+  // 1. Real Gemini AI Tagging (No Fake Offline Tags!)
   let generatedTags = await generateGeminiTags(cleanPayload, apiKey);
   if (!generatedTags || generatedTags.length < 2) {
-    generatedTags = generateLocalAiTags(cleanPayload);
+    // Leave as empty array so the web vault triggers true AI classification with loading animation
+    generatedTags = [];
   }
 
   const bookmarkItem = {
@@ -714,7 +718,7 @@ async function saveBookmarkCore(payload) {
     url: payload.url || null,
     date: formattedDate,
     created_at_ms: Date.now(),
-    tags: generatedTags || [],
+    tags: generatedTags,
     is_favorite: false,
     is_archived: false,
     note: payload.note || null,

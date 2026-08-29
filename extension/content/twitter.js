@@ -367,7 +367,7 @@
       const actionRow = tweet.querySelector('div[role="group"]');
       if (!actionRow) return;
 
-      if (actionRow.querySelector('.valut-x-action')) return;
+      if (actionRow.querySelector('.valut-x-action') || actionRow.querySelector('.valut-x-btn')) return;
 
       const container = document.createElement('div');
       container.className = 'valut-x-action';
@@ -386,8 +386,15 @@
 
       container.appendChild(btn);
 
+      // Find the native bookmark or share icon
+      const bookmarkBtn = actionRow.querySelector('button[data-testid="bookmark"], div[data-testid="bookmark"]');
       const shareBtn = actionRow.querySelector('button[data-testid="share"], button[aria-label*="Share"]');
-      if (shareBtn && shareBtn.parentNode === actionRow) {
+
+      if (bookmarkBtn && bookmarkBtn.parentElement && bookmarkBtn.parentElement.parentNode === actionRow) {
+        actionRow.insertBefore(container, bookmarkBtn.parentElement);
+      } else if (shareBtn && shareBtn.parentElement && shareBtn.parentElement.parentNode === actionRow) {
+        actionRow.insertBefore(container, shareBtn.parentElement);
+      } else if (shareBtn && shareBtn.parentNode === actionRow) {
         actionRow.insertBefore(container, shareBtn);
       } else {
         actionRow.appendChild(container);
@@ -396,9 +403,9 @@
   }
 
   const observer = new MutationObserver(() => injectTweetButtons());
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', injectTweetButtons);
-  setInterval(injectTweetButtons, 1000);
+  setInterval(injectTweetButtons, 800);
   injectTweetButtons();
 })();

@@ -233,7 +233,7 @@
   }
 
   function injectRedditButtons() {
-    const posts = document.querySelectorAll('shreddit-post, div.thing.link, article');
+    const posts = document.querySelectorAll('shreddit-post, div.thing.link, article, div[data-testid="post-container"], div.Post');
 
     posts.forEach(post => {
       if (post.querySelector('.valut-reddit-btn')) return;
@@ -259,7 +259,7 @@
 
       // 2. Target the interaction bar / bottom action container
       const bottomBar = post.querySelector(
-        'shreddit-interaction-bar, div[slot="bottom-bar"], div[slot="credit-bar"], [data-testid="post-action-bar"], div.flex.flex-row.items-center.gap-x-1, div.flat-list.buttons, [slot="flatlist"]'
+        'shreddit-interaction-bar, div[slot="bottom-bar"], div[slot="credit-bar"], [data-testid="post-action-bar"], div.flex.flex-row.items-center.gap-x-1, div.flat-list.buttons, [slot="flatlist"], div.flex.items-center'
       );
       if (bottomBar) {
         bottomBar.appendChild(btn);
@@ -279,6 +279,6 @@
   observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', injectRedditButtons);
-  setInterval(injectRedditButtons, 1200);
+  setInterval(injectRedditButtons, 800);
   injectRedditButtons();
 })();

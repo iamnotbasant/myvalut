@@ -209,10 +209,51 @@
   }
 
   function injectInstagramButtons() {
-    const postContainers = document.querySelectorAll('article, div[role="dialog"] article, div[role="presentation"] article, div._aatb, div.x1n2onr6.x1ja2u2z');
+    // 1. Direct Target: Find all Save / Bookmark SVGs across feed, modals, and reels
+    const saveSvgs = document.querySelectorAll(
+      'svg[aria-label*="Save"], svg[aria-label*="Bookmark"], svg[aria-label*="Speichern"], svg[aria-label*="Guardar"], svg[aria-label*="Sauvegarder"], svg[aria-label*="Salva"]'
+    );
+
+    saveSvgs.forEach(svg => {
+      const saveButton = svg.closest('div[role="button"], button, span, div.x1i10hfl');
+      if (!saveButton || !saveButton.parentElement) return;
+
+      const parent = saveButton.parentElement;
+      if (parent.querySelector('.valut-ig-btn') || parent.parentElement?.querySelector('.valut-ig-btn')) return;
+
+      const postContainer = svg.closest('article, div[role="dialog"], div[role="presentation"], div._aatb, main') || document;
+
+      const btn = document.createElement('button');
+      btn.className = 'valut-ig-btn';
+      btn.type = 'button';
+      btn.innerHTML = VALUT_ICON_SVG;
+      btn.title = 'Save to Valut with AI Tags';
+
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        saveInstagramPost(postContainer, btn);
+      });
+
+      parent.style.display = 'inline-flex';
+      parent.style.alignItems = 'center';
+      parent.style.gap = '6px';
+      parent.insertBefore(btn, saveButton);
+    });
+
+    // 2. Secondary Target: Reels Action Bars & Posts without save icon
+    const postContainers = document.querySelectorAll('article, div[role="dialog"] article, div[role="presentation"] article, div._aatb, div.x1n2onr6.x1ja2u2z, section[class*="x1qjc9v5"]');
 
     postContainers.forEach(container => {
       if (container.querySelector('.valut-ig-btn')) return;
+
+      const shareSvg = container.querySelector(
+        'svg[aria-label*="Share"], svg[aria-label*="Direct"], svg[aria-label*="Comment"]'
+      );
+      if (!shareSvg) return;
+
+      const actionsRow = shareSvg.closest('section, div.x78zum5.x1q0g3np.xwib8y2, div[data-pressable-container="true"], div.x6s0dn4');
+      if (!actionsRow) return;
 
       const btn = document.createElement('button');
       btn.className = 'valut-ig-btn';
@@ -226,44 +267,17 @@
         saveInstagramPost(container, btn);
       });
 
-      // 1. Primary Target: The native Instagram Bookmark/Save icon in this post
-      const saveSvg = container.querySelector(
-        'svg[aria-label*="Save"], svg[aria-label*="Bookmark"], svg[aria-label*="Speichern"], svg[aria-label*="Guardar"], svg[aria-label*="Sauvegarder"], svg[aria-label*="Salva"]'
-      );
-
-      if (saveSvg) {
-        const saveButton = saveSvg.closest('div[role="button"], button, span, div.x1i10hfl');
-        if (saveButton && saveButton.parentElement) {
-          const parent = saveButton.parentElement;
-          parent.style.display = 'inline-flex';
-          parent.style.alignItems = 'center';
-          parent.style.gap = '6px';
-          parent.insertBefore(btn, saveButton);
-          return;
-        }
-      }
-
-      // 2. Secondary Target: Find the action bar row containing Like/Comment/Share
-      const shareSvg = container.querySelector(
-        'svg[aria-label*="Share"], svg[aria-label*="Direct"], svg[aria-label*="Comment"], svg[aria-label*="Like"]'
-      );
-      if (shareSvg) {
-        const actionsRow = shareSvg.closest('section, div.x78zum5.x1q0g3np.xwib8y2, div[data-pressable-container="true"]');
-        if (actionsRow) {
-          const rightContainer = actionsRow.querySelector('div:last-child, span:last-child');
-          if (rightContainer && rightContainer !== actionsRow) {
-            rightContainer.style.display = 'inline-flex';
-            rightContainer.style.alignItems = 'center';
-            rightContainer.appendChild(btn);
-          } else {
-            btn.style.marginLeft = 'auto';
-            actionsRow.style.display = 'flex';
-            actionsRow.style.flexDirection = 'row';
-            actionsRow.style.alignItems = 'center';
-            actionsRow.appendChild(btn);
-          }
-          return;
-        }
+      const rightContainer = actionsRow.querySelector('div:last-child, span:last-child');
+      if (rightContainer && rightContainer !== actionsRow) {
+        rightContainer.style.display = 'inline-flex';
+        rightContainer.style.alignItems = 'center';
+        rightContainer.appendChild(btn);
+      } else {
+        btn.style.marginLeft = 'auto';
+        actionsRow.style.display = 'flex';
+        actionsRow.style.flexDirection = 'row';
+        actionsRow.style.alignItems = 'center';
+        actionsRow.appendChild(btn);
       }
     });
   }
@@ -272,6 +286,6 @@
   observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', injectInstagramButtons);
-  setInterval(injectInstagramButtons, 1200);
+  setInterval(injectInstagramButtons, 800);
   injectInstagramButtons();
 })();
