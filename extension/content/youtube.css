@@ -1,4 +1,4 @@
-/* YouTube Injected Button Styling */
+/* YouTube Injected Button Styling - Exact Reference Match */
 .valut-yt-btn {
   display: inline-flex;
   align-items: center;
@@ -13,10 +13,12 @@
   font-weight: 500;
   border: none;
   cursor: pointer;
-  margin-right: 8px;
-  transition: all 0.2s cubic-bezier(0.05, 0, 0.2, 1);
+  margin-left: 8px;
+  margin-right: 0px;
+  transition: background-color 0.2s cubic-bezier(0.05, 0, 0.2, 1), transform 0.1s;
   user-select: none;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .valut-yt-btn:hover {
@@ -39,35 +41,53 @@
 }
 
 .valut-yt-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Player Bar Icon Button */
+.valut-yt-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Video Player Control Bar Button */
 .valut-yt-player-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 100%;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: #eee;
-  cursor: pointer;
-  opacity: 0.9;
-  transition: opacity 0.1s cubic-bezier(0.4, 0, 1, 1), transform 0.1s;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 46px !important;
+  height: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #eeeeee !important;
+  cursor: pointer !important;
+  opacity: 0.9 !important;
+  transition: opacity 0.1s cubic-bezier(0.4, 0, 1, 1), transform 0.1s !important;
 }
 
 .valut-yt-player-btn:hover {
-  opacity: 1;
-  transform: scale(1.1);
+  opacity: 1 !important;
+  transform: scale(1.08) !important;
 }
 
-.valut-yt-player-btn svg {
+.valut-player-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.valut-player-icon-wrapper svg {
   width: 22px;
   height: 22px;
+  fill: #ffffff;
+}
+
+.valut-yt-player-btn.valut-saved .valut-player-icon-wrapper svg {
+  fill: #10b981 !important;
 }

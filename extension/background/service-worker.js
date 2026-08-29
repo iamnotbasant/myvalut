@@ -64,61 +64,83 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Main save function
+// Main save function with automatic multi-port fallback (3000, 3001, etc.)
 async function saveBookmarkToValut(data) {
-  try {
-    const config = await chrome.storage.sync.get(['serverUrl', 'apiKey', 'userId']);
-    const serverUrl = (config.serverUrl || DEFAULT_SERVER_URL).replace(/\/$/, '');
+  const config = await chrome.storage.sync.get(['serverUrl', 'apiKey', 'userId']);
+  const primaryUrl = (config.serverUrl || DEFAULT_SERVER_URL).replace(/\/$/, '');
+  
+  const candidateUrls = [
+    primaryUrl,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:3002'
+  ];
 
-    const payload = {
-      url: data.url,
-      title: data.title || undefined,
-      text: data.text || undefined,
-      platform: data.platform || undefined,
-      userId: config.userId || undefined,
-      apiKey: config.apiKey || undefined
-    };
+  const uniqueCandidates = Array.from(new Set(candidateUrls));
+  let lastError = null;
 
-    const response = await fetch(`${serverUrl}/api/extension/save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+  for (const baseUrl of uniqueCandidates) {
+    try {
+      const response = await fetch(`${baseUrl}/api/extension/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: data.url,
+          title: data.title || undefined,
+          text: data.text || undefined,
+          platform: data.platform || undefined,
+          userId: config.userId || undefined,
+          apiKey: config.apiKey || undefined
+        })
+      });
 
-    const result = await response.json();
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // If a fallback URL succeeded, save it as the active serverUrl
+          if (baseUrl !== primaryUrl) {
+            chrome.storage.sync.set({ serverUrl: baseUrl });
+          }
 
-    if (response.ok && result.success) {
-      // Notify content script if tabId exists
-      if (data.tabId) {
-        chrome.tabs.sendMessage(data.tabId, {
-          action: 'SAVE_SUCCESS',
-          bookmark: result.bookmark,
-          tags: result.tags
-        }).catch(() => {});
+          if (data.tabId) {
+            chrome.tabs.sendMessage(data.tabId, {
+              action: 'SAVE_SUCCESS',
+              bookmark: result.bookmark,
+              tags: result.tags
+            }).catch(() => {});
+          }
+
+          // Visual badge feedback
+          chrome.action.setBadgeText({ text: '✓' });
+          chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+          setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
+
+          return { success: true, bookmark: result.bookmark, tags: result.tags };
+        }
       }
-
-      // Visual badge feedback
-      chrome.action.setBadgeText({ text: '✓' });
-      chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-      setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
-
-      return { success: true, bookmark: result.bookmark, tags: result.tags };
-    } else {
-      throw new Error(result.error || 'Server rejected bookmark save');
+    } catch (err) {
+      lastError = err;
     }
-  } catch (error) {
-    console.error('Valut save error:', error);
-    if (data.tabId) {
-      chrome.tabs.sendMessage(data.tabId, {
-        action: 'SAVE_ERROR',
-        error: error.message
-      }).catch(() => {});
-    }
-    chrome.action.setBadgeText({ text: '!' });
-    chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-    setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
-    return { success: false, error: error.message };
   }
+
+  // All connection candidates failed
+  const friendlyError = 'Valut app is offline. Please run "npm run dev" in your project terminal!';
+  console.error('Valut save error:', lastError);
+
+  if (data.tabId) {
+    chrome.tabs.sendMessage(data.tabId, {
+      action: 'SAVE_ERROR',
+      error: friendlyError
+    }).catch(() => {});
+  }
+
+  chrome.action.setBadgeText({ text: '!' });
+  chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
+
+  return { success: false, error: friendlyError };
 }
