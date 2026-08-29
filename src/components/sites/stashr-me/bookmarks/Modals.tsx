@@ -36,62 +36,177 @@ export function AddBookmarkModal({
   availableTags
 }: AddBookmarkModalProps) {
   const [url, setUrl] = useState('');
+  const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
-  const [platform, setPlatform] = useState<PlatformType>('twitter');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [platform, setPlatform] = useState<PlatformType>('web');
+  const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
+  const [selectedTags, setSelectedTags] = useState<{ name: string; color: TagColor }[]>([]);
+  const [customTagInput, setCustomTagInput] = useState('');
   const [note, setNote] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isIngesting, setIsIngesting] = useState(false);
+  const [ingestStatus, setIngestStatus] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Auto-detect platform from URL
+  const getSavedApiKey = () => {
+    try {
+      return localStorage.getItem('gemini_api_key') || undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const runUrlIngest = async (inputUrl: string) => {
+    if (!inputUrl.trim() || !inputUrl.startsWith('http')) return;
+
+    setIsIngesting(true);
+    setIngestStatus('Analyzing link with Gemini AI...');
+
+    try {
+      const apiKey = getSavedApiKey();
+      const res = await fetch('/api/ai/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: inputUrl.trim(), apiKey }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        const item = data.data;
+        if (item.title) setTitle(item.title);
+        if (item.text) setText(item.text);
+        if (item.displayName) setDisplayName(item.displayName);
+        if (item.username) setUsername(item.username);
+        if (item.platform) setPlatform(item.platform);
+        if (item.imageUrl) setImageUrl(item.imageUrl);
+        if (item.avatarUrl) setAvatarUrl(item.avatarUrl);
+
+        if (Array.isArray(item.tags) && item.tags.length > 0) {
+          setSelectedTags(item.tags);
+        }
+
+        soundFx.playAiSuccessSound();
+        setIngestStatus('Auto-tagged & metadata extracted!');
+        setTimeout(() => setIngestStatus(null), 3000);
+      } else {
+        setIngestStatus(null);
+      }
+    } catch (err) {
+      console.error('Ingest error:', err);
+      setIngestStatus(null);
+    } finally {
+      setIsIngesting(false);
+    }
+  };
+
   const handleUrlChange = (inputUrl: string) => {
     setUrl(inputUrl);
-    if (inputUrl.includes('twitter.com') || inputUrl.includes('x.com')) {
-      setPlatform('twitter');
-    } else if (inputUrl.includes('reddit.com')) {
-      setPlatform('reddit');
-    } else if (inputUrl.includes('instagram.com')) {
-      setPlatform('instagram');
-    } else if (inputUrl.includes('tiktok.com')) {
-      setPlatform('tiktok');
-    } else if (inputUrl.includes('youtube.com') || inputUrl.includes('youtu.be')) {
-      setPlatform('youtube');
-    } else if (inputUrl.startsWith('http')) {
-      setPlatform('web');
+
+    // Auto-detect platform icon immediately
+    const lower = inputUrl.toLowerCase();
+    if (lower.includes('twitter.com') || lower.includes('x.com')) setPlatform('twitter');
+    else if (lower.includes('reddit.com') || lower.includes('redd.it')) setPlatform('reddit');
+    else if (lower.includes('instagram.com')) setPlatform('instagram');
+    else if (lower.includes('tiktok.com')) setPlatform('tiktok');
+    else if (lower.includes('youtube.com') || lower.includes('youtu.be')) setPlatform('youtube');
+    else if (lower.includes('pinterest.com')) setPlatform('pinterest');
+    else if (lower.includes('bsky.app')) setPlatform('bluesky');
+    else if (lower.includes('threads.net')) setPlatform('threads');
+    else if (inputUrl.startsWith('http')) setPlatform('web');
+  };
+
+  const handleUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted && pasted.startsWith('http')) {
+      handleUrlChange(pasted);
+      setTimeout(() => runUrlIngest(pasted), 100);
     }
+  };
+
+  const handleTriggerAiTag = async () => {
+    if (!text.trim() && !url.trim() && !title.trim()) return;
+
+    setIsIngesting(true);
+    setIngestStatus('Generating AI tags...');
+    soundFx.playClickSound();
+
+    try {
+      const apiKey = getSavedApiKey();
+      const res = await fetch('/api/ai/tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url,
+          text: text || title,
+          platform,
+          title: title || displayName,
+          apiKey,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.tags && Array.isArray(data.tags)) {
+        soundFx.playAiSuccessSound();
+        setSelectedTags(data.tags);
+        setIngestStatus('AI Tags updated!');
+        setTimeout(() => setIngestStatus(null), 2500);
+      }
+    } catch (e) {
+      console.error('AI Tag error:', e);
+    } finally {
+      setIsIngesting(false);
+    }
+  };
+
+  const handleAddCustomTag = () => {
+    if (!customTagInput.trim()) return;
+    const cleanName = customTagInput.trim().toLowerCase().replace(/[-_]/g, ' ');
+    if (!selectedTags.some(t => t.name === cleanName)) {
+      soundFx.playTagSound();
+      const defaultColors: TagColor[] = ['teal', 'blue', 'violet', 'amber', 'pink', 'indigo'];
+      const color = defaultColors[selectedTags.length % defaultColors.length];
+      setSelectedTags([...selectedTags, { name: cleanName, color }]);
+    }
+    setCustomTagInput('');
+  };
+
+  const handleRemoveTag = (tagName: string) => {
+    soundFx.playTagSound();
+    setSelectedTags(selectedTags.filter(t => t.name !== tagName));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() && !url.trim()) return;
+    if (!text.trim() && !url.trim() && !title.trim()) return;
 
-    const tagsPayload = selectedTags.map(tagName => {
-      const found = availableTags.find(t => t.name === tagName);
-      return {
-        name: tagName,
-        color: (found?.color || 'blue') as TagColor
-      };
-    });
+    soundFx.playSaveSound();
 
     onAdd({
-      displayName: displayName.trim() || 'Basant',
-      username: username.trim() || 'basant',
+      displayName: displayName.trim() || (platform === 'youtube' ? 'YouTube Creator' : platform === 'reddit' ? 'Reddit' : 'Basant'),
+      username: username.trim() || (platform === 'youtube' ? 'youtube' : 'user'),
       platform,
-      text: text.trim() || url,
-      url: url.trim(),
-      tags: tagsPayload,
+      title: title.trim() || undefined,
+      text: text.trim() || title.trim() || url,
+      url: url.trim() || undefined,
+      imageUrl: imageUrl || undefined,
+      avatarUrl: avatarUrl || undefined,
+      tags: selectedTags.length > 0 ? selectedTags : [{ name: platform, color: 'blue' }],
       note: note.trim() || undefined,
-      isFavorite
+      isFavorite,
     });
 
     // Reset form
     setUrl('');
+    setTitle('');
     setText('');
     setDisplayName('');
     setUsername('');
+    setImageUrl(undefined);
+    setAvatarUrl(undefined);
     setNote('');
     setSelectedTags([]);
     setIsFavorite(false);
@@ -99,205 +214,272 @@ export function AddBookmarkModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+        className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#121212] p-6 shadow-2xl animate-in zoom-in-95 duration-150 text-white"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <Bookmark className="size-4 text-primary" />
-            <h3 className="font-semibold text-base text-strong">
-              Add new bookmark
-            </h3>
+        {/* Modal Header */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-white/10 text-white">
+              <Plus className="size-4" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-white">
+                Add to Vault
+              </h3>
+              <p className="text-[11px] text-neutral-400">
+                Paste any YouTube, X, Reddit, or web link for auto-tagging
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Source URL with Ingest button */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Source URL
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-neutral-300">
+                Source URL
+              </label>
+              {url.startsWith('http') && (
+                <button
+                  type="button"
+                  onClick={() => runUrlIngest(url)}
+                  disabled={isIngesting}
+                  className="text-[11px] text-primary hover:underline font-medium inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className="size-3" />
+                  <span>Fetch & Auto-Tag</span>
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type="url"
+                value={url}
+                onChange={e => handleUrlChange(e.target.value)}
+                onPaste={handleUrlPaste}
+                placeholder="https://youtube.com/watch?v=... or https://x.com/..."
+                className="h-9 w-full rounded-xl border border-white/10 bg-white/5 px-3 pr-10 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
+              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {isIngesting ? (
+                  <span className="size-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                ) : (
+                  <PlatformIcon platform={platform} />
+                )}
+              </div>
+            </div>
+            {ingestStatus && (
+              <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 animate-in fade-in">
+                <Sparkles className="size-3" />
+                <span>{ingestStatus}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Thumbnail preview if detected */}
+          {imageUrl && (
+            <div className="relative h-32 w-full rounded-xl overflow-hidden border border-white/10 bg-black/40">
+              <Image
+                src={imageUrl}
+                alt="Preview"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+              <button
+                type="button"
+                onClick={() => setImageUrl(undefined)}
+                className="absolute top-2 right-2 rounded-md bg-black/70 p-1 text-neutral-300 hover:text-white hover:bg-black transition-colors"
+                title="Remove image preview"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-medium text-neutral-300 mb-1">
+              Title / Headline
             </label>
             <input
-              type="url"
-              value={url}
-              onChange={e => handleUrlChange(e.target.value)}
-              placeholder="https://x.com/username/status/..."
-              className="h-8 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. 10min Premiere Pro Tutorial with Whisper AI"
+              className="h-8.5 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30"
             />
           </div>
 
+          {/* Content / Summary */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Content / Caption *
+            <label className="block text-xs font-medium text-neutral-300 mb-1">
+              Content / Summary *
             </label>
             <textarea
               required
               value={text}
               onChange={e => setText(e.target.value)}
               rows={3}
-              placeholder="Key insights, quote, or note from the save..."
-              className="w-full rounded-lg border border-input bg-background p-3 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+              placeholder="Key insights, quote, script, or notes..."
+              className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30"
             />
           </div>
 
+          {/* Author Name & Platform */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Author Name
+              <label className="block text-xs font-medium text-neutral-300 mb-1">
+                Author / Channel Name
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="e.g. Maya Chen"
-                className="h-8 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring"
+                className="h-8.5 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-neutral-300 mb-1">
                 Platform
               </label>
               <select
                 value={platform}
                 onChange={e => setPlatform(e.target.value as PlatformType)}
-                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring"
+                className="h-8.5 w-full rounded-xl border border-white/10 bg-[#1e1e1e] px-2 text-xs text-white outline-none focus:border-white/30 cursor-pointer"
               >
+                <option value="youtube">YouTube</option>
                 <option value="twitter">Twitter / X</option>
                 <option value="reddit">Reddit</option>
                 <option value="instagram">Instagram</option>
                 <option value="tiktok">TikTok</option>
-                <option value="youtube">YouTube</option>
+                <option value="pinterest">Pinterest</option>
+                <option value="bluesky">Bluesky</option>
+                <option value="threads">Threads</option>
                 <option value="web">Web</option>
               </select>
             </div>
           </div>
 
-          {/* Tags Picker with AI Auto-tag */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium text-muted-foreground">
-                Tags
+          {/* AI Tags Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-medium text-neutral-300">
+                Tags (Dynamic 2-6 Clean Tokens)
               </label>
               <button
                 type="button"
-                onClick={async () => {
-                  try {
-                    soundFx.playClickSound();
-                    const res = await fetch('/api/ai/tag', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ url, text, platform, title: displayName }),
-                    });
-                    const data = await res.json();
-                    if (data.tags && Array.isArray(data.tags)) {
-                      soundFx.playAiSuccessSound();
-                      const newNames = (data.tags as Array<{ name: string }>).map(t => t.name);
-                      setSelectedTags(Array.from(new Set([...selectedTags, ...newNames])));
-                    }
-                  } catch (e) {
-                    console.error('AI Tag error:', e);
-                  }
-                }}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer bg-primary/10 hover:bg-primary/20 px-2.5 py-0.5 rounded-full active:scale-95"
+                onClick={handleTriggerAiTag}
+                disabled={isIngesting}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer bg-primary/10 hover:bg-primary/20 px-2.5 py-0.5 rounded-full active:scale-95 disabled:opacity-50"
               >
                 <Sparkles className="size-3" />
-                <span>✦ Auto-Tag with AI</span>
+                <span>✦ AI Auto-Tag</span>
               </button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {availableTags.map(t => {
-                const isSelected = selectedTags.includes(t.name);
-                return (
-                  <button
-                    type="button"
-                    key={t.id}
-                    onClick={() => {
-                      soundFx.playTagSound();
-                      setSelectedTags(
-                        isSelected
-                          ? selectedTags.filter(x => x !== t.name)
-                          : [...selectedTags, t.name]
-                      );
-                    }}
-                    className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95 ${
-                      isSelected
-                        ? 'border-primary/40 bg-primary/10 text-primary font-medium'
-                        : 'border-border bg-background text-muted-foreground hover:bg-accent'
-                    }`}
+
+            {/* Selected Tag Pills */}
+            <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl border border-white/10 bg-black/30">
+              {selectedTags.length === 0 ? (
+                <span className="text-[11px] text-neutral-500 italic py-0.5">
+                  No tags yet. Paste a link or click AI Auto-Tag above.
+                </span>
+              ) : (
+                selectedTags.map(t => (
+                  <span
+                    key={t.name}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-xs text-neutral-200"
                   >
                     <TagDot color={t.color} />
                     <span>{t.name}</span>
-                    {isSelected && <Check className="size-3 text-primary" />}
-                  </button>
-                );
-              })}
-              {/* Also display any AI tags selected that might not be in availableTags yet */}
-              {selectedTags
-                .filter(st => !availableTags.some(at => at.name === st))
-                .map(st => (
-                  <button
-                    type="button"
-                    key={st}
-                    onClick={() => {
-                      soundFx.playTagSound();
-                      setSelectedTags(selectedTags.filter(x => x !== st));
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/20 bg-white/10 text-white font-medium px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95"
-                  >
-                    <span className="size-1.5 rounded-full bg-emerald-400"></span>
-                    <span>{st}</span>
-                    <Check className="size-3 text-white" />
-                  </button>
-                ))}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(t.name)}
+                      className="hover:text-rose-400 transition-colors ml-0.5"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            {/* Add Custom Tag input */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={customTagInput}
+                onChange={e => setCustomTagInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustomTag();
+                  }
+                }}
+                placeholder="Type custom tag and press Enter..."
+                className="h-8 flex-1 rounded-lg border border-white/10 bg-white/5 px-2.5 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomTag}
+                className="h-8 rounded-lg border border-white/10 bg-white/10 px-3 text-xs font-medium text-white hover:bg-white/20 transition-colors cursor-pointer"
+              >
+                Add Tag
+              </button>
             </div>
           </div>
 
-          {/* Note */}
+          {/* Personal Note */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-neutral-300 mb-1">
               Personal Note (Optional)
             </label>
             <input
               type="text"
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Why this was saved..."
-              className="h-8 w-full rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-ring"
+              placeholder="Why this is in your vault..."
+              className="h-8.5 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-neutral-500 outline-none focus:border-white/30"
             />
           </div>
 
-          <div className="flex items-center justify-between border-t border-border pt-4">
+          {/* Bottom Actions */}
+          <div className="flex items-center justify-between border-t border-white/10 pt-4">
             <button
               type="button"
               onClick={() => setIsFavorite(!isFavorite)}
-              className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                isFavorite ? 'text-amber-500' : 'text-muted-foreground hover:text-foreground'
+              className={`flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                isFavorite ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Star className={`size-3.5 ${isFavorite ? 'fill-amber-500' : ''}`} />
-              <span>{isFavorite ? 'Starred' : 'Add to favorites'}</span>
+              <Star className={`size-3.5 ${isFavorite ? 'fill-amber-400' : ''}`} />
+              <span>{isFavorite ? 'Starred' : 'Star bookmark'}</span>
             </button>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                className="h-8.5 rounded-xl border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+                className="h-8.5 rounded-xl bg-white px-4 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors shadow-sm cursor-pointer"
               >
-                Save Bookmark
+                Save to Vault
               </button>
             </div>
           </div>

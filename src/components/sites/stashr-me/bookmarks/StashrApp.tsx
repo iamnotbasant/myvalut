@@ -291,6 +291,29 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     };
   }, [bookmarks, collections, tags, isLoaded]);
 
+  // Global keyboard shortcuts for Quick Add (+ or n)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === '+' || e.key === '=' || (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey)) {
+        e.preventDefault();
+        soundFx.playClickSound();
+        setIsAddBookmarkOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleToggleTheme = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
@@ -774,6 +797,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         tags={allAvailableTags}
         onToggleTheme={handleToggleTheme}
         isDark={isDark}
+        onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
       />
 
       <AddBookmarkModal

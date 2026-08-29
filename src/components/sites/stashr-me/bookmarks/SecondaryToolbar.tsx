@@ -15,7 +15,8 @@ import {
   TagDot,
   Check,
   X,
-  Shuffle
+  Shuffle,
+  Plus
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
@@ -411,14 +412,14 @@ export function SecondaryToolbar({
             )}
           </button>
 
-          {/* + Collection Button (Solid White Button) */}
+          {/* + Bookmark Button (Solid White Button) */}
           <button
             type="button"
             onClick={onOpenAddBookmark}
-            className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg bg-white hover:bg-neutral-200 text-black font-semibold text-xs h-8.5 gap-1.5 px-3.5 shadow-sm transition-all"
+            className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg bg-white hover:bg-neutral-200 text-black font-semibold text-xs h-8.5 gap-1.5 px-3.5 shadow-sm transition-all cursor-pointer active:scale-95"
           >
-            <FolderPlusIcon className="size-3.5 stroke-[2]" />
-            <span>Collection</span>
+            <Plus className="size-3.5 stroke-[2.5]" />
+            <span>Bookmark</span>
           </button>
         </div>
       </div>

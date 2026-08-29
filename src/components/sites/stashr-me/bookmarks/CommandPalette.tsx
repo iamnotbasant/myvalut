@@ -14,7 +14,9 @@ import {
   Moon,
   TagDot,
   Folder,
-  X
+  X,
+  Plus,
+  Sparkles
 } from '@/components/icons';
 
 interface CommandPaletteProps {
@@ -27,6 +29,7 @@ interface CommandPaletteProps {
   tags: Tag[];
   onToggleTheme: () => void;
   isDark: boolean;
+  onOpenAddBookmark?: () => void;
 }
 
 export function CommandPalette({
@@ -38,7 +41,8 @@ export function CommandPalette({
   collections,
   tags,
   onToggleTheme,
-  isDark
+  isDark,
+  onOpenAddBookmark
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
 
@@ -123,6 +127,28 @@ export function CommandPalette({
               </button>
             </div>
           )}
+
+          {/* Quick Actions */}
+          <div>
+            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Quick Actions
+            </div>
+            <div className="space-y-0.5">
+              {onOpenAddBookmark && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenAddBookmark();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-primary hover:bg-primary/10 text-left transition-colors font-medium cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Add new bookmark (Auto AI Tags)</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">⌘N / +</span>
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Navigation Section */}
           <div>

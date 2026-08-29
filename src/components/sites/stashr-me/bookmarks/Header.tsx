@@ -10,7 +10,8 @@ import {
   Sun,
   Moon,
   Laptop,
-  HelpCircle
+  HelpCircle,
+  Plus
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { Volume2, VolumeX } from 'lucide-react';
@@ -118,8 +119,23 @@ export function Header({
         </nav>
       </div>
 
-      {/* Right: Sound Toggle + Extension Indicator + User Profile Avatar */}
+      {/* Right: + Add Bookmark + Sound Toggle + Extension Indicator + User Profile Avatar */}
       <div className="flex items-center gap-1.5">
+        {/* + Quick Add Bookmark Button */}
+        <button
+          type="button"
+          onClick={() => {
+            soundFx.playClickSound();
+            onOpenAddBookmark();
+          }}
+          title="Add Bookmark (+)"
+          aria-label="Add Bookmark"
+          className="inline-flex h-8 select-none items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-2.5 transition-colors cursor-pointer border border-white/10 active:scale-95 shadow-xs"
+        >
+          <Plus className="size-3.5" />
+          <span className="hidden sm:inline">Add</span>
+        </button>
+
         {/* Sound Effects Toggle Button */}
         <button
           type="button"
