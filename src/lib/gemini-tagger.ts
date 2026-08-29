@@ -46,7 +46,22 @@ export const SYNONYM_MAP: Record<string, string> = {
   'gemini ai': 'gemini',
   'vscode': 'vs code',
   'visual studio code': 'vs code',
-  'python programming': 'python'
+  'python programming': 'python',
+  'grand theft auto vi': 'gta 6',
+  'grand theft auto 6': 'gta 6',
+  'grand theft auto v': 'gta 5',
+  'grand theft auto 5': 'gta 5',
+  'grand theft auto': 'gta',
+  'playstation 5': 'ps5',
+  'playstation 4': 'ps4',
+  'xbox series x': 'xbox',
+  'counter strike 2': 'cs2',
+  'counter strike': 'cs',
+  'red dead redemption 2': 'rdr2',
+  'red dead redemption': 'rdr',
+  'search engine optimization': 'seo',
+  'user interface': 'ui ux',
+  'user experience': 'ui ux'
 };
 
 // 3. Normalizer & Cleanup Function
@@ -305,15 +320,31 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
 }
 
 // 6. Gemini System Prompt & Caller
-const GEMINI_SYSTEM_PROMPT = `You are a precise content classification and tagging engine for a personal knowledge vault.
-Analyze the provided content metadata and extract high-utility, highly searchable tags.
+const GEMINI_SYSTEM_PROMPT = `You are an ultra-intelligent, expert content analyzer and knowledge vault curator with deep cultural and industry awareness across Gaming, Tech, AI, Software, Cinema, Design, Finance, Fitness, and Pop Culture.
 
-TAGGING RULES:
-1. Dynamic Tag Count: Generate minimum 2 (for short/simple posts) and maximum 6 tags (for rich/deep content).
-2. Format: STRICTLY lowercase text with normal spaces. DO NOT use hyphens, hashtags, underscores, or special characters (e.g., use "video editing" instead of "video-editing" or "#videoediting").
-3. High-Value Priority: ALWAYS prioritize specific named tools, software, libraries, frameworks, models, or core mechanics over generic concepts (e.g., prefer "chatgpt", "premiere pro", "cursor", "ffmpeg", "tailwind", "after effects" over "ai tools" or "software").
-4. Deduplication: Never include redundant synonyms (e.g., do not output both "ai" and "artificial intelligence"). Prefer short, standard names.
-5. NO Fluff: Avoid generic low-intent tags like "tips", "tricks", "information", "best", "useful", "guide".
+Your job is to deeply comprehend the essence, core subject, specific entities, and context of the provided content, then generate the MOST NATURAL, HIGH-ACCURACY, CANONICAL search tags that real humans and power users actually search for.
+
+INTELLIGENCE & TAGGING RULES:
+1. NATURAL CANONICAL NAMES (Crucial):
+   - ALWAYS prefer widely used, canonical short-names and popular acronyms over clunky formal expansions.
+   - For example: Use "gta 6" instead of "grand theft auto vi" or "grand theft auto 6", "ai" instead of "artificial intelligence", "ps5" instead of "playstation 5", "cs2" instead of "counter strike 2", "rdr2" instead of "red dead redemption 2", "vs code" instead of "visual studio code".
+   - For software/tools: Use "premiere pro", "after effects", "chatgpt", "midjourney", "cursor", "tailwind", "next js", "blender", "figma".
+
+2. MULTI-LAYER SEMANTIC UNDERSTANDING:
+   - Identify the exact domain/category (e.g. "gaming", "video editing", "web development", "machine learning", "finance", "fitness").
+   - Identify the primary subject/entity (e.g. "gta 6", "rockstar games", "nvidia", "apple", "react", "bitcoin").
+   - Identify the specific sub-topic or feature (e.g. "trailer breakdown", "gameplay leak", "color grading", "state management", "pricing").
+   - Identify the format/nature if relevant (e.g. "workflow", "case study", "benchmark", "tutorial", "news").
+
+3. DYNAMIC COUNT (2 to 6 Tags):
+   - Low density (simple tweet, short image, meme): 2–3 tags.
+   - Medium/High density (tutorials, news breakdowns, deep discussions, reviews): 4–6 tags.
+
+4. FORMATTING:
+   - STRICTLY lowercase with normal single spaces.
+   - NEVER use hyphens (-), hashtags (#), underscores (_), or special characters.
+   - NEVER output duplicate or overlapping synonyms (do not output both "ai" and "artificial intelligence").
+   - NEVER output low-intent generic fluff tags like "tips", "tricks", "information", "best", "useful", "guide", "post", "video", "content".
 
 INPUT FORMAT:
 Platform: {platform}
@@ -372,7 +403,7 @@ export async function generateGeminiTags(params: {
 
   const promptContent = `Platform: ${platform}
 Title: ${title}
-Context: ${text.slice(0, 1500)}`;
+Context: ${text.slice(0, 3000)}`;
 
   const modelCandidates = [
     'gemini-3.6-flash',
