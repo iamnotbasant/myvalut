@@ -217,6 +217,13 @@ export const SYNONYM_MAP: Record<string, string> = {
   'micro saas': 'saas',
   'indie hacker': 'startup',
   'conversion rate': 'marketing',
+  'zerodha': 'zerodha',
+  'zero1': 'zerodha',
+  'creator economy': 'creator economy',
+  'creator': 'creator economy',
+  'investing': 'investing',
+  'investment': 'investing',
+  'venture capital': 'startup',
 };
 
 // Curated Semantic Color Map (Clean Spaced Keys)
@@ -226,6 +233,10 @@ const TOPIC_COLOR_MAP: Record<string, TagColor> = {
   'video editing': 'violet',
   'design': 'pink',
   'finance': 'teal',
+  'investing': 'teal',
+  'zerodha': 'teal',
+  'creator economy': 'orange',
+  'podcast': 'amber',
   'fitness': 'green',
   'business': 'cyan',
   'marketing': 'orange',
@@ -338,9 +349,14 @@ const BANNED_GENERIC_WORDS = new Set([
 // 2. Preprocessing: Platform-Wise High-Signal Ingestion Matrix
 export function preprocessPlatformInput(input: TagInput): string {
   const platform = (input.platform || 'web').toLowerCase();
-  const rawText = input.text || '';
+  let rawText = input.text || '';
   const title = input.title ? `Title: ${input.title.trim()}\n` : '';
   const context = input.context ? input.context.trim() : '';
+
+  // Clean boilerplate crawler text
+  if (rawText.includes('Enjoy the videos and music that you love') || rawText.includes('video, sharing, camera phone')) {
+    rawText = input.title || '';
+  }
 
   switch (platform) {
     case 'youtube': {
@@ -572,6 +588,24 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
   let detectedFormat: string | null = null;
 
   // 1. Tool & Entity Detection (High Priority)
+  // Finance, Business, Investing & Startups
+  if (hasPattern(textBlob, 'zerodha')) {
+    detectedCategory = 'finance';
+    detectedEntities.push('investing', 'zerodha');
+  }
+  if (hasPattern(textBlob, 'funding') || hasPattern(textBlob, 'venture capital') || hasPattern(textBlob, 'investor')) {
+    if (!detectedCategory) detectedCategory = 'business';
+    detectedEntities.push('finance', 'startup');
+  }
+  if (hasPattern(textBlob, 'creator economy') || hasPattern(textBlob, 'media company') || hasPattern(textBlob, 'creators')) {
+    if (!detectedCategory) detectedCategory = 'business';
+    detectedEntities.push('creator economy', 'business');
+  }
+  if (hasPattern(textBlob, 'stocks') || hasPattern(textBlob, 'trading') || hasPattern(textBlob, 'crypto') || hasPattern(textBlob, 'bitcoin')) {
+    detectedCategory = 'finance';
+    detectedEntities.push('investing');
+  }
+
   // Video & Graphic Design Tools & Skills
   if (hasPattern(textBlob, 'premiere')) detectedEntities.push('premiere pro');
   if (hasPattern(textBlob, 'after effects') || hasPattern(textBlob, 'ae')) detectedEntities.push('after effects');
@@ -625,98 +659,110 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
   }
 
   // 2. Category Detection
-  if (
-    hasPattern(textBlob, 'premiere') ||
-    hasPattern(textBlob, 'video edit') ||
-    hasPattern(textBlob, 'davinci') ||
-    hasPattern(textBlob, 'after effects') ||
-    hasPattern(textBlob, 'capcut') ||
-    hasPattern(textBlob, 'ffmpeg') ||
-    hasPattern(textBlob, 'speed ramp') ||
-    hasPattern(textBlob, 'color grade') ||
-    hasPattern(textBlob, 'timeline') ||
-    hasPattern(textBlob, 'b roll') ||
-    hasPattern(textBlob, 'transition')
-  ) {
-    detectedCategory = 'video editing';
-  } else if (
-    hasPattern(textBlob, 'thumbnail') ||
-    hasPattern(textBlob, 'photoshop') ||
-    hasPattern(textBlob, 'illustrator') ||
-    hasPattern(textBlob, 'graphic design') ||
-    hasPattern(textBlob, 'photo edit')
-  ) {
-    detectedCategory = 'graphic design';
-  } else if (
-    hasPattern(textBlob, 'game') ||
-    hasPattern(textBlob, 'gaming') ||
-    hasPattern(textBlob, 'gta') ||
-    hasPattern(textBlob, 'watch dogs') ||
-    hasPattern(textBlob, 'playstation') ||
-    hasPattern(textBlob, 'xbox') ||
-    hasPattern(textBlob, 'steam') ||
-    hasPattern(textBlob, 'gameplay')
-  ) {
-    detectedCategory = 'gaming';
-  } else if (
-    hasPattern(textBlob, 'claude') ||
-    hasPattern(textBlob, 'chatgpt') ||
-    hasPattern(textBlob, 'openai') ||
-    hasPattern(textBlob, 'gemini') ||
-    hasPattern(textBlob, 'deepseek') ||
-    hasPattern(textBlob, 'llm') ||
-    hasPattern(textBlob, 'prompt') ||
-    hasPattern(textBlob, 'ai agent') ||
-    hasPattern(textBlob, 'generative ai')
-  ) {
-    detectedCategory = 'ai';
-  } else if (
-    hasPattern(textBlob, 'react') ||
-    hasPattern(textBlob, 'next js') ||
-    hasPattern(textBlob, 'tailwind') ||
-    hasPattern(textBlob, 'coding') ||
-    hasPattern(textBlob, 'typescript') ||
-    hasPattern(textBlob, 'javascript') ||
-    hasPattern(textBlob, 'supabase') ||
-    hasPattern(textBlob, 'github')
-  ) {
-    detectedCategory = 'tech';
-  } else if (
-    hasPattern(textBlob, 'figma') ||
-    hasPattern(textBlob, 'ui') ||
-    hasPattern(textBlob, 'ux') ||
-    hasPattern(textBlob, 'typography') ||
-    hasPattern(textBlob, 'graphic design')
-  ) {
-    detectedCategory = 'design';
-  } else if (
-    hasPattern(textBlob, 'calisthenics') ||
-    hasPattern(textBlob, 'fitness') ||
-    hasPattern(textBlob, 'workout')
-  ) {
-    detectedCategory = 'fitness';
-  } else if (
-    hasPattern(textBlob, 'saas') ||
-    hasPattern(textBlob, 'startup') ||
-    hasPattern(textBlob, 'revenue') ||
-    hasPattern(textBlob, 'business')
-  ) {
-    detectedCategory = 'business';
-  } else if (
-    hasPattern(textBlob, 'meme') ||
-    hasPattern(textBlob, 'funny') ||
-    hasPattern(textBlob, 'joke')
-  ) {
-    detectedCategory = 'entertainment';
-  } else {
-    const platform = (input.platform || 'web').toLowerCase();
-    if (platform === 'youtube') detectedCategory = 'video editing';
-    else if (platform === 'instagram') detectedCategory = 'design';
-    else detectedCategory = 'tech';
+  if (!detectedCategory) {
+    if (
+      hasPattern(textBlob, 'premiere') ||
+      hasPattern(textBlob, 'video edit') ||
+      hasPattern(textBlob, 'davinci') ||
+      hasPattern(textBlob, 'after effects') ||
+      hasPattern(textBlob, 'capcut') ||
+      hasPattern(textBlob, 'ffmpeg') ||
+      hasPattern(textBlob, 'speed ramp') ||
+      hasPattern(textBlob, 'color grade') ||
+      hasPattern(textBlob, 'timeline') ||
+      hasPattern(textBlob, 'b roll') ||
+      hasPattern(textBlob, 'transition')
+    ) {
+      detectedCategory = 'video editing';
+    } else if (
+      hasPattern(textBlob, 'thumbnail') ||
+      hasPattern(textBlob, 'photoshop') ||
+      hasPattern(textBlob, 'illustrator') ||
+      hasPattern(textBlob, 'graphic design') ||
+      hasPattern(textBlob, 'photo edit')
+    ) {
+      detectedCategory = 'graphic design';
+    } else if (
+      hasPattern(textBlob, 'game') ||
+      hasPattern(textBlob, 'gaming') ||
+      hasPattern(textBlob, 'gta') ||
+      hasPattern(textBlob, 'watch dogs') ||
+      hasPattern(textBlob, 'playstation') ||
+      hasPattern(textBlob, 'xbox') ||
+      hasPattern(textBlob, 'steam') ||
+      hasPattern(textBlob, 'gameplay')
+    ) {
+      detectedCategory = 'gaming';
+    } else if (
+      hasPattern(textBlob, 'claude') ||
+      hasPattern(textBlob, 'chatgpt') ||
+      hasPattern(textBlob, 'openai') ||
+      hasPattern(textBlob, 'gemini') ||
+      hasPattern(textBlob, 'deepseek') ||
+      hasPattern(textBlob, 'llm') ||
+      hasPattern(textBlob, 'prompt') ||
+      hasPattern(textBlob, 'ai agent') ||
+      hasPattern(textBlob, 'generative ai')
+    ) {
+      detectedCategory = 'ai';
+    } else if (
+      hasPattern(textBlob, 'react') ||
+      hasPattern(textBlob, 'next js') ||
+      hasPattern(textBlob, 'tailwind') ||
+      hasPattern(textBlob, 'coding') ||
+      hasPattern(textBlob, 'typescript') ||
+      hasPattern(textBlob, 'javascript') ||
+      hasPattern(textBlob, 'supabase') ||
+      hasPattern(textBlob, 'github')
+    ) {
+      detectedCategory = 'tech';
+    } else if (
+      hasPattern(textBlob, 'figma') ||
+      hasPattern(textBlob, 'ui') ||
+      hasPattern(textBlob, 'ux') ||
+      hasPattern(textBlob, 'typography') ||
+      hasPattern(textBlob, 'graphic design')
+    ) {
+      detectedCategory = 'design';
+    } else if (
+      hasPattern(textBlob, 'calisthenics') ||
+      hasPattern(textBlob, 'fitness') ||
+      hasPattern(textBlob, 'workout')
+    ) {
+      detectedCategory = 'fitness';
+    } else if (
+      hasPattern(textBlob, 'saas') ||
+      hasPattern(textBlob, 'startup') ||
+      hasPattern(textBlob, 'revenue') ||
+      hasPattern(textBlob, 'business') ||
+      hasPattern(textBlob, 'creator')
+    ) {
+      detectedCategory = 'business';
+    } else if (
+      hasPattern(textBlob, 'finance') ||
+      hasPattern(textBlob, 'money') ||
+      hasPattern(textBlob, 'investing') ||
+      hasPattern(textBlob, 'stocks')
+    ) {
+      detectedCategory = 'finance';
+    } else if (
+      hasPattern(textBlob, 'meme') ||
+      hasPattern(textBlob, 'funny') ||
+      hasPattern(textBlob, 'joke')
+    ) {
+      detectedCategory = 'entertainment';
+    } else {
+      const platform = (input.platform || 'web').toLowerCase();
+      if (platform === 'youtube') detectedCategory = 'video editing';
+      else if (platform === 'instagram') detectedCategory = 'design';
+      else detectedCategory = 'tech';
+    }
   }
 
   // 3. Format Detection
-  if (hasPattern(textBlob, 'workflow')) {
+  if (hasPattern(textBlob, 'podcast') || hasPattern(textBlob, 'interview') || hasPattern(textBlob, 'ft.')) {
+    detectedFormat = 'podcast';
+  } else if (hasPattern(textBlob, 'workflow')) {
     detectedFormat = 'workflow';
   } else if (hasPattern(textBlob, 'tutorial') || hasPattern(textBlob, 'how to') || hasPattern(textBlob, 'step by step')) {
     detectedFormat = 'tutorial';

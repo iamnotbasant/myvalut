@@ -178,12 +178,11 @@
     }
 
     try {
-      const payload = { ...postData, openWebsite: true };
+      const payload = { ...postData };
 
       if (!chrome.runtime?.id) {
         const fallbackRes = await directFallbackSave(payload);
         handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
         return;
       }
 
@@ -192,7 +191,6 @@
           try {
             const fallbackRes = await directFallbackSave(payload);
             handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
-            window.open('https://myvalut.vercel.app', '_blank');
           } catch (fbErr) {
             handleIgError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
           }
@@ -202,9 +200,8 @@
       });
     } catch (e) {
       try {
-        const fallbackRes = await directFallbackSave({ ...postData, openWebsite: true });
+        const fallbackRes = await directFallbackSave({ ...postData });
         handleIgSuccess(btn, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
       } catch (fbErr) {
         handleIgError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
       }

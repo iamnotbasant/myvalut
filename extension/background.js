@@ -382,7 +382,25 @@ function generateLocalAiTags(payload) {
   const detectedEntities = [];
   let detectedFormat = null;
 
-  // Specific Tools & Entities
+  // 1. Finance, Business, Investing & Startups
+  if (hasPattern(textBlob, 'zerodha')) {
+    detectedCategory = 'finance';
+    detectedEntities.push('investing', 'zerodha');
+  }
+  if (hasPattern(textBlob, 'funding') || hasPattern(textBlob, 'venture capital') || hasPattern(textBlob, 'investor')) {
+    if (!detectedCategory) detectedCategory = 'business';
+    detectedEntities.push('finance', 'startup');
+  }
+  if (hasPattern(textBlob, 'creator economy') || hasPattern(textBlob, 'media company') || hasPattern(textBlob, 'creators')) {
+    if (!detectedCategory) detectedCategory = 'business';
+    detectedEntities.push('creator economy', 'business');
+  }
+  if (hasPattern(textBlob, 'stocks') || hasPattern(textBlob, 'trading') || hasPattern(textBlob, 'crypto') || hasPattern(textBlob, 'bitcoin')) {
+    detectedCategory = 'finance';
+    detectedEntities.push('investing');
+  }
+
+  // 2. Specific Tools & Entities
   if (hasPattern(textBlob, 'premiere')) detectedEntities.push('premiere pro');
   if (hasPattern(textBlob, 'after effects') || hasPattern(textBlob, 'ae')) detectedEntities.push('after effects');
   if (hasPattern(textBlob, 'davinci')) detectedEntities.push('davinci resolve');
@@ -409,80 +427,101 @@ function generateLocalAiTags(payload) {
   if (hasPattern(textBlob, 'typography')) detectedEntities.push('typography');
   if (hasPattern(textBlob, 'calisthenics') || hasPattern(textBlob, 'bodyweight')) detectedEntities.push('calisthenics');
 
-  // Category
-  if (
-    hasPattern(textBlob, 'premiere') ||
-    hasPattern(textBlob, 'video edit') ||
-    hasPattern(textBlob, 'davinci') ||
-    hasPattern(textBlob, 'after effects') ||
-    hasPattern(textBlob, 'capcut') ||
-    hasPattern(textBlob, 'ffmpeg')
-  ) {
-    detectedCategory = 'video editing';
-  } else if (
-    hasPattern(textBlob, 'game') ||
-    hasPattern(textBlob, 'gaming') ||
-    hasPattern(textBlob, 'gta') ||
-    hasPattern(textBlob, 'watch dogs') ||
-    hasPattern(textBlob, 'playstation') ||
-    hasPattern(textBlob, 'xbox')
-  ) {
-    detectedCategory = 'gaming';
-  } else if (
-    hasPattern(textBlob, 'claude') ||
-    hasPattern(textBlob, 'chatgpt') ||
-    hasPattern(textBlob, 'openai') ||
-    hasPattern(textBlob, 'gemini') ||
-    hasPattern(textBlob, 'deepseek') ||
-    hasPattern(textBlob, 'llm') ||
-    hasPattern(textBlob, 'prompt')
-  ) {
-    detectedCategory = 'ai';
-  } else if (
-    hasPattern(textBlob, 'react') ||
-    hasPattern(textBlob, 'next js') ||
-    hasPattern(textBlob, 'tailwind') ||
-    hasPattern(textBlob, 'coding') ||
-    hasPattern(textBlob, 'typescript') ||
-    hasPattern(textBlob, 'supabase')
-  ) {
-    detectedCategory = 'tech';
-  } else if (
-    hasPattern(textBlob, 'figma') ||
-    hasPattern(textBlob, 'ui') ||
-    hasPattern(textBlob, 'ux') ||
-    hasPattern(textBlob, 'typography')
-  ) {
-    detectedCategory = 'design';
-  } else if (
-    hasPattern(textBlob, 'calisthenics') ||
-    hasPattern(textBlob, 'fitness')
-  ) {
-    detectedCategory = 'fitness';
-  } else if (
-    hasPattern(textBlob, 'saas') ||
-    hasPattern(textBlob, 'startup')
-  ) {
-    detectedCategory = 'business';
-  } else if (
-    hasPattern(textBlob, 'meme') ||
-    hasPattern(textBlob, 'funny')
-  ) {
-    detectedCategory = 'entertainment';
-  } else {
-    const platform = (payload.platform || 'web').toLowerCase();
-    if (platform === 'youtube') detectedCategory = 'video editing';
-    else if (platform === 'instagram') detectedCategory = 'design';
-    else detectedCategory = 'tech';
+  // 3. Category Detection
+  if (!detectedCategory) {
+    if (
+      hasPattern(textBlob, 'premiere') ||
+      hasPattern(textBlob, 'video edit') ||
+      hasPattern(textBlob, 'davinci') ||
+      hasPattern(textBlob, 'after effects') ||
+      hasPattern(textBlob, 'capcut') ||
+      hasPattern(textBlob, 'ffmpeg')
+    ) {
+      detectedCategory = 'video editing';
+    } else if (
+      hasPattern(textBlob, 'game') ||
+      hasPattern(textBlob, 'gaming') ||
+      hasPattern(textBlob, 'gta') ||
+      hasPattern(textBlob, 'watch dogs') ||
+      hasPattern(textBlob, 'playstation') ||
+      hasPattern(textBlob, 'xbox')
+    ) {
+      detectedCategory = 'gaming';
+    } else if (
+      hasPattern(textBlob, 'claude') ||
+      hasPattern(textBlob, 'chatgpt') ||
+      hasPattern(textBlob, 'openai') ||
+      hasPattern(textBlob, 'gemini') ||
+      hasPattern(textBlob, 'deepseek') ||
+      hasPattern(textBlob, 'llm') ||
+      hasPattern(textBlob, 'prompt')
+    ) {
+      detectedCategory = 'ai';
+    } else if (
+      hasPattern(textBlob, 'react') ||
+      hasPattern(textBlob, 'next js') ||
+      hasPattern(textBlob, 'tailwind') ||
+      hasPattern(textBlob, 'coding') ||
+      hasPattern(textBlob, 'typescript') ||
+      hasPattern(textBlob, 'supabase')
+    ) {
+      detectedCategory = 'tech';
+    } else if (
+      hasPattern(textBlob, 'figma') ||
+      hasPattern(textBlob, 'ui') ||
+      hasPattern(textBlob, 'ux') ||
+      hasPattern(textBlob, 'typography')
+    ) {
+      detectedCategory = 'design';
+    } else if (
+      hasPattern(textBlob, 'calisthenics') ||
+      hasPattern(textBlob, 'fitness')
+    ) {
+      detectedCategory = 'fitness';
+    } else if (
+      hasPattern(textBlob, 'saas') ||
+      hasPattern(textBlob, 'startup') ||
+      hasPattern(textBlob, 'business') ||
+      hasPattern(textBlob, 'revenue') ||
+      hasPattern(textBlob, 'creator')
+    ) {
+      detectedCategory = 'business';
+    } else if (
+      hasPattern(textBlob, 'finance') ||
+      hasPattern(textBlob, 'money') ||
+      hasPattern(textBlob, 'investing') ||
+      hasPattern(textBlob, 'stocks')
+    ) {
+      detectedCategory = 'finance';
+    } else if (
+      hasPattern(textBlob, 'meme') ||
+      hasPattern(textBlob, 'funny')
+    ) {
+      detectedCategory = 'entertainment';
+    } else {
+      const platform = (payload.platform || 'web').toLowerCase();
+      if (platform === 'youtube') detectedCategory = 'video editing';
+      else if (platform === 'instagram') detectedCategory = 'design';
+      else detectedCategory = 'tech';
+    }
   }
 
-  // Format
-  if (hasPattern(textBlob, 'workflow')) detectedFormat = 'workflow';
-  else if (hasPattern(textBlob, 'tutorial') || hasPattern(textBlob, 'how to')) detectedFormat = 'tutorial';
-  else if (hasPattern(textBlob, 'case study')) detectedFormat = 'case study';
-  else if (hasPattern(textBlob, 'meme')) detectedFormat = 'meme';
-  else if (hasPattern(textBlob, 'gameplay')) detectedFormat = 'gameplay';
-  else if (hasPattern(textBlob, 'tool')) detectedFormat = 'tool';
+  // 4. Format Detection
+  if (hasPattern(textBlob, 'podcast') || hasPattern(textBlob, 'interview') || hasPattern(textBlob, 'ft.')) {
+    detectedFormat = 'podcast';
+  } else if (hasPattern(textBlob, 'workflow')) {
+    detectedFormat = 'workflow';
+  } else if (hasPattern(textBlob, 'tutorial') || hasPattern(textBlob, 'how to')) {
+    detectedFormat = 'tutorial';
+  } else if (hasPattern(textBlob, 'case study') || hasPattern(textBlob, 'breakdown')) {
+    detectedFormat = 'case study';
+  } else if (hasPattern(textBlob, 'meme') || hasPattern(textBlob, 'funny')) {
+    detectedFormat = 'meme';
+  } else if (hasPattern(textBlob, 'gameplay')) {
+    detectedFormat = 'gameplay';
+  } else if (hasPattern(textBlob, 'tool')) {
+    detectedFormat = 'tool';
+  }
 
   const rawTags = [detectedCategory, ...detectedEntities, detectedFormat || undefined];
   const normalized = cleanAndNormalizeTags(rawTags);
@@ -512,7 +551,7 @@ Analyze the provided content metadata and extract high-utility, highly searchabl
 DYNAMIC TAGGING RULES (MIN 2, MAX 6 TAGS):
 1. Knowledge & Depth-Based Tag Count: Generate 4 to 6 tags for rich/knowledge-heavy posts, and 2 to 3 tags for brief/simple content.
 2. Format: STRICTLY lowercase text with standard spaces. NEVER use hyphens, hashtags, underscores, or special characters.
-3. High-Value Specificity: ALWAYS prioritize specific named tools, software, frameworks, models, and core mechanics over vague concepts.
+3. High-Value Specificity: ALWAYS prioritize specific named entities, tools, domains (e.g. "finance", "business", "creator economy", "investing", "startup", "podcast", "zerodha", "premiere pro", "chatgpt") over vague concepts.
 4. Deduplication: Never include redundant synonyms.
 5. NO Fluff: Never use low-intent generic words.
 
@@ -588,75 +627,6 @@ OUTPUT FORMAT (JSON ONLY):
   return null;
 }
 
-// Async Background Tag Enrichment: Updates Supabase DB and notifies Realtime
-async function enrichTagsInBackground(bookmarkId, payload, apiKey, serverUrl = DEFAULT_SERVER_URL) {
-  try {
-    let aiTags = null;
-    if (apiKey) {
-      aiTags = await generateGeminiTags(payload, apiKey);
-    }
-
-    // If no direct API key, call server-side AI tagger endpoint
-    if (!aiTags || aiTags.length === 0) {
-      try {
-        const tagRes = await fetch(`${serverUrl || DEFAULT_SERVER_URL}/api/ai/tag`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: payload.title,
-            text: payload.text || payload.title,
-            url: payload.url,
-            platform: payload.platform,
-            context: payload.context,
-          }),
-        });
-        if (tagRes.ok) {
-          const tagData = await tagRes.json();
-          if (tagData.tags && Array.isArray(tagData.tags) && tagData.tags.length >= 3) {
-            aiTags = tagData.tags;
-          }
-        }
-      } catch (srvErr) {
-        // server unreachable
-      }
-    }
-
-    if (!aiTags || aiTags.length === 0) return;
-
-    await fetch(`${SUPABASE_URL}/rest/v1/bookmarks?id=eq.${bookmarkId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tags: aiTags }),
-    });
-
-    // Upsert tags into tags table
-    for (const t of aiTags) {
-      const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-      fetch(`${SUPABASE_URL}/rest/v1/tags`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates',
-        },
-        body: JSON.stringify({
-          id: tagId,
-          name: t.name,
-          color: t.color,
-          user_id: payload.userId || null,
-        }),
-      }).catch(() => {});
-    }
-  } catch (err) {
-    console.warn('Background AI tag enrichment error:', err);
-  }
-}
-
 // Offline Queue Manager
 async function enqueueOfflineBookmark(bookmarkItem) {
   try {
@@ -699,11 +669,23 @@ async function syncOfflineQueue() {
   }
 }
 
-// Master Save Flow — Save Instantly & Open Website for Live AI Tagging
+// Master Save Flow — 100% Background Save with Immediate Smart Tags (Zero Tab Opening / No Redirects!)
 async function saveBookmarkCore(payload) {
   const settings = await chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'userId', 'recentSaves']);
   const userId = settings.userId || payload.userId || null;
   const serverUrl = settings.serverUrl || DEFAULT_SERVER_URL;
+  const apiKey = settings.geminiApiKey || null;
+
+  // Clean boilerplate text
+  let cleanText = payload.text || payload.title || payload.url || 'Saved Bookmark';
+  if (cleanText.includes('Enjoy the videos and music that you love') || cleanText.includes('video, sharing, camera phone')) {
+    cleanText = payload.title ? `${payload.title} | Video by ${payload.displayName || 'Creator'}` : 'Saved YouTube Video';
+  }
+
+  const cleanPayload = {
+    ...payload,
+    text: cleanText,
+  };
 
   const now = new Date();
   const formattedDate = now.toLocaleDateString('en-US', {
@@ -714,7 +696,12 @@ async function saveBookmarkCore(payload) {
 
   const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  // Save with empty tags initially so the website runs the AI tagger with live visual indicator
+  // 1. Generate Smart Tags Immediately in the Background Worker
+  let generatedTags = await generateGeminiTags(cleanPayload, apiKey);
+  if (!generatedTags || generatedTags.length < 2) {
+    generatedTags = generateLocalAiTags(cleanPayload);
+  }
+
   const bookmarkItem = {
     id: bookmarkId,
     platform: payload.platform || 'web',
@@ -723,18 +710,18 @@ async function saveBookmarkCore(payload) {
     avatar_url: payload.avatarUrl || null,
     image_url: payload.imageUrl || null,
     title: payload.title || null,
-    text: payload.text || payload.title || payload.url || 'Saved Bookmark',
+    text: cleanText,
     url: payload.url || null,
     date: formattedDate,
     created_at_ms: Date.now(),
-    tags: [],
+    tags: generatedTags || [],
     is_favorite: false,
     is_archived: false,
     note: payload.note || null,
     user_id: userId,
   };
 
-  // 1. Immediate Save to Supabase (or Offline Queue)
+  // 2. Immediate Save to Supabase (or Offline Queue)
   let savedResult = null;
   try {
     const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/bookmarks`, {
@@ -752,15 +739,37 @@ async function saveBookmarkCore(payload) {
       savedResult = {
         success: true,
         bookmark: bookmarkItem,
-        tags: [],
+        tags: bookmarkItem.tags,
         savedToDatabase: true,
       };
+
+      // Upsert tags into tags table
+      if (Array.isArray(bookmarkItem.tags)) {
+        for (const t of bookmarkItem.tags) {
+          const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+          fetch(`${SUPABASE_URL}/rest/v1/tags`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates',
+            },
+            body: JSON.stringify({
+              id: tagId,
+              name: t.name,
+              color: t.color,
+              user_id: userId,
+            }),
+          }).catch(() => {});
+        }
+      }
     } else {
       await enqueueOfflineBookmark(bookmarkItem);
       savedResult = {
         success: true,
         bookmark: bookmarkItem,
-        tags: [],
+        tags: bookmarkItem.tags,
         offlineQueued: true,
       };
     }
@@ -769,16 +778,9 @@ async function saveBookmarkCore(payload) {
     savedResult = {
       success: true,
       bookmark: bookmarkItem,
-      tags: [],
+      tags: bookmarkItem.tags,
       offlineQueued: true,
     };
-  }
-
-  // 2. Open Valut Website Tab so user sees processing and tags applied live!
-  if (payload.openWebsite !== false) {
-    try {
-      chrome.tabs.create({ url: serverUrl });
-    } catch {}
   }
 
   // 3. Update Recent Saves list
@@ -790,13 +792,13 @@ async function saveBookmarkCore(payload) {
       avatarUrl: bookmarkItem.avatar_url,
       imageUrl: bookmarkItem.image_url,
       createdAt: bookmarkItem.created_at_ms,
-      tags: [],
+      tags: bookmarkItem.tags,
     },
     ...recent,
   ].slice(0, 15);
   chrome.storage.local.set({ recentSaves: newRecent });
 
-  // 4. Badge notification
+  // 4. Badge notification (no tab redirects!)
   chrome.action.setBadgeText({ text: '✓' });
   chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);

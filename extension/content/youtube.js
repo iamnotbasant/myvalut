@@ -23,55 +23,93 @@
     let text = '';
     let imageUrl = '';
     let pageUrl = window.location.href;
-    let extractedKeywords = '';
     let transcriptText = '';
-
-    // Extract meta keywords (contains video tags from creator)
-    const metaKeywords = document.querySelector('meta[name="keywords"]')?.getAttribute('content');
-    if (metaKeywords) {
-      extractedKeywords = metaKeywords;
-    }
 
     if (isShorts) {
       const activeReel = document.querySelector('ytd-reel-video-renderer[is-active]') || document;
-      title = activeReel.querySelector('#overlay ytd-reel-player-header-renderer h2, #title')?.textContent?.trim() || document.title;
-      authorName = activeReel.querySelector('#channel-name a, yt-formatted-string.ytd-channel-name')?.textContent?.trim() || '';
-      const avatarEl = activeReel.querySelector('#avatar-btn img, #avatar img, yt-img-shadow#avatar img');
-      avatarUrl = avatarEl?.getAttribute('src') || avatarEl?.getAttribute('data-src') || '';
+      title = activeReel.querySelector('#overlay ytd-reel-player-header-renderer h2, #title')?.textContent?.trim() || document.title.replace(' - YouTube', '');
+      authorName = activeReel.querySelector('#channel-name a, yt-formatted-string.ytd-channel-name, #channel-name')?.textContent?.trim() || 'YouTube Creator';
+      authorHandle = authorName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      
+      const avatarEl = activeReel.querySelector('#avatar-btn img, #avatar img, yt-img-shadow#avatar img, ytd-channel-name img');
+      if (avatarEl) {
+        avatarUrl = avatarEl.currentSrc || avatarEl.src || avatarEl.getAttribute('src') || '';
+      }
       text = title;
       const shortsId = window.location.pathname.split('/shorts/')[1]?.split('?')[0];
       if (shortsId) {
-        imageUrl = `https://i.ytimg.com/vi/${shortsId}/maxresdefault.jpg`;
+        imageUrl = `https://i.ytimg.com/vi/${shortsId}/hqdefault.jpg`;
       }
     } else {
-      const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1 yt-formatted-string, h1.title yt-formatted-string, #container h1');
-      title = titleEl?.textContent?.trim() || document.querySelector('meta[name="title"]')?.getAttribute('content') || document.title.replace(' - YouTube', '');
+      // 1. Precise Video Title Extraction
+      const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1 yt-formatted-string, h1.title yt-formatted-string, ytd-watch-metadata #title h1, #container h1');
+      title = titleEl?.textContent?.trim() || document.querySelector('meta[property="og:title"]')?.getAttribute('content') || document.querySelector('meta[name="title"]')?.getAttribute('content') || document.title.replace(' - YouTube', '').trim();
 
-      const channelEl = document.querySelector('#owner #channel-name a, ytd-video-owner-renderer #channel-name a, #upload-info #channel-name a, ytd-channel-name a');
+      // 2. Precise Channel Name & Handle Extraction
+      const channelEl = document.querySelector('ytd-watch-metadata ytd-channel-name yt-formatted-string a, #owner #channel-name a, ytd-video-owner-renderer #channel-name a, #upload-info #channel-name a, ytd-channel-name a');
       authorName = channelEl?.textContent?.trim() || 'YouTube Creator';
-      authorHandle = authorName.toLowerCase().replace(/[^a-z0-9_]/g, '');
-
-      const avatarEl = document.querySelector('#owner #avatar img, ytd-video-owner-renderer #avatar-link img, #upload-info #avatar img, yt-img-shadow#avatar img, #avatar img');
-      avatarUrl = avatarEl?.getAttribute('src') || avatarEl?.getAttribute('data-src') || '';
-
-      const descEl = document.querySelector('#description-inline-expander yt-attributed-string, #description yt-formatted-string, #description-text');
-      const rawDesc = descEl?.textContent?.trim() || document.querySelector('meta[name="description"]')?.getAttribute('content') || document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
       
-      // High-signal text combining description and creator tags
-      text = rawDesc.slice(0, 600);
-      if (extractedKeywords) {
-        text = `${text}\nKeywords: ${extractedKeywords.slice(0, 300)}`.trim();
+      const handleEl = document.querySelector('ytd-watch-metadata #owner-sub-count, ytd-video-owner-renderer #channel-name + yt-formatted-string, #owner ytd-channel-name + span');
+      const rawHandle = handleEl?.textContent?.trim();
+      if (rawHandle && rawHandle.startsWith('@')) {
+        authorHandle = rawHandle.replace(/^@/, '');
+      } else {
+        authorHandle = authorName.toLowerCase().replace(/[^a-z0-9_]/g, '');
       }
 
-      // Check if transcript drawer is open
+      // 3. Robust Channel Avatar Extraction (Support YouTube Polymer 3 custom img elements)
+      const avatarCandidates = [
+        'ytd-watch-metadata #owner yt-img-shadow #img',
+        'ytd-watch-metadata ytd-video-owner-renderer #avatar img',
+        '#owner ytd-video-owner-renderer #avatar img#img',
+        '#owner #avatar img',
+        'ytd-video-owner-renderer #avatar-link img',
+        '#upload-info #avatar img',
+        'yt-img-shadow#avatar img',
+        '#avatar img'
+      ];
+
+      for (const selector of avatarCandidates) {
+        const el = document.querySelector(selector);
+        if (el) {
+          const src = el.currentSrc || el.src || el.getAttribute('src');
+          if (src && !src.includes('data:image/gif') && !src.startsWith('data:')) {
+            avatarUrl = src;
+            break;
+          }
+        }
+      }
+
+      // 4. Real Video Description Extraction (Filter out generic YouTube static boilerplate)
+      const descEl = document.querySelector('#description-inline-expander yt-attributed-string, #description-inline-expander, ytd-watch-metadata #description, #description yt-formatted-string, #description-text, #snippet');
+      let rawDesc = descEl?.textContent?.trim() || '';
+
+      const ogDesc = document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
+      if (!rawDesc && ogDesc && !ogDesc.includes('Enjoy the videos and music')) {
+        rawDesc = ogDesc;
+      }
+
+      // Strip generic YouTube crawler boilerplate
+      const isBoilerplate = rawDesc.includes('Enjoy the videos and music that you love') || rawDesc.includes('video, sharing, camera phone');
+      if (isBoilerplate || !rawDesc) {
+        text = `${title} | Video by ${authorName}`;
+      } else {
+        text = rawDesc.slice(0, 600).trim();
+      }
+
+      // 5. Transcript / Chapter Context
       const transcriptSegments = document.querySelectorAll('ytd-transcript-segment-renderer yt-formatted-string, #segments-container yt-formatted-string');
       if (transcriptSegments.length > 0) {
-        const words = Array.from(transcriptSegments).map(s => s.textContent.trim()).filter(Boolean).slice(0, 200).join(' ');
+        const words = Array.from(transcriptSegments).map(s => s.textContent.trim()).filter(Boolean).slice(0, 150).join(' ');
         if (words) transcriptText = words;
       }
 
-      if (videoId) {
-        imageUrl = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+      // 6. High-Quality Video Thumbnail (Use official YouTube Thumbnail URL or og:image)
+      const ogImg = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+      if (ogImg && ogImg.includes('i.ytimg.com')) {
+        imageUrl = ogImg;
+      } else if (videoId) {
+        imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
       }
     }
 
@@ -87,69 +125,121 @@
       platform: 'youtube',
       title: title || 'YouTube Video',
       text: text || title || 'Saved YouTube Video',
-      context: transcriptText || extractedKeywords || undefined,
+      context: transcriptText || undefined,
       chapters: chapters.length > 0 ? chapters : undefined,
       displayName: authorName || 'YouTube Creator',
       username: authorHandle || 'youtube',
       avatarUrl: avatarUrl || undefined,
       imageUrl: imageUrl || undefined,
-      openWebsite: true,
     };
   }
 
-  // Smart Dynamic Tag Taxonomy (Natural Spaced Tags)
+  // Smart Dynamic Tag Taxonomy (Natural Spaced Tags covering all domains)
   function extractSmartTags(text) {
     const lower = (text || '').toLowerCase();
     let category = 'video editing';
     const topics = [];
     let type = 'tutorial';
 
-    if (lower.includes('premiere')) topics.push('premiere pro');
-    if (lower.includes('after effects') || lower.includes('ae')) topics.push('after effects');
-    if (lower.includes('davinci')) topics.push('davinci resolve');
-    if (lower.includes('capcut')) topics.push('capcut');
-    if (lower.includes('ffmpeg')) topics.push('ffmpeg');
-    if (lower.includes('speed ramp')) topics.push('speed ramping');
-    if (lower.includes('color grade') || lower.includes('lut')) topics.push('color grade');
-    if (lower.includes('motion') || lower.includes('animation')) topics.push('motion design');
-    if (lower.includes('transition') || lower.includes('fx') || lower.includes('vfx')) topics.push('vfx');
-
-    if (topics.length === 0) {
-      if (lower.includes('ai') || lower.includes('chatgpt') || lower.includes('claude') || lower.includes('prompt') || lower.includes('agent')) {
-        category = 'ai';
-        if (lower.includes('chatgpt')) topics.push('chatgpt');
-        if (lower.includes('claude')) topics.push('claude');
-        if (topics.length === 0) topics.push('ai agents', 'prompt engineering');
-      } else if (lower.includes('code') || lower.includes('react') || lower.includes('next.js') || lower.includes('web dev') || lower.includes('programming')) {
-        category = 'tech';
-        if (lower.includes('react')) topics.push('react');
-        if (lower.includes('next')) topics.push('next js');
-        if (topics.length === 0) topics.push('web dev');
-      } else if (lower.includes('design') || lower.includes('figma') || lower.includes('ui') || lower.includes('ux')) {
-        category = 'design';
-        topics.push('ui ux', 'figma');
-      } else if (lower.includes('calisthenics') || lower.includes('workout') || lower.includes('fitness')) {
-        category = 'fitness';
-        topics.push('calisthenics');
-      } else {
-        topics.push('premiere pro');
-      }
+    // 1. Finance, Business, Investing & Startups
+    if (
+      lower.includes('zerodha') ||
+      lower.includes('funding') ||
+      lower.includes('fund') ||
+      lower.includes('investing') ||
+      lower.includes('finance') ||
+      lower.includes('money') ||
+      lower.includes('stocks') ||
+      lower.includes('trading') ||
+      lower.includes('creator economy') ||
+      lower.includes('media company') ||
+      lower.includes('business') ||
+      lower.includes('startup') ||
+      lower.includes('saas') ||
+      lower.includes('revenue')
+    ) {
+      category = 'business';
+      if (lower.includes('zerodha')) topics.push('finance', 'investing');
+      if (lower.includes('funding') || lower.includes('fund')) topics.push('finance', 'startup');
+      if (lower.includes('creator') || lower.includes('media company')) topics.push('creator economy', 'business');
+      if (lower.includes('podcast') || lower.includes('ft.') || lower.includes('interview')) topics.push('podcast');
+      if (topics.length === 0) topics.push('finance', 'business');
+      type = 'case study';
+    }
+    // 2. Video Editing & Motion
+    else if (lower.includes('premiere') || lower.includes('after effects') || lower.includes('ae') || lower.includes('davinci') || lower.includes('capcut') || lower.includes('video edit') || lower.includes('speed ramp') || lower.includes('color grade') || lower.includes('lut') || lower.includes('transition') || lower.includes('vfx')) {
+      category = 'video editing';
+      if (lower.includes('premiere')) topics.push('premiere pro');
+      if (lower.includes('after effects') || lower.includes('ae')) topics.push('after effects');
+      if (lower.includes('davinci')) topics.push('davinci resolve');
+      if (lower.includes('capcut')) topics.push('capcut');
+      if (lower.includes('speed ramp')) topics.push('speed ramping');
+      if (lower.includes('color grade') || lower.includes('lut')) topics.push('color grade');
+      if (lower.includes('motion') || lower.includes('animation')) topics.push('motion design');
+      if (topics.length === 0) topics.push('video editing');
+      type = 'tutorial';
+    }
+    // 3. AI & Machine Learning
+    else if (lower.includes('ai') || lower.includes('chatgpt') || lower.includes('claude') || lower.includes('deepseek') || lower.includes('gemini') || lower.includes('prompt') || lower.includes('agent') || lower.includes('llm')) {
+      category = 'ai';
+      if (lower.includes('chatgpt')) topics.push('chatgpt');
+      if (lower.includes('claude')) topics.push('claude');
+      if (lower.includes('deepseek')) topics.push('deepseek');
+      if (lower.includes('gemini')) topics.push('gemini');
+      if (topics.length === 0) topics.push('ai agents', 'prompt engineering');
+      type = 'tool';
+    }
+    // 4. Tech & Web Dev
+    else if (lower.includes('code') || lower.includes('react') || lower.includes('next.js') || lower.includes('web dev') || lower.includes('programming') || lower.includes('javascript') || lower.includes('python')) {
+      category = 'tech';
+      if (lower.includes('react')) topics.push('react');
+      if (lower.includes('next')) topics.push('next js');
+      if (topics.length === 0) topics.push('web dev');
+      type = 'tutorial';
+    }
+    // 5. Design & UI/UX
+    else if (lower.includes('design') || lower.includes('figma') || lower.includes('ui') || lower.includes('ux') || lower.includes('photoshop')) {
+      category = 'design';
+      if (lower.includes('figma')) topics.push('figma');
+      if (lower.includes('photoshop')) topics.push('photoshop');
+      topics.push('ui ux');
+      type = 'showcase';
+    }
+    // 6. Fitness
+    else if (lower.includes('calisthenics') || lower.includes('workout') || lower.includes('fitness') || lower.includes('gym')) {
+      category = 'fitness';
+      topics.push('calisthenics');
+      type = 'tutorial';
+    }
+    // 7. Gaming
+    else if (lower.includes('gaming') || lower.includes('gameplay') || lower.includes('gta') || lower.includes('playstation')) {
+      category = 'gaming';
+      topics.push('gameplay');
+      type = 'gameplay';
+    }
+    else {
+      category = 'video editing';
+      topics.push('resource');
     }
 
-    if (lower.includes('workflow')) {
+    if (lower.includes('podcast') || lower.includes('interview') || lower.includes('ft.')) {
+      type = 'podcast';
+    } else if (lower.includes('workflow')) {
       type = 'workflow';
-    } else if (lower.includes('course') || lower.includes('how to') || lower.includes('guide') || lower.includes('walkthrough')) {
-      type = 'tutorial';
-    } else if (lower.includes('tool') || lower.includes('plugin') || lower.includes('extension') || lower.includes('preset')) {
-      type = 'tool';
     } else if (lower.includes('case study') || lower.includes('breakdown')) {
       type = 'case study';
-    } else {
-      type = 'tutorial';
+    } else if (lower.includes('tool') || lower.includes('plugin') || lower.includes('software')) {
+      type = 'tool';
     }
 
     const tagNames = [category, ...topics.slice(0, 4), type];
     const colorMap = {
+      'business': 'cyan',
+      'finance': 'teal',
+      'investing': 'teal',
+      'startup': 'green',
+      'creator economy': 'orange',
+      'podcast': 'amber',
       'video editing': 'violet',
       'premiere pro': 'violet',
       'after effects': 'violet',
@@ -163,6 +253,8 @@
       'ai': 'teal',
       'chatgpt': 'teal',
       'claude': 'teal',
+      'deepseek': 'teal',
+      'gemini': 'teal',
       'ai agents': 'teal',
       'prompt engineering': 'teal',
       'tech': 'teal',
@@ -172,8 +264,11 @@
       'design': 'pink',
       'ui ux': 'cyan',
       'figma': 'pink',
+      'photoshop': 'blue',
       'fitness': 'green',
       'calisthenics': 'green',
+      'gaming': 'indigo',
+      'gameplay': 'indigo',
       'workflow': 'amber',
       'tutorial': 'green',
       'tool': 'cyan',
@@ -198,7 +293,7 @@
       year: 'numeric',
     });
 
-    const smartTags = extractSmartTags(payload.text + ' ' + payload.title + ' ' + (payload.context || ''));
+    const smartTags = extractSmartTags(payload.title + ' ' + payload.text + ' ' + (payload.context || ''));
 
     const bookmarkItem = {
       id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -273,12 +368,11 @@
     }
 
     try {
-      const payload = { ...videoData, openWebsite: true };
+      const payload = { ...videoData };
 
       if (!chrome.runtime?.id) {
         const fallbackRes = await directFallbackSave(payload);
         handleYtSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
         return;
       }
 
@@ -287,7 +381,6 @@
           try {
             const fallbackRes = await directFallbackSave(payload);
             handleYtSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
-            window.open('https://myvalut.vercel.app', '_blank');
           } catch (fbErr) {
             handleYtError(buttonElement, toast, 'Please refresh this tab once to connect the updated extension.');
           }
@@ -297,9 +390,8 @@
       });
     } catch (e) {
       try {
-        const fallbackRes = await directFallbackSave({ ...videoData, openWebsite: true });
+        const fallbackRes = await directFallbackSave({ ...videoData });
         handleYtSuccess(buttonElement, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
       } catch (fbErr) {
         handleYtError(buttonElement, toast, 'Please refresh this tab once to connect the updated extension.');
       }

@@ -202,12 +202,11 @@
     }
 
     try {
-      const payload = { ...data, openWebsite: true };
+      const payload = { ...data };
 
       if (!chrome.runtime?.id) {
         const fallbackRes = await directFallbackSave(payload);
         handleRedditSuccess(btn, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
         return;
       }
 
@@ -216,7 +215,6 @@
           try {
             const fallbackRes = await directFallbackSave(payload);
             handleRedditSuccess(btn, toast, fallbackRes.result?.tags || []);
-            window.open('https://myvalut.vercel.app', '_blank');
           } catch (fbErr) {
             handleRedditError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
           }
@@ -226,9 +224,8 @@
       });
     } catch (e) {
       try {
-        const fallbackRes = await directFallbackSave({ ...data, openWebsite: true });
+        const fallbackRes = await directFallbackSave({ ...data });
         handleRedditSuccess(btn, toast, fallbackRes.result?.tags || []);
-        window.open('https://myvalut.vercel.app', '_blank');
       } catch (fbErr) {
         handleRedditError(btn, toast, 'Please refresh this tab once to connect the updated extension.');
       }
