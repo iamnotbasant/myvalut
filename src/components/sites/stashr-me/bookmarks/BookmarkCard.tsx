@@ -33,10 +33,124 @@ interface BookmarkCardProps {
   onSelectTag?: (tagName: string) => void;
 }
 
+import { TagColor } from '@/types/stashr';
+
 function getCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   // If it's a YouTube URL, keep it valid
   return url;
+}
+
+// Dynamically calculates how many whole tags fit in the available container width before showing +N badge
+function DynamicCardTags({
+  tags,
+  onSelectTag
+}: {
+  tags: Array<{ name: string; color: TagColor }>;
+  onSelectTag?: (tagName: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 3));
+
+  useEffect(() => {
+    if (!containerRef.current || tags.length === 0) return;
+
+    const calculateVisibleTags = () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const availableWidth = container.clientWidth;
+      if (availableWidth <= 0) return;
+
+      const badgeWidth = 36;
+      const gap = 6;
+      let totalWidth = 0;
+      let count = 0;
+
+      // Estimate tag widths based on font and padding (12px font ~7.2px per char + 26px padding & dot)
+      const tagWidths = tags.map(t => Math.max(36, Math.ceil(t.name.length * 7.2 + 26)));
+
+      // 1. Check if all tags fit without a +N badge
+      const allFitWidth = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
+      if (allFitWidth <= availableWidth) {
+        setVisibleCount(tags.length);
+        return;
+      }
+
+      // 2. Otherwise calculate how many tags fit alongside the +N badge
+      for (let i = 0; i < tagWidths.length; i++) {
+        const nextWidth = totalWidth + (i > 0 ? gap : 0) + tagWidths[i];
+        if (nextWidth + gap + badgeWidth <= availableWidth) {
+          totalWidth = nextWidth;
+          count++;
+        } else {
+          break;
+        }
+      }
+
+      setVisibleCount(Math.max(1, count));
+    };
+
+    calculateVisibleTags();
+
+    const resizeObserver = new ResizeObserver(calculateVisibleTags);
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, [tags]);
+
+  const visibleTags = tags.slice(0, visibleCount);
+  const remainingTags = tags.slice(visibleCount);
+
+  return (
+    <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1.5 overflow-visible">
+      {visibleTags.map((tag, idx) => (
+        <button
+          key={idx}
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            onSelectTag?.(tag.name);
+          }}
+          className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 transition-all cursor-pointer active:scale-95"
+        >
+          <TagDot color={tag.color} />
+          <span className="whitespace-nowrap">{tag.name}</span>
+        </button>
+      ))}
+
+      {remainingTags.length > 0 && (
+        <div className="relative group/tagtooltip shrink-0">
+          <button
+            type="button"
+            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 hover:text-white gap-1 px-2 py-0.5 transition-colors cursor-pointer"
+          >
+            +{remainingTags.length}
+          </button>
+          {/* Floating Tag Tooltip - Matching Screenshot 2 */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50 pointer-events-auto">
+            <div className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a] px-2.5 py-1 text-xs text-neutral-900 dark:text-white shadow-2xl backdrop-blur-md whitespace-nowrap">
+              {remainingTags.map((tag, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onSelectTag?.(tag.name);
+                  }}
+                  className="flex items-center gap-1.5 font-medium hover:opacity-80 cursor-pointer whitespace-nowrap"
+                >
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
+                  {idx < remainingTags.length - 1 && <span className="text-neutral-400">,</span>}
+                </button>
+              ))}
+            </div>
+            <div className="size-2 -mt-1 rotate-45 border-r border-b border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a]" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function BookmarkCard({
@@ -289,57 +403,7 @@ export function BookmarkCard({
 
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.length > 0 ? (
-              <>
-                {bookmark.tags.slice(0, 2).map((tag, idx) => (
-                  <button
-                    type="button"
-                    key={idx}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onSelectTag?.(tag.name);
-                    }}
-                    className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] hover:border-primary/40 rounded-lg font-normal text-xs h-6 text-neutral-300 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
-                  >
-                    <TagDot color={tag.color} />
-                    <span className="whitespace-nowrap">{tag.name}</span>
-                  </button>
-                ))}
-                {bookmark.tags.length > 2 && (
-                  <div className="relative group/tagtooltip shrink-0">
-                    <button
-                      type="button"
-                      className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] rounded-lg font-normal text-xs h-6 text-neutral-400 hover:text-white px-2 py-0.5 transition-colors cursor-pointer"
-                    >
-                      +{bookmark.tags.length - 2}
-                    </button>
-                    {/* Floating Tag Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50">
-                      <div className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a] px-2.5 py-1 text-xs text-neutral-900 dark:text-white shadow-2xl backdrop-blur-md whitespace-nowrap">
-                        {bookmark.tags.slice(2).map((tag, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={e => {
-                              e.stopPropagation();
-                              onSelectTag?.(tag.name);
-                            }}
-                            className="flex items-center gap-1.5 font-medium hover:opacity-80 cursor-pointer whitespace-nowrap"
-                          >
-                            <TagDot color={tag.color} />
-                            <span>{tag.name}</span>
-                            {idx < bookmark.tags.length - 3 && <span className="text-neutral-400">,</span>}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="size-2 -mt-1 rotate-45 border-r border-b border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a]" />
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : null}
-          </div>
+          <DynamicCardTags tags={bookmark.tags || []} onSelectTag={onSelectTag} />
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
@@ -745,58 +809,8 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-1">
-        <div className="flex min-w-0 flex-1 items-center">
-          {bookmark.tags && bookmark.tags.length > 0 ? (
-            <div className="flex items-center gap-1.5">
-              {bookmark.tags.slice(0, 2).map((tag, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onSelectTag?.(tag.name);
-                  }}
-                  className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 transition-all cursor-pointer active:scale-95"
-                >
-                  <TagDot color={tag.color} />
-                  <span className="whitespace-nowrap">{tag.name}</span>
-                </button>
-              ))}
-              {bookmark.tags.length > 2 && (
-                <div className="relative group/tagtooltip shrink-0">
-                  <button
-                    type="button"
-                    className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 hover:text-white gap-1 px-2 py-0.5 transition-colors cursor-pointer"
-                  >
-                    +{bookmark.tags.length - 2}
-                  </button>
-                  {/* Floating Tag Tooltip - Exact match with Screenshot 2 */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50 pointer-events-auto">
-                    <div className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a] px-2.5 py-1 text-xs text-neutral-900 dark:text-white shadow-2xl backdrop-blur-md whitespace-nowrap">
-                      {bookmark.tags.slice(2).map((tag, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            onSelectTag?.(tag.name);
-                          }}
-                          className="flex items-center gap-1.5 font-medium hover:opacity-80 cursor-pointer whitespace-nowrap"
-                        >
-                          <TagDot color={tag.color} />
-                          <span>{tag.name}</span>
-                          {idx < bookmark.tags.length - 3 && <span className="text-neutral-400">,</span>}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="size-2 -mt-1 rotate-45 border-r border-b border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a]" />
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-        </div>
+      <div className="relative z-10 flex items-center justify-between gap-2.5 mt-auto pt-1">
+        <DynamicCardTags tags={bookmark.tags || []} onSelectTag={onSelectTag} />
 
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
