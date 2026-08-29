@@ -1,5 +1,5 @@
 // Valut Extension Background Service Worker
-const DEFAULT_SERVER_URL = 'http://localhost:3000';
+const DEFAULT_SERVER_URL = 'https://myvalut.vercel.app';
 
 // Initialize context menu
 chrome.runtime.onInstalled.addListener(() => {
@@ -71,14 +71,13 @@ async function saveBookmarkToValut(data) {
   
   const candidateUrls = [
     primaryUrl,
+    'https://myvalut.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:3002'
+    'http://localhost:3001'
   ];
 
-  const uniqueCandidates = Array.from(new Set(candidateUrls));
+  const uniqueCandidates = Array.from(new Set(candidateUrls.filter(Boolean)));
   let lastError = null;
 
   for (const baseUrl of uniqueCandidates) {

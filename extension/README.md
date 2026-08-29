@@ -29,5 +29,5 @@
   - Adds a seamless bookmark icon on tweet action bars and Reddit posts.
 - **Any Web Article / Page:**
   - Press `Alt+V` anytime or click the extension popup to instantly save the page.
-- **Direct Backend Sync:**
-  - Communicates directly with your Valut web app at `http://localhost:3000/api/extension/save`.
+- **Direct Cloud & Local Sync:**
+  - Communicates directly with your live Valut web app at `https://myvalut.vercel.app/api/extension/save` (and supports local development on `http://localhost:3000`).

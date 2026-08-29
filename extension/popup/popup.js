@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Load stored config & test connection
   chrome.storage.sync.get(['serverUrl', 'apiKey'], async (data) => {
-    const serverUrl = data.serverUrl || 'http://localhost:3000';
+    const serverUrl = data.serverUrl || 'https://myvalut.vercel.app';
     serverUrlInput.value = serverUrl;
     apiKeyInput.value = data.apiKey || '';
 
