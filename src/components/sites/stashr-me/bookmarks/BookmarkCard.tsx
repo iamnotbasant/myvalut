@@ -209,12 +209,20 @@ export function BookmarkCard({
             onOpenImage?.(imgSrc);
           }
         }}
-        className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer ${
+        className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
-        }`}
+        } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
       >
+        {/* Animated Laser Border Beam during AI Tagging */}
+        {isTagging && (
+          <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
+            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
+            <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
+          </div>
+        )}
+
         {/* Top Header: Avatar, Name, Handle, Selection Checkbox */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20 bg-muted">
               {bookmark.avatarUrl ? (
@@ -263,7 +271,7 @@ export function BookmarkCard({
         </div>
 
         {/* Middle Content & Optional Right Thumbnail */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="relative z-10 flex items-start justify-between gap-4">
           <p className="flex-1 text-[13.5px] leading-relaxed text-neutral-200 line-clamp-3">
             {bookmark.text}
           </p>
@@ -298,16 +306,16 @@ export function BookmarkCard({
         </div>
 
         {/* Bottom Row: Tags + Date & Platform Badge */}
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isTagging || (!bookmark.tags || bookmark.tags.length === 0) ? (
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.25)] animate-pulse">
-                <Sparkles className="size-3 text-purple-400 animate-spin" />
-                <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">✦ AI Tagging...</span>
+            {isTagging ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
+                <Sparkles className="size-3 text-white animate-spin" />
+                <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
               </div>
             ) : bookmark.tags && bookmark.tags.length > 0 ? (
               <>
-                {bookmark.tags.slice(0, 3).map((tag, idx) => (
+                {bookmark.tags.slice(0, 4).map((tag, idx) => (
                   <button
                     type="button"
                     key={idx}
@@ -321,9 +329,9 @@ export function BookmarkCard({
                     <span>{tag.name}</span>
                   </button>
                 ))}
-                {bookmark.tags.length > 3 && (
+                {bookmark.tags.length > 4 && (
                   <span className="inline-flex select-none items-center justify-center whitespace-nowrap border border-neutral-700/70 bg-[#27272a]/70 rounded-lg font-normal text-xs h-6 text-neutral-400 px-2 py-0.5">
-                    +{bookmark.tags.length - 3}
+                    +{bookmark.tags.length - 4}
                   </span>
                 )}
               </>
@@ -373,12 +381,20 @@ export function BookmarkCard({
             onOpenImage?.(imgSrc);
           }
         }}
-        className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer ${
+        className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
-        }`}
+        } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
       >
+        {/* Animated Laser Border Beam during AI Tagging */}
+        {isTagging && (
+          <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
+            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
+            <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
+          </div>
+        )}
+
         {/* Top Header: Avatar, Name, Handle, Menu & Actions */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
               {bookmark.avatarUrl ? (
@@ -425,13 +441,13 @@ export function BookmarkCard({
         </div>
 
         {/* Content text */}
-        <p className="text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
+        <p className="relative z-10 text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
           {bookmark.text}
         </p>
 
         {/* Big Media Container */}
         {imgSrc && !hasImageError && (
-          <div className="relative overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/media w-full">
+          <div className="relative z-10 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/media w-full">
             {!isImageLoaded && (
               <div className="w-full aspect-video bg-white/5 animate-pulse" />
             )}
@@ -459,22 +475,41 @@ export function BookmarkCard({
         )}
 
         {/* Footer: Tags & Date */}
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
+        <div className="relative z-10 flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.length > 0 && bookmark.tags.map((tag, idx) => (
+            {isTagging ? (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
+                <Sparkles className="size-3 text-white animate-spin" />
+                <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
+              bookmark.tags.map((tag, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onSelectTag?.(tag.name);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] text-xs text-neutral-300 hover:text-white"
+                >
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
+                </button>
+              ))
+            ) : (
               <button
                 type="button"
-                key={idx}
                 onClick={e => {
                   e.stopPropagation();
-                  onSelectTag?.(tag.name);
+                  onAutoTag?.();
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] text-xs text-neutral-300 hover:text-white"
+                className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-300 transition-colors py-0.5 cursor-pointer"
               >
-                <TagDot color={tag.color} />
-                <span>{tag.name}</span>
+                <Sparkles className="size-3 text-neutral-400" />
+                <span>✦ Auto-Tag with AI</span>
               </button>
-            ))}
+            )}
           </div>
           <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
         </div>
@@ -504,8 +539,15 @@ export function BookmarkCard({
       }}
       className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
         isSelected ? 'ring-primary ring-2 border-primary' : ''
-      }`}
+      } ${isTagging ? 'shadow-[0_0_30px_rgba(255,255,255,0.12)] border-white/30 ring-1 ring-white/40' : ''}`}
     >
+      {/* Animated Laser Border Beam during AI Tagging */}
+      {isTagging && (
+        <div className="pointer-events-none absolute -inset-[1px] rounded-[inherit] overflow-hidden z-0">
+          <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.95)_340deg,transparent_360deg)] animate-[spin_2.5s_linear_infinite]" />
+          <div className="absolute inset-[1.5px] rounded-[inherit] bg-[#0d0d0d]" />
+        </div>
+      )}
       {/* Top Right Floating Hover Action Bar */}
       <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-0.5">
         <div className="flex items-center gap-0.5 rounded-lg bg-gradient-to-l from-[#0d0d0d] from-60% to-transparent pl-8 opacity-0 transition-opacity group-hover/bookmarkcard:opacity-100 has-[:focus-visible]:opacity-100">
@@ -621,7 +663,7 @@ export function BookmarkCard({
       </div>
 
       {/* Header with Avatar & Author */}
-      <div className="flex items-center gap-2.5">
+      <div className="relative z-10 flex items-center gap-2.5">
         {bookmark.avatarUrl ? (
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-muted relative shadow-sm">
             <Image
@@ -667,14 +709,14 @@ export function BookmarkCard({
 
       {/* Title */}
       {bookmark.title && (
-        <p className="font-semibold text-white text-sm leading-snug">
+        <p className="relative z-10 font-semibold text-white text-sm leading-snug">
           {bookmark.title}
         </p>
       )}
 
       {/* Post Text & Show More */}
       {bookmark.text && (
-        <div className="space-y-2 whitespace-pre-line text-[13.5px] leading-relaxed text-neutral-200">
+        <div className="relative z-10 space-y-2 whitespace-pre-line text-[13.5px] leading-relaxed text-neutral-200">
           <p className={!isExpanded && bookmark.text.length > 220 ? "line-clamp-4" : ""}>
             <span>{bookmark.text}</span>
           </p>
@@ -706,7 +748,7 @@ export function BookmarkCard({
               onOpenImage?.(imgSrc);
             }
           }}
-          className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] relative block w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 group/media text-left ${
+          className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] relative z-10 block w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 group/media text-left ${
             bookmark.platform === 'youtube' ? 'aspect-video' : ''
           }`}
         >
@@ -746,7 +788,7 @@ export function BookmarkCard({
             e.stopPropagation();
             onOpenNote(bookmark);
           }}
-          className="flex items-start gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2 text-xs italic text-neutral-300 hover:bg-white/10 cursor-pointer transition-colors"
+          className="relative z-10 flex items-start gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2 text-xs italic text-neutral-300 hover:bg-white/10 cursor-pointer transition-colors"
         >
           <FileText className="size-3 shrink-0 text-primary mt-0.5" />
           <span className="line-clamp-2">{bookmark.note}</span>
@@ -754,16 +796,16 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+      <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-1">
         <div className="flex min-w-0 flex-1 items-center">
-          {isTagging || (!bookmark.tags || bookmark.tags.length === 0) ? (
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.25)] animate-pulse">
-              <Sparkles className="size-3 text-purple-400 animate-spin" />
-              <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">✦ AI Tagging...</span>
+          {isTagging ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_15px_rgba(255,255,255,0.15)] backdrop-blur-xs">
+              <Sparkles className="size-3 text-white animate-spin" />
+              <span className="font-medium text-white tracking-wide">✦ AI Tagging...</span>
             </div>
           ) : bookmark.tags && bookmark.tags.length > 0 ? (
             <div className="flex min-w-0 items-center gap-1.5">
-              {bookmark.tags.slice(0, 2).map((tag, idx) => (
+              {bookmark.tags.slice(0, 3).map((tag, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -777,18 +819,18 @@ export function BookmarkCard({
                   <span className="truncate">{tag.name}</span>
                 </button>
               ))}
-              {bookmark.tags.length > 2 && (
+              {bookmark.tags.length > 3 && (
                 <div className="relative group/tagtooltip">
                   <button
                     type="button"
                     className="group/button inline-flex select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 gap-1 px-2 py-0.5 shrink-0 transition-colors cursor-pointer"
                   >
-                    +{bookmark.tags.length - 2}
+                    +{bookmark.tags.length - 3}
                   </button>
                   {/* Floating Tag Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50">
                     <div className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#141414] px-2.5 py-1 text-xs text-neutral-200 shadow-2xl backdrop-blur-md whitespace-nowrap">
-                      {bookmark.tags.slice(2).map((tag, idx) => (
+                      {bookmark.tags.slice(3).map((tag, idx) => (
                         <button
                           key={idx}
                           type="button"
@@ -800,7 +842,7 @@ export function BookmarkCard({
                         >
                           <TagDot color={tag.color} />
                           <span>{tag.name}</span>
-                          {idx < bookmark.tags.length - 3 && <span className="text-neutral-400">,</span>}
+                          {idx < bookmark.tags.length - 4 && <span className="text-neutral-400">,</span>}
                         </button>
                       ))}
                     </div>

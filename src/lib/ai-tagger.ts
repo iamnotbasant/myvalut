@@ -431,9 +431,12 @@ export function getTagColor(tagName: string, index = 0): TagColor {
 
 function getResolvedGeminiKey(customKey?: string): string {
   if (customKey && customKey.trim()) return customKey.trim();
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-  if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) return process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_GEMINI_API_KEY) return process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   try {
+    if (typeof atob !== 'undefined') {
+      return atob('QVEuQWI4Uk42SXFWTm1YMjNubEdhbTVXSlVNNGFOeVhZOFUzZ1lERXJLVjNRQ3BaQUkxaWc=');
+    }
     return Buffer.from('QVEuQWI4Uk42SXFWTm1YMjNubEdhbTVXSlVNNGFOeVhZOFUzZ1lERXJLVjNRQ3BaQUkxaWc=', 'base64').toString('utf-8');
   } catch {
     return '';
@@ -449,29 +452,30 @@ export async function generateGeminiAiTags(input: TagInput, apiKey?: string): Pr
 
   const models = [
     'gemini-3.6-flash',
-    'gemini-3.7-flash',
-    'gemini-3.5-flash',
     'gemini-flash-latest',
+    'gemini-3.1-pro-preview',
   ];
 
-  const systemInstruction = `You are a precise content classification and tagging engine for a personal knowledge vault.
-Analyze the provided content metadata and extract high-utility, highly searchable tags.
+  const systemInstruction = `You are a precise content classification and knowledge extraction engine for a personal knowledge vault.
+Analyze the provided content metadata and extract high-utility, highly searchable, relevant tags.
 
-TAGGING RULES:
-1. Dynamic Tag Count: Generate minimum 2 (for short/simple posts) and maximum 6 tags (for rich/deep content).
-2. Format: STRICTLY lowercase text with normal spaces. DO NOT use hyphens, hashtags, underscores, or special characters (e.g., use "video editing" instead of "video-editing" or "#videoediting").
-3. High-Value Priority: ALWAYS prioritize specific named tools, software, libraries, frameworks, models, or core mechanics over generic concepts (e.g., prefer "chatgpt", "premiere pro", "cursor", "ffmpeg", "tailwind", "after effects" over "ai tools" or "software").
-4. Deduplication: Never include redundant synonyms (e.g., do not output both "ai" and "artificial intelligence"). Prefer short, standard names.
-5. NO Fluff: Avoid generic low-intent tags like "tips", "tricks", "information", "best", "useful", "guide".
+DYNAMIC TAGGING RULES (MIN 2, MAX 6 TAGS):
+1. Knowledge & Depth-Based Tag Count:
+   - For RICH, DETAILED, or KNOWLEDGE-HEAVY content (tutorials, multi-step guides, tech stacks, deep breakdowns, workflow tips, tool comparisons, specific techniques): Generate 4 to 6 specific tags.
+   - For SHORT, SIMPLE, or MINIMAL content (brief thoughts, simple links, short memes): Generate 2 to 3 concise tags.
+2. Format: STRICTLY lowercase text with standard spaces. NEVER use hyphens, hashtags, underscores, or special characters (e.g. use "video editing" instead of "video-editing" or "#videoediting").
+3. High-Value Specificity: ALWAYS prioritize specific named tools, software, libraries, frameworks, models, and core mechanics over vague concepts (e.g. prefer "chatgpt", "premiere pro", "speed ramping", "cursor", "ffmpeg", "tailwind", "after effects", "motion design" over "software" or "tips").
+4. Deduplication: Never include redundant synonyms (e.g. do not output both "ai" and "artificial intelligence").
+5. NO Fluff: Never use low-intent generic words like "tips", "tricks", "information", "best", "useful", "guide", "post".
 
 OUTPUT FORMAT (JSON ONLY):
 {
   "content_density": "low" | "medium" | "high",
   "category": "string",
   "tools_and_entities": ["string", "string"],
-  "core_topics": ["string"],
+  "core_topics": ["string", "string"],
   "content_format": "string",
-  "final_tags": ["string", "string", "string"]
+  "final_tags": ["string", "string"]
 }`;
 
   const preprocessedContent = preprocessPlatformInput(input);
@@ -568,32 +572,40 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
   let detectedFormat: string | null = null;
 
   // 1. Tool & Entity Detection (High Priority)
-  // Video Editing Tools
+  // Video & Graphic Design Tools & Skills
   if (hasPattern(textBlob, 'premiere')) detectedEntities.push('premiere pro');
   if (hasPattern(textBlob, 'after effects') || hasPattern(textBlob, 'ae')) detectedEntities.push('after effects');
   if (hasPattern(textBlob, 'davinci')) detectedEntities.push('davinci resolve');
   if (hasPattern(textBlob, 'capcut')) detectedEntities.push('capcut');
   if (hasPattern(textBlob, 'ffmpeg')) detectedEntities.push('ffmpeg');
-  if (hasPattern(textBlob, 'speed ramp')) detectedEntities.push('speed ramping');
-  if (hasPattern(textBlob, 'color grade') || hasPattern(textBlob, 'lut')) detectedEntities.push('color grade');
+  if (hasPattern(textBlob, 'speed ramp') || hasPattern(textBlob, 'speedramping')) detectedEntities.push('speed ramping');
+  if (hasPattern(textBlob, 'color grade') || hasPattern(textBlob, 'colorgrade') || hasPattern(textBlob, 'lut')) detectedEntities.push('color grade');
   if (hasPattern(textBlob, 'blender')) detectedEntities.push('blender');
   if (hasPattern(textBlob, 'photoshop')) detectedEntities.push('photoshop');
   if (hasPattern(textBlob, 'illustrator')) detectedEntities.push('illustrator');
+  if (hasPattern(textBlob, 'thumbnail') || hasPattern(textBlob, 'thumbnails')) detectedEntities.push('thumbnails');
+  if (hasPattern(textBlob, 'photo edit') || hasPattern(textBlob, 'photo-edit') || hasPattern(textBlob, 'retouch')) detectedEntities.push('photo editing');
+  if (hasPattern(textBlob, 'motion design') || hasPattern(textBlob, 'motion graphic') || hasPattern(textBlob, 'animation')) detectedEntities.push('motion design');
+  if (hasPattern(textBlob, 'sound effect') || hasPattern(textBlob, 'sfx') || hasPattern(textBlob, 'sound design')) detectedEntities.push('sound effects');
+  if (hasPattern(textBlob, 'vfx') || hasPattern(textBlob, 'visual effect')) detectedEntities.push('vfx');
 
   // AI & Dev Tools
-  if (hasPattern(textBlob, 'chatgpt') || hasPattern(textBlob, 'gpt 4') || hasPattern(textBlob, 'gpt4')) detectedEntities.push('chatgpt');
-  if (hasPattern(textBlob, 'claude')) detectedEntities.push('claude');
+  if (hasPattern(textBlob, 'chatgpt') || hasPattern(textBlob, 'gpt 4') || hasPattern(textBlob, 'gpt4') || hasPattern(textBlob, 'openai')) detectedEntities.push('chatgpt');
+  if (hasPattern(textBlob, 'claude') || hasPattern(textBlob, 'anthropic')) detectedEntities.push('claude');
   if (hasPattern(textBlob, 'cursor')) detectedEntities.push('cursor');
   if (hasPattern(textBlob, 'deepseek')) detectedEntities.push('deepseek');
   if (hasPattern(textBlob, 'gemini')) detectedEntities.push('gemini');
   if (hasPattern(textBlob, 'whisper')) detectedEntities.push('whisper');
   if (hasPattern(textBlob, 'langchain')) detectedEntities.push('langchain');
+  if (hasPattern(textBlob, 'ai agent') || hasPattern(textBlob, 'agents') || hasPattern(textBlob, 'agentic')) detectedEntities.push('ai agents');
+  if (hasPattern(textBlob, 'prompt') || hasPattern(textBlob, 'prompting')) detectedEntities.push('prompt engineering');
   if (hasPattern(textBlob, 'react')) detectedEntities.push('react');
   if (hasPattern(textBlob, 'next js') || hasPattern(textBlob, 'nextjs')) detectedEntities.push('next js');
   if (hasPattern(textBlob, 'tailwind')) detectedEntities.push('tailwind');
   if (hasPattern(textBlob, 'shadcn')) detectedEntities.push('shadcn');
   if (hasPattern(textBlob, 'supabase')) detectedEntities.push('supabase');
   if (hasPattern(textBlob, 'python')) detectedEntities.push('python');
+  if (hasPattern(textBlob, 'open source') || hasPattern(textBlob, 'opensource') || hasPattern(textBlob, 'github')) detectedEntities.push('open source');
 
   // Gaming Entities
   if (hasPattern(textBlob, 'gta 6') || hasPattern(textBlob, 'gta vi') || hasPattern(textBlob, 'gta')) detectedEntities.push('gta 6');
@@ -604,10 +616,11 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
 
   // Design Entities
   if (hasPattern(textBlob, 'figma')) detectedEntities.push('figma');
-  if (hasPattern(textBlob, 'typography') || hasPattern(textBlob, 'font')) detectedEntities.push('typography');
+  if (hasPattern(textBlob, 'typography') || hasPattern(textBlob, 'font') || hasPattern(textBlob, 'fonts')) detectedEntities.push('typography');
+  if (hasPattern(textBlob, 'design system') || hasPattern(textBlob, 'design-system')) detectedEntities.push('design system');
 
   // Fitness
-  if (hasPattern(textBlob, 'calisthenics') || hasPattern(textBlob, 'bodyweight') || hasPattern(textBlob, 'pullup')) {
+  if (hasPattern(textBlob, 'calisthenics') || hasPattern(textBlob, 'bodyweight') || hasPattern(textBlob, 'pullup') || hasPattern(textBlob, 'pushup')) {
     detectedEntities.push('calisthenics');
   }
 
@@ -626,6 +639,14 @@ export function extractHeuristicTags(input: TagInput): GeneratedTag[] {
     hasPattern(textBlob, 'transition')
   ) {
     detectedCategory = 'video editing';
+  } else if (
+    hasPattern(textBlob, 'thumbnail') ||
+    hasPattern(textBlob, 'photoshop') ||
+    hasPattern(textBlob, 'illustrator') ||
+    hasPattern(textBlob, 'graphic design') ||
+    hasPattern(textBlob, 'photo edit')
+  ) {
+    detectedCategory = 'graphic design';
   } else if (
     hasPattern(textBlob, 'game') ||
     hasPattern(textBlob, 'gaming') ||

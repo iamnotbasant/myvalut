@@ -502,20 +502,19 @@ async function generateGeminiTags(payload, apiKey) {
 
   const models = [
     'gemini-3.6-flash',
-    'gemini-3.7-flash',
-    'gemini-3.5-flash',
-    'gemini-flash-latest'
+    'gemini-flash-latest',
+    'gemini-3.1-pro-preview'
   ];
 
-  const systemInstruction = `You are a precise content classification and tagging engine for a personal knowledge vault.
+  const systemInstruction = `You are a precise content classification and knowledge extraction engine for a personal knowledge vault.
 Analyze the provided content metadata and extract high-utility, highly searchable tags.
 
-TAGGING RULES:
-1. Dynamic Tag Count: Generate minimum 2 (for short/simple posts) and maximum 6 tags (for rich/deep content).
-2. Format: STRICTLY lowercase text with normal spaces. DO NOT use hyphens, hashtags, underscores, or special characters (e.g., use "video editing" instead of "video-editing" or "#videoediting").
-3. High-Value Priority: ALWAYS prioritize specific named tools, software, libraries, frameworks, models, or core mechanics over generic concepts (e.g., prefer "chatgpt", "premiere pro", "cursor", "ffmpeg", "tailwind", "after effects" over "ai tools" or "software").
-4. Deduplication: Never include redundant synonyms (e.g., do not output both "ai" and "artificial intelligence"). Prefer short, standard names.
-5. NO Fluff: Avoid generic low-intent tags like "tips", "tricks", "information", "best", "useful", "guide".
+DYNAMIC TAGGING RULES (MIN 2, MAX 6 TAGS):
+1. Knowledge & Depth-Based Tag Count: Generate 4 to 6 tags for rich/knowledge-heavy posts, and 2 to 3 tags for brief/simple content.
+2. Format: STRICTLY lowercase text with standard spaces. NEVER use hyphens, hashtags, underscores, or special characters.
+3. High-Value Specificity: ALWAYS prioritize specific named tools, software, frameworks, models, and core mechanics over vague concepts.
+4. Deduplication: Never include redundant synonyms.
+5. NO Fluff: Never use low-intent generic words.
 
 OUTPUT FORMAT (JSON ONLY):
 {
