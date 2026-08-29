@@ -182,7 +182,7 @@ export function BookmarkDetailModal({
         )}
 
         {/* Footer: Tags and Platform */}
-        <div className="flex items-center justify-between border-t border-white/10 px-5 py-3 bg-black/40">
+        <div className="flex items-center justify-between gap-3 pt-1">
           {/* Tags list */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {bookmark.tags && bookmark.tags.length > 0 ? (
