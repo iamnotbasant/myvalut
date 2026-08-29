@@ -101,7 +101,23 @@ export function normalizeAndCleanTags(rawTags: string[]): Array<{ name: string; 
   });
 }
 
-// 4. Platform Detection
+// 4. Safe Backend Assembly (Prompt Fail-Safe)
+export function assembleFinalTags(aiJson: any): Array<{ name: string; color: TagColor }> {
+  if (!aiJson || typeof aiJson !== 'object') return [];
+
+  const category = (aiJson.category || '').toLowerCase().trim();
+  const format = (aiJson.content_format || '').toLowerCase().trim();
+  const tools = Array.isArray(aiJson.tools) ? aiJson.tools : [];
+  const topics = Array.isArray(aiJson.topics) ? aiJson.topics : [];
+  const finalTags = Array.isArray(aiJson.final_tags) ? aiJson.final_tags : [];
+
+  // Merge: Category + Tools + Topics + Content Format + final_tags
+  const rawList = [category, ...tools, ...topics, format, ...finalTags];
+
+  return normalizeAndCleanTags(rawList);
+}
+
+// 5. Platform Detection
 export function detectPlatformFromUrl(url: string): PlatformType {
   const lowercaseUrl = url.toLowerCase();
   if (lowercaseUrl.includes('youtube.com') || lowercaseUrl.includes('youtu.be')) return 'youtube';
@@ -126,7 +142,7 @@ export interface ExtractedMetadata {
   url: string;
 }
 
-// 5. High-Signal Platform Scrapers
+// 6. High-Signal Platform Scrapers
 export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMetadata> {
   const platform = detectPlatformFromUrl(inputUrl);
   let title = '';
@@ -319,54 +335,41 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
   };
 }
 
-// 6. Gemini System Prompt & Caller
-const GEMINI_SYSTEM_PROMPT = `You are an ultra-intelligent, expert content analyzer and knowledge vault curator with deep cultural and industry awareness across Gaming, Tech, AI, Software, Cinema, Design, Finance, Fitness, and Pop Culture.
+// 7. Gemini System Prompt & Caller
+const GEMINI_SYSTEM_PROMPT = `You are the core categorization engine for a knowledge curation app (Vault).
+Analyze the provided content and generate strictly structured, high-utility searchable tags in JSON format.
 
-Your job is to deeply comprehend the essence, core subject, specific entities, and context of the provided content, then generate the MOST NATURAL, HIGH-ACCURACY, CANONICAL search tags that real humans and power users actually search for.
+TAG COMPOSITION RULES (MANDATORY HIERARCHY):
+1. Every item MUST have 3 layers of tags:
+   - Layer 1 (Broad Category - Exactly 1): High-level domain for global sidebar navigation. Must be one of: "ai", "tech", "video editing", "coding", "finance", "fitness", "productivity", "marketing", "design", "general".
+   - Layer 2 (Tools & Topics - 1 to 4): The exact names of software, apps, tools, frameworks, or core subjects (e.g., "calliope", "chatgpt", "premiere pro", "cursor", "faceless video", "2d animation", "ffmpeg"). NEVER use generic words like "tips", "video", "software", or "tricks".
+   - Layer 3 (Content Format - Exactly 1): The nature of the content for type-filtering. Must be one of: "tool", "tutorial", "workflow", "resource", "case study", "opinion", "news".
 
-INTELLIGENCE & TAGGING RULES:
-1. NATURAL CANONICAL NAMES (Crucial):
-   - ALWAYS prefer widely used, canonical short-names and popular acronyms over clunky formal expansions.
-   - For example: Use "gta 6" instead of "grand theft auto vi" or "grand theft auto 6", "ai" instead of "artificial intelligence", "ps5" instead of "playstation 5", "cs2" instead of "counter strike 2", "rdr2" instead of "red dead redemption 2", "vs code" instead of "visual studio code".
-   - For software/tools: Use "premiere pro", "after effects", "chatgpt", "midjourney", "cursor", "tailwind", "next js", "blender", "figma".
+2. FORMATTING RULES:
+   - STRICTLY lowercase with natural spaces.
+   - DO NOT use hyphens ("-"), underscores ("_"), or hashtags ("#"). (e.g., write "faceless video", NOT "faceless-video").
+   - Max 6 tags total, Min 3 tags total.
+   - Deduplicate near-synonyms.
 
-2. MULTI-LAYER SEMANTIC UNDERSTANDING:
-   - Identify the exact domain/category (e.g. "gaming", "video editing", "web development", "machine learning", "finance", "fitness").
-   - Identify the primary subject/entity (e.g. "gta 6", "rockstar games", "nvidia", "apple", "react", "bitcoin").
-   - Identify the specific sub-topic or feature (e.g. "trailer breakdown", "gameplay leak", "color grading", "state management", "pricing").
-   - Identify the format/nature if relevant (e.g. "workflow", "case study", "benchmark", "tutorial", "news").
-
-3. DYNAMIC COUNT (2 to 6 Tags):
-   - Low density (simple tweet, short image, meme): 2–3 tags.
-   - Medium/High density (tutorials, news breakdowns, deep discussions, reviews): 4–6 tags.
-
-4. FORMATTING:
-   - STRICTLY lowercase with normal single spaces.
-   - NEVER use hyphens (-), hashtags (#), underscores (_), or special characters.
-   - NEVER output duplicate or overlapping synonyms (do not output both "ai" and "artificial intelligence").
-   - NEVER output low-intent generic fluff tags like "tips", "tricks", "information", "best", "useful", "guide", "post", "video", "content".
-
-INPUT FORMAT:
+INPUT:
 Platform: {platform}
 Title: {title}
 Context: {content_text}
 
 OUTPUT FORMAT (JSON ONLY):
 {
-  "content_density": "low" | "medium" | "high",
-  "category": "string",
-  "tools_and_entities": ["string", "string"],
-  "core_topics": ["string"],
-  "content_format": "string",
-  "final_tags": ["string", "string", "string"]
+  "category": "ai",
+  "tools": ["calliope"],
+  "topics": ["faceless video", "2d animation"],
+  "content_format": "tool",
+  "final_tags": ["ai", "calliope", "faceless video", "2d animation", "tool"]
 }`;
 
 export interface GeminiTagResponse {
-  content_density: 'low' | 'medium' | 'high';
   category: string;
-  tools_and_entities: string[];
-  core_topics: string[];
-  content_format?: string;
+  tools: string[];
+  topics: string[];
+  content_format: string;
   final_tags: string[];
 }
 
@@ -457,19 +460,8 @@ Context: ${text.slice(0, 3000)}`;
     }
 
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
+    const cleanTags = assembleFinalTags(parsed);
 
-    // Collect tags from final_tags, category, and tools_and_entities
-    const candidateTags: string[] = [];
-    if (Array.isArray(parsed.final_tags) && parsed.final_tags.length > 0) {
-      candidateTags.push(...parsed.final_tags);
-    } else {
-      if (parsed.category) candidateTags.push(parsed.category);
-      if (Array.isArray(parsed.tools_and_entities)) candidateTags.push(...parsed.tools_and_entities);
-      if (Array.isArray(parsed.core_topics)) candidateTags.push(...parsed.core_topics);
-      if (parsed.content_format) candidateTags.push(parsed.content_format);
-    }
-
-    const cleanTags = normalizeAndCleanTags(candidateTags);
     return {
       tags: cleanTags,
       rawDetails: parsed,
