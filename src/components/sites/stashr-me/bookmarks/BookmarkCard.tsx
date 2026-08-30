@@ -80,9 +80,58 @@ function DynamicCardTags({
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: () => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 2));
+
+  useEffect(() => {
+    if (!containerRef.current || tags.length === 0) return;
+
+    const calculateVisibleTags = () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const availableWidth = container.clientWidth;
+      if (availableWidth <= 0) return;
+
+      const badgeWidth = 36;
+      const gap = 6;
+      let totalWidth = 0;
+      let count = 0;
+
+      // Estimate tag widths (12px font ~7.2px per char + 26px for dot & padding)
+      const tagWidths = tags.map(t => Math.max(36, Math.ceil(t.name.length * 7.2 + 26)));
+
+      // 1. Check if all tags fit in 1 line without a +N badge
+      const allFitWidth = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
+      if (allFitWidth <= availableWidth) {
+        setVisibleCount(tags.length);
+        return;
+      }
+
+      // 2. Otherwise calculate how many fit alongside the +N badge
+      for (let i = 0; i < tagWidths.length; i++) {
+        const nextWidth = totalWidth + (i > 0 ? gap : 0) + tagWidths[i];
+        if (nextWidth + gap + badgeWidth <= availableWidth) {
+          totalWidth = nextWidth;
+          count++;
+        } else {
+          break;
+        }
+      }
+
+      setVisibleCount(Math.max(1, count));
+    };
+
+    calculateVisibleTags();
+
+    const resizeObserver = new ResizeObserver(calculateVisibleTags);
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, [tags]);
+
   if (isGeneratingTags) {
     return (
-      <div className="flex min-w-0 flex-1 items-center">
+      <div className="flex min-w-0 flex-1 items-center overflow-hidden">
         <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
           <Sparkles className="size-3 text-purple-400 animate-spin" />
           <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
@@ -95,7 +144,7 @@ function DynamicCardTags({
 
   if (!tags || tags.length === 0) {
     return (
-      <div className="flex min-w-0 flex-1 items-center">
+      <div className="flex min-w-0 flex-1 items-center overflow-hidden">
         {onGenerateTags ? (
           <button
             type="button"
@@ -113,13 +162,11 @@ function DynamicCardTags({
     );
   }
 
-  // Show up to 4 tags directly wrapped; if more than 4 tags, show 3 + (+N badge)
-  const maxDirect = tags.length <= 4 ? tags.length : 3;
-  const visibleTags = tags.slice(0, maxDirect);
-  const remainingTags = tags.slice(maxDirect);
+  const visibleTags = tags.slice(0, visibleCount);
+  const remainingTags = tags.slice(visibleCount);
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+    <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1.5 overflow-visible">
       {visibleTags.map((tag, idx) => (
         <button
           key={idx}
@@ -144,9 +191,9 @@ function DynamicCardTags({
             +{remainingTags.length}
           </button>
 
-          {/* Floating Tag Tooltip - Safe positioning and individual pills without clipping */}
+          {/* Floating Tag Tooltip - Anchored with left-0 so it NEVER clips against the card border */}
           <div className="absolute bottom-full left-0 mb-2.5 hidden group-hover/tagtooltip:flex flex-col items-start z-50 pointer-events-auto animate-in fade-in-50">
-            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-2 text-xs text-white shadow-[0_12px_30px_rgba(0,0,0,0.85)] backdrop-blur-md max-w-[260px]">
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-2 text-xs text-white shadow-[0_12px_30px_rgba(0,0,0,0.9)] backdrop-blur-md max-w-[260px]">
               {remainingTags.map((tag, idx) => (
                 <button
                   key={idx}
@@ -861,7 +908,7 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex flex-wrap items-end justify-between gap-x-2.5 gap-y-2 mt-auto pt-2 border-t border-white/[0.04]">
+      <div className="relative z-10 flex items-center justify-between gap-2.5 mt-auto pt-2 border-t border-white/[0.04]">
         <DynamicCardTags
           tags={bookmark.tags || []}
           isGeneratingTags={isGeneratingTags}
@@ -869,7 +916,7 @@ export function BookmarkCard({
           onGenerateTags={() => onGenerateTags?.(bookmark)}
         />
 
-        <div className="flex shrink-0 items-center gap-2 ml-auto self-end py-0.5">
+        <div className="flex shrink-0 items-center gap-2">
           <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
           <PlatformIcon platform={bookmark.platform} />
