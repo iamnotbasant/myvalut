@@ -28,6 +28,7 @@ interface BookmarksContainerProps {
   onOpenDetail: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: (bookmark: BookmarkItem) => void;
+  onEditTags?: (bookmark: BookmarkItem) => void;
 }
 
 export function BookmarksContainer({
@@ -52,7 +53,8 @@ export function BookmarksContainer({
   onOpenImage,
   onOpenDetail,
   onSelectTag,
-  onGenerateTags
+  onGenerateTags,
+  onEditTags
 }: BookmarksContainerProps) {
   // Empty State
   if (bookmarks.length === 0) {
@@ -130,6 +132,7 @@ export function BookmarksContainer({
               onOpenDetail={onOpenDetail}
               onSelectTag={onSelectTag}
               onGenerateTags={onGenerateTags}
+              onEditTags={onEditTags}
             />
           ))}
         </div>
@@ -155,6 +158,7 @@ export function BookmarksContainer({
               onOpenDetail={onOpenDetail}
               onSelectTag={onSelectTag}
               onGenerateTags={onGenerateTags}
+              onEditTags={onEditTags}
             />
           ))}
         </div>
@@ -197,6 +201,7 @@ export function BookmarksContainer({
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
                   onGenerateTags={onGenerateTags}
+                  onEditTags={onEditTags}
                 />
               ))}
             </div>
@@ -220,6 +225,7 @@ export function BookmarksContainer({
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
                   onGenerateTags={onGenerateTags}
+                  onEditTags={onEditTags}
                 />
               ))}
             </div>
@@ -243,6 +249,7 @@ export function BookmarksContainer({
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
                   onGenerateTags={onGenerateTags}
+                  onEditTags={onEditTags}
                 />
               ))}
             </div>
@@ -275,6 +282,7 @@ export function BookmarksContainer({
                     onOpenDetail={onOpenDetail}
                     onSelectTag={onSelectTag}
                     onGenerateTags={onGenerateTags}
+                    onEditTags={onEditTags}
                   />
                 ))}
               </div>

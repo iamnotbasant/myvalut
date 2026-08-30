@@ -23,7 +23,8 @@ import {
   ConfirmDialogModal,
   NoteModal,
   ImageLightboxModal,
-  FeedbackModal
+  FeedbackModal,
+  EditTagsModal
 } from './Modals';
 import { BookmarkDetailModal } from './BookmarkDetailModal';
 import {
@@ -131,11 +132,54 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   );
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [activeNoteBookmark, setActiveNoteBookmark] = useState<BookmarkItem | null>(null);
+  const [activeEditTagsBookmark, setActiveEditTagsBookmark] = useState<BookmarkItem | null>(null);
   const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
   const [activeDetailBookmark, setActiveDetailBookmark] = useState<BookmarkItem | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Save manual/edited tags for a bookmark
+  const handleSaveBookmarkTags = useCallback(async (bookmarkId: string, updatedTags: Array<{ name: string; color: any }>) => {
+    // 1. Update in local state
+    setBookmarks(prev =>
+      prev.map(b => (b.id === bookmarkId ? { ...b, tags: updatedTags } : b))
+    );
+
+    // 2. Also update in details modal if open
+    if (activeDetailBookmark && activeDetailBookmark.id === bookmarkId) {
+      setActiveDetailBookmark(prev => (prev ? { ...prev, tags: updatedTags } : null));
+    }
+
+    // 3. Update tags catalog if new tags added
+    setTags(prevTags => {
+      const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
+      const toAdd: Tag[] = [];
+      for (const nt of updatedTags) {
+        if (!existingNames.has(nt.name.toLowerCase())) {
+          const newTagObj: Tag = {
+            id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+            name: nt.name,
+            color: nt.color,
+          };
+          toAdd.push(newTagObj);
+          if (isSupabaseConfigured) {
+            insertTagToDb(newTagObj, user?.id).catch(console.error);
+          }
+        }
+      }
+      return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
+    });
+
+    // 4. Update in DB
+    try {
+      if (isSupabaseConfigured) {
+        await updateBookmarkInDb(bookmarkId, { tags: updatedTags });
+      }
+    } catch (e) {
+      console.warn('Failed to update bookmark tags in DB:', e);
+    }
+  }, [activeDetailBookmark, user?.id]);
 
   // Background tag generation tracking state
   const [generatingTagIds, setGeneratingTagIds] = useState<Set<string>>(new Set());
@@ -852,6 +896,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onSelectTag={handleSelectTag}
                 generatingTagIds={generatingTagIds}
                 onGenerateTags={handleGenerateTagsForBookmark}
+                onEditTags={setActiveEditTagsBookmark}
               />
             </div>
           </div>
@@ -918,6 +963,15 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         isOpen={!!activeNoteBookmark}
         onClose={() => setActiveNoteBookmark(null)}
         onSave={handleSaveNote}
+      />
+
+      <EditTagsModal
+        isOpen={!!activeEditTagsBookmark}
+        bookmark={activeEditTagsBookmark}
+        availableTags={allAvailableTags}
+        onClose={() => setActiveEditTagsBookmark(null)}
+        onSave={handleSaveBookmarkTags}
+        onGenerateTags={handleGenerateTagsForBookmark}
       />
 
       <ImageLightboxModal

@@ -1012,3 +1012,241 @@ export function ConfirmDialogModal({
     </div>
   );
 }
+
+// 9. Edit Tags Modal
+interface EditTagsModalProps {
+  isOpen: boolean;
+  bookmark: BookmarkItem | null;
+  availableTags: Tag[];
+  onClose: () => void;
+  onSave: (bookmarkId: string, updatedTags: Array<{ name: string; color: TagColor }>) => Promise<void> | void;
+  onGenerateTags?: (bookmark: BookmarkItem) => Promise<void> | void;
+}
+
+export function EditTagsModal({
+  isOpen,
+  bookmark,
+  availableTags,
+  onClose,
+  onSave,
+  onGenerateTags
+}: EditTagsModalProps) {
+  const [currentTags, setCurrentTags] = useState<Array<{ name: string; color: TagColor }>>([]);
+  const [customTagInput, setCustomTagInput] = useState('');
+  const [selectedColor, setSelectedColor] = useState<TagColor>('cyan');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+
+  React.useEffect(() => {
+    if (bookmark) {
+      setCurrentTags(bookmark.tags ? [...bookmark.tags] : []);
+      setCustomTagInput('');
+    }
+  }, [bookmark, isOpen]);
+
+  if (!isOpen || !bookmark) return null;
+
+  const handleAddTag = (name: string, color: TagColor) => {
+    const cleanName = name.trim().toLowerCase();
+    if (!cleanName) return;
+    if (currentTags.some(t => t.name.toLowerCase() === cleanName)) return;
+
+    soundFx.playTagSound();
+    setCurrentTags(prev => [...prev, { name: cleanName, color }]);
+    setCustomTagInput('');
+  };
+
+  const handleRemoveTag = (tagName: string) => {
+    soundFx.playTagSound();
+    setCurrentTags(prev => prev.filter(t => t.name.toLowerCase() !== tagName.toLowerCase()));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave(bookmark.id, currentTags);
+      soundFx.playAiSuccessSound();
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAutoGenerate = async () => {
+    if (!onGenerateTags) return;
+    setIsAIGenerating(true);
+    try {
+      await onGenerateTags(bookmark);
+      const updatedBookmarks = JSON.parse(localStorage.getItem('stashr_bookmarks_v3') || '[]');
+      const target = updatedBookmarks.find((b: any) => b.id === bookmark.id);
+      if (target && target.tags) {
+        setCurrentTags(target.tags);
+      }
+    } finally {
+      setIsAIGenerating(false);
+    }
+  };
+
+  const colors: TagColor[] = ['cyan', 'teal', 'blue', 'indigo', 'violet', 'pink', 'amber', 'orange', 'green', 'red'];
+
+  const unassignedAvailableTags = availableTags.filter(
+    avail => !currentTags.some(curr => curr.name.toLowerCase() === avail.name.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#121214] p-5 shadow-2xl space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2">
+            <TagDot color="cyan" />
+            <h2 className="text-sm font-semibold text-white">Edit Tags</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Bookmark Info */}
+        <div className="rounded-xl border border-white/[0.06] bg-black/30 p-2.5">
+          <p className="text-xs font-medium text-white line-clamp-1">
+            {bookmark.title || bookmark.text || 'Untitled Bookmark'}
+          </p>
+          <span className="text-[11px] text-neutral-400 mt-0.5 block">
+            {bookmark.displayName || bookmark.username || bookmark.platform}
+          </span>
+        </div>
+
+        {/* Current Active Tags */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-neutral-300">Active Tags ({currentTags.length})</label>
+            {onGenerateTags && (
+              <button
+                type="button"
+                onClick={handleAutoGenerate}
+                disabled={isAIGenerating}
+                className="inline-flex items-center gap-1.5 text-[11px] text-purple-300 hover:text-purple-200 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className={`size-3 text-purple-400 ${isAIGenerating ? 'animate-spin' : ''}`} />
+                <span>{isAIGenerating ? 'Generating...' : 'AI Auto-Suggest'}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 min-h-10 rounded-xl border border-white/10 bg-black/40 p-2.5">
+            {currentTags.length === 0 ? (
+              <span className="text-xs text-neutral-500 italic">No tags attached to this bookmark.</span>
+            ) : (
+              currentTags.map(tag => (
+                <span
+                  key={tag.name}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.06] text-xs text-neutral-200 group/tagpill"
+                >
+                  <TagDot color={tag.color} />
+                  <span>{tag.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag.name)}
+                    className="text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer ml-0.5"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Add New Custom Tag */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-neutral-300">Add New Tag</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customTagInput}
+              onChange={e => setCustomTagInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddTag(customTagInput, selectedColor);
+                }
+              }}
+              placeholder="Type tag name and press Enter..."
+              className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white placeholder:text-neutral-500 focus:border-purple-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => handleAddTag(customTagInput, selectedColor)}
+              disabled={!customTagInput.trim()}
+              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-white transition-colors cursor-pointer disabled:opacity-40"
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Color selector */}
+          <div className="flex items-center gap-1.5 pt-1">
+            <span className="text-[11px] text-neutral-400 mr-1">Color:</span>
+            {colors.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setSelectedColor(c)}
+                className={`size-4.5 rounded-full flex items-center justify-center transition-transform cursor-pointer ${
+                  selectedColor === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                <TagDot color={c} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Suggested / Available Tags from Catalog */}
+        {unassignedAvailableTags.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <label className="text-[11px] text-neutral-400">Available from Vault</label>
+            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+              {unassignedAvailableTags.slice(0, 15).map(avail => (
+                <button
+                  key={avail.id}
+                  type="button"
+                  onClick={() => handleAddTag(avail.name, avail.color)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-white/5 bg-white/[0.03] hover:bg-white/[0.08] text-[11px] text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Plus className="size-2.5 text-neutral-400" />
+                  <TagDot color={avail.color} />
+                  <span>{avail.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-2 border-t border-white/[0.08] pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-1.5 rounded-lg border border-white/10 text-xs text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-md transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save Tags'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

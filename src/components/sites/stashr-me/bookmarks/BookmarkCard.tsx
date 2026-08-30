@@ -14,7 +14,8 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Tag
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
@@ -34,6 +35,7 @@ interface BookmarkCardProps {
   onOpenDetail?: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: (bookmark: BookmarkItem) => void;
+  onEditTags?: (bookmark: BookmarkItem) => void;
 }
 
 import { TagColor } from '@/types/stashr';
@@ -231,7 +233,8 @@ export function BookmarkCard({
   onOpenImage,
   onOpenDetail,
   onSelectTag,
-  onGenerateTags
+  onGenerateTags,
+  onEditTags
 }: BookmarkCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -329,6 +332,12 @@ export function BookmarkCard({
       label: isGeneratingTags ? 'Generating tags...' : 'Generate AI Tags',
       icon: <Sparkles className={`size-3.5 ${isGeneratingTags ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />,
       onClick: () => onGenerateTags?.(bookmark)
+    },
+    {
+      id: 'edit-tags',
+      label: 'Edit Tags',
+      icon: <Tag className="size-3.5" />,
+      onClick: () => onEditTags?.(bookmark)
     },
     {
       id: 'copy',
@@ -711,8 +720,19 @@ export function BookmarkCard({
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
                 >
-                  <Sparkles className={`size-3.5 ${isGeneratingTags ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />
+                  <Sparkles className="size-3.5 text-purple-400" />
                   <span>{isGeneratingTags ? 'Generating tags...' : 'Generate AI tags'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    onEditTags?.(bookmark);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Tag className="size-3.5 text-neutral-400" />
+                  <span>Edit Tags</span>
                 </button>
                 <button
                   onClick={e => {
