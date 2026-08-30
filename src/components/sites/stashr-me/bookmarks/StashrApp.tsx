@@ -16,6 +16,7 @@ import { SecondaryToolbar } from './SecondaryToolbar';
 import { BookmarksContainer } from './BookmarksContainer';
 import { CreatorsView, ConnectionsView } from './OtherViews';
 import { SystemLogsView } from './SystemLogsView';
+import { TagsView } from './TagsView';
 import { CommandPalette } from './CommandPalette';
 import {
   AddBookmarkModal,
@@ -56,7 +57,7 @@ import { useAuth } from '@/lib/auth-context';
 import { soundFx } from '@/lib/sound-effects';
 
 interface StashrAppProps {
-  initialNav?: 'bookmarks' | 'archived' | 'creators' | 'connections' | 'logs';
+  initialNav?: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs';
 }
 
 function getInitialLocalStorageData<T>(key: string, fallback: T): T {
@@ -682,6 +683,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     });
   };
 
+  // Batch Auto-Tag all untagged bookmarks with Gemini AI
+  const handleBatchAutoTagUntagged = async () => {
+    const untagged = bookmarks.filter(b => !b.tags || b.tags.length === 0);
+    if (untagged.length === 0) return;
+
+    for (const item of untagged) {
+      await handleGenerateTagsForBookmark(item);
+    }
+  };
+
   const handleTogglePinCollection = (id: string) => {
     soundFx.playClickSound();
     setCollections(prev =>
@@ -947,6 +958,19 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         )}
 
         {filterState.activeNav === 'connections' && <ConnectionsView bookmarks={bookmarks} />}
+
+        {filterState.activeNav === 'tags' && (
+          <TagsView
+            tags={allAvailableTags}
+            bookmarks={bookmarks}
+            onSelectTag={handleSelectTag}
+            onOpenAddTag={() => setIsAddTagOpen(true)}
+            onEditTag={setActiveEditTag}
+            onDeleteTag={handleDeleteTag}
+            onAutoTagUntagged={handleBatchAutoTagUntagged}
+            isAutoTagging={generatingTagIds.size > 0}
+          />
+        )}
 
         {filterState.activeNav === 'logs' && (
           <SystemLogsView bookmarks={bookmarks} onGenerateTags={handleGenerateTagsForBookmark} />

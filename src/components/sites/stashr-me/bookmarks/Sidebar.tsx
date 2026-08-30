@@ -25,7 +25,8 @@ import {
   Copy,
   MoreHorizontal,
   Activity,
-  TagDot
+  TagDot,
+  Tag as TagIcon
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 import { LogIn, User } from 'lucide-react';
@@ -112,7 +113,7 @@ export function Sidebar({
     return filterState.activeNav === navName || pathname === `/${navName}`;
   };
 
-  const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'connections' | 'logs') => {
+  const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs') => {
     if (pathname.startsWith('/settings')) {
       router.push(`/${nav}`);
     } else {
@@ -203,6 +204,17 @@ export function Sidebar({
             {creatorsCount !== undefined && (
               <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{creatorsCount}</span>
             )}
+          </a>
+          <a
+            role="button"
+            data-active={isNavActive('tags') ? "true" : undefined}
+            onClick={(e) => { e.preventDefault(); handleNavClick('tags'); }}
+            className={navItemClass + (isNavActive('tags') ? " active" : "")}
+            href="/tags"
+          >
+            <TagIcon className="size-4 text-teal-400" />
+            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Tags</span>
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{tags.length}</span>
           </a>
           <a
             role="button"

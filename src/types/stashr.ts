@@ -67,5 +67,5 @@ export interface FilterState {
   tags: string[];
   onlyFavorites?: boolean;
   collectionId: string | null;
-  activeNav: 'bookmarks' | 'archived' | 'creators' | 'connections' | 'logs';
+  activeNav: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs';
 }
