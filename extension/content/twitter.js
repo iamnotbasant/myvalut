@@ -88,6 +88,12 @@
           body: JSON.stringify({
             url: saveData.url,
             platform: saveData.platform || 'twitter',
+            title: saveData.title,
+            text: saveData.text,
+            displayName: saveData.displayName,
+            username: saveData.username,
+            avatarUrl: saveData.avatarUrl,
+            imageUrl: saveData.imageUrl,
           }),
         });
 
@@ -109,10 +115,33 @@
     button.classList.add('valut-saving');
     button.innerHTML = SPINNER_ICON;
 
+    const article = button.closest('article');
+    const tweetTextEl = article ? article.querySelector('[data-testid="tweetText"]') : null;
+    const text = tweetTextEl ? (tweetTextEl.innerText || tweetTextEl.textContent || '').trim() : '';
+
+    const userNameEl = article ? article.querySelector('[data-testid="User-Name"]') : null;
+    const displayName = userNameEl ? (userNameEl.querySelector('span')?.innerText || '').trim() : '';
+    const userLink = userNameEl ? userNameEl.querySelector('a[href^="/"]') : null;
+    const username = userLink ? (userLink.getAttribute('href') || '').replace('/', '').split('/')[0] : '';
+
+    const avatarImg = article ? article.querySelector('img[src*="profile_images"]') : null;
+    const avatarUrl = avatarImg ? avatarImg.src : '';
+
+    const photoImg = article ? article.querySelector('[data-testid="tweetPhoto"] img') : null;
+    const imageUrl = photoImg ? photoImg.src : '';
+
+    const title = text ? (text.length > 80 ? `${text.slice(0, 80)}...` : text) : 'Tweet';
+
     try {
       const response = await sendSaveRequest({
         url: tweetUrl,
         platform: 'twitter',
+        title,
+        text,
+        displayName,
+        username,
+        avatarUrl,
+        imageUrl,
       });
 
       if (response && response.success) {

@@ -64,12 +64,16 @@ export const SYNONYM_MAP: Record<string, string> = {
   'user experience': 'ui ux'
 };
 
-// 3. Hard Blacklist for Clickbait verbs and Platform words
+// 3. Hard Blacklist for Clickbait verbs, fillers, and Platform noise
 export const HARD_BLACKLIST = new Set([
   'tells', 'tell', 'know', 'youtube', 'video', 'videos', 
   'tips', 'tricks', 'secret', 'secrets', 'best', 'watch',
   'learn', 'using', 'insane', 'things', 'stop', 'make',
-  'twitter', 'x', 'reddit', 'instagram', 'tiktok', 'threads'
+  'twitter', 'x', 'reddit', 'instagram', 'tiktok', 'threads',
+  'just', 'won', 'post', 'view', 'read', 'with', 'this', 'that',
+  'from', 'your', 'about', 'more', 'into', 'some', 'what', 'when',
+  'will', 'have', 'been', 'music', 'content', 'channel', 'share',
+  'good', 'great', 'check', 'here', 'look', 'link', 'click'
 ]);
 
 // 4. Normalizer & Cleanup Function with Post-Filter Guardrail
@@ -263,27 +267,81 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         console.warn('Reddit json fallback:', e);
       }
     } else if (platform === 'twitter') {
-      try {
-        const fxUrl = inputUrl.replace(/twitter\.com|x\.com/, 'api.fxtwitter.com');
-        const fxRes = await fetch(fxUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-        });
-        if (fxRes.ok) {
-          const data = await fxRes.json();
-          const tweet = data.tweet;
-          if (tweet) {
-            text = tweet.text || '';
-            displayName = tweet.author?.name || 'X User';
-            username = tweet.author?.screen_name || 'xuser';
-            avatarUrl = tweet.author?.avatar_url || `https://unavatar.io/x/${username}`;
-            imageUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url || '';
-            title = text.length > 60 ? `${text.slice(0, 60)}...` : text;
-          }
-        }
-      } catch (e) {
-        console.warn('Twitter fx fallback:', e);
+      let tweetId = '';
+      let tweetUser = '';
+      const statusMatch = inputUrl.match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/i);
+      if (statusMatch) {
+        tweetUser = statusMatch[1];
+        tweetId = statusMatch[2];
+      } else {
+        const idMatch = inputUrl.match(/status\/(\d+)/i);
+        if (idMatch) tweetId = idMatch[1];
       }
 
+      // 1. Try fxtwitter API
+      if (tweetId) {
+        try {
+          const fxEndpoint = tweetUser
+            ? `https://api.fxtwitter.com/${tweetUser}/status/${tweetId}`
+            : `https://api.fxtwitter.com/status/${tweetId}`;
+
+          const fxRes = await fetch(fxEndpoint, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+          });
+
+          if (fxRes.ok) {
+            const data = await fxRes.json();
+            const tweet = data.tweet;
+            if (tweet && tweet.text) {
+              text = tweet.text.trim();
+              displayName = tweet.author?.name || tweetUser || 'X User';
+              username = tweet.author?.screen_name || tweetUser || 'xuser';
+              avatarUrl = tweet.author?.avatar_url || (username ? `https://unavatar.io/x/${username}` : undefined);
+              imageUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url || '';
+              title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
+            }
+          }
+        } catch (e) {
+          console.warn('[Valut] Twitter fxtwitter API error:', e);
+        }
+      }
+
+      // 2. Try vxtwitter OpenGraph HTML scraper (Bypasses Twitter login wall)
+      if (!text && tweetId) {
+        try {
+          const vxUrl = `https://vxtwitter.com/${tweetUser || 'i'}/status/${tweetId}`;
+          const vxRes = await fetch(vxUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          });
+
+          if (vxRes.ok) {
+            const html = await vxRes.text();
+            const $ = cheerio.load(html);
+            const ogDesc = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || '';
+            const ogTitle = $('meta[property="og:title"]').attr('content') || $('meta[name="twitter:title"]').attr('content') || '';
+            const ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content') || '';
+
+            if (ogDesc) {
+              text = ogDesc.trim();
+              title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
+            }
+            if (ogTitle) {
+              const parsedName = ogTitle.split('(')[0].trim();
+              if (parsedName) displayName = parsedName;
+              const handleMatch = ogTitle.match(/\(@([^)]+)\)/);
+              if (handleMatch) username = handleMatch[1];
+            }
+            if (ogImage) imageUrl = ogImage;
+            if (username && !avatarUrl) avatarUrl = `https://unavatar.io/x/${username}`;
+          }
+        } catch (e) {
+          console.warn('[Valut] Twitter vxtwitter OpenGraph error:', e);
+        }
+      }
+
+      // 3. Twitter oEmbed fallback
       if (!text) {
         try {
           const oembedRes = await fetch(
@@ -291,10 +349,10 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           );
           if (oembedRes.ok) {
             const data = await oembedRes.json();
-            displayName = data.author_name || 'X User';
+            displayName = data.author_name || displayName || 'X User';
             const $ = cheerio.load(data.html || '');
             text = $('p').text() || '';
-            title = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+            title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
             if (data.author_url) {
               const handle = data.author_url.split('/').filter(Boolean).pop();
               if (handle) {
@@ -407,29 +465,28 @@ Your job is to generate 2 to 6 high-utility search tags from the provided conten
 
 CRITICAL EXTRACTION RULES:
 1. COMPOUND NOUN PHRASES ONLY:
+   - Output domain/tool concepts (e.g. "sound design", "video editing", "color grading", "web dev", "machine learning").
    - NEVER split multi-word concepts into separate words.
-   - Example: Output "sound design", NEVER "sound" and "design".
-   - Example: Output "video editing", NEVER "video" and "editing".
-   - Example: Output "audio mixing", NEVER "audio" and "mixing".
+   - NEVER output single generic verbs or common English noise words ("just", "won", "make", "this", "look", "good").
 
 2. STRICT FORBIDDEN WORDS (NEVER TAG THESE):
-   - NO Common Verbs / Clickbait Fillers: "tells", "know", "learn", "using", "secret", "secrets", "insane", "best", "tips", "tricks", "watch", "things", "stop", "make".
-   - NO Platform Names: DO NOT output "youtube", "twitter", "x", "reddit", "instagram" unless the video is specifically an analytical guide about that platform's algorithm.
+   - NO Clickbait Fillers: "tells", "know", "learn", "using", "secret", "secrets", "insane", "best", "tips", "tricks", "watch", "things", "stop", "make".
+   - NO Platform Names or Generic Media Types: DO NOT output "youtube", "twitter", "x", "reddit", "video", "videos", "music", "content" unless it is specifically a technical guide about that exact system.
 
 3. BOILERPLATE CONTAMINATION HANDLING:
-   - If the description/content contains generic platform fallback text (e.g., "Enjoy the videos and music you love, upload original content..."), IGNORE IT COMPLETELY. 
+   - If description contains platform fallback text (e.g., "Enjoy the videos and music you love..."), IGNORE IT COMPLETELY. 
    - Rely strictly on the Title, Channel/Author name, and infer the core technical discipline.
 
-4. TAGGING PRIORITY & DENSITY (DYNAMIC 2-6 TAGS):
-   - Primary Subject / Discipline (e.g., "sound design", "video editing", "color grading")
-   - Specific Tools / Assets / Entities (e.g., "sfx", "epidemic sound", "premiere pro", "davinci resolve")
-   - Technique / Sub-topic (e.g., "audio mixing", "foley", "sound variation")
+4. TAGGING PRIORITY & DENSITY (2 TO 6 TAGS):
+   - Primary Discipline (e.g., "sound design", "video editing", "ui ux", "coding")
+   - Specific Tools / Frameworks / Entities (e.g., "nextjs", "premiere pro", "davinci resolve", "figma", "tailwind")
+   - Technique / Sub-topic (e.g., "audio mixing", "typography", "state management", "cinematography")
    - Format / Intent (e.g., "tutorial", "breakdown", "workflow")
 
 5. FORMAT REQUIREMENTS:
    - Strictly lowercase words with normal spaces.
    - Absolutely NO hyphens (-), NO hashtags (#), NO underscores (_).
-   - Maximum 6 tags, Minimum 2 tags.
+   - Return valid JSON array only.
 
 INPUT FORMAT:
 Title: {title}
@@ -445,58 +502,6 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 
 export interface GeminiTagResponse {
   tags: string[];
-}
-
-// 8.5 Smart Fallback Heuristic Tagger (when offline, rate-limited, or AI unavailable)
-export function generateHeuristicTags(params: {
-  platform: string;
-  title: string;
-  text?: string;
-  displayName?: string;
-  username?: string;
-}): Array<{ name: string; color: TagColor }> {
-  const combined = `${params.title || ''} ${params.text || ''} ${params.displayName || ''} ${params.username || ''}`.toLowerCase();
-  const extractedTags: string[] = [];
-
-  const TOPIC_RULES: Array<{ match: RegExp | string; tag: string }> = [
-    { match: /\b(ai|artificial intelligence|gpt|gemini|llm|claude|openai|agent|deepseek|midjourney|prompt|machine learning)\b/i, tag: 'ai' },
-    { match: /\b(nextjs|next\.js|react|vue|svelte|angular|frontend|webdev|javascript|typescript|js|ts)\b/i, tag: 'web dev' },
-    { match: /\b(tailwind|css|design system|figma|ui ux|interface|frontend|styling|components)\b/i, tag: 'ui ux' },
-    { match: /\b(python|rust|golang|backend|postgres|supabase|database|api|docker|sql|developer|code)\b/i, tag: 'coding' },
-    { match: /\b(video editing|premiere|davinci|after effects|animation|motion|vfx|cut|render|cinematic)\b/i, tag: 'video editing' },
-    { match: /\b(sound design|audio|sfx|mixing|music|soundtrack|foley|beats)\b/i, tag: 'sound design' },
-    { match: /\b(tutorial|how to|guide|breakdown|learn|walkthrough|course|tips)\b/i, tag: 'tutorial' },
-    { match: /\b(workflow|productivity|tools|setup|automation|efficiency|system)\b/i, tag: 'workflow' },
-    { match: /\b(gta|gaming|gameplay|ps5|xbox|steam|trailer|game|gamer)\b/i, tag: 'gaming' },
-    { match: /\b(crypto|bitcoin|eth|finance|investing|stocks|business|startup|saas)\b/i, tag: 'finance' },
-    { match: /\b(design|typography|branding|logo|graphic design|art|illustration|creative)\b/i, tag: 'design' },
-  ];
-
-  for (const rule of TOPIC_RULES) {
-    if (typeof rule.match === 'string' ? combined.includes(rule.match) : rule.match.test(combined)) {
-      extractedTags.push(rule.tag);
-    }
-  }
-
-  // Also extract words from title if not enough tags
-  if (extractedTags.length < 2 && params.title) {
-    const words = params.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length >= 3 && !HARD_BLACKLIST.has(w) && !['this', 'that', 'with', 'from', 'your', 'about', 'more', 'into', 'some', 'what', 'when', 'will', 'have', 'been', 'post', 'view', 'read'].includes(w));
-    
-    if (words.length > 0) {
-      extractedTags.push(words[0]);
-      if (words.length > 1) extractedTags.push(words[1]);
-    }
-  }
-
-  if (extractedTags.length === 0) {
-    extractedTags.push('inspiration', 'resource');
-  }
-
-  return processIncomingTags(extractedTags);
 }
 
 // 9. Pure Gemini AI Tagger
@@ -521,9 +526,9 @@ export async function generateGeminiTags(params: {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
-    console.warn('[Valut] No Gemini API key configured. Using heuristic fallback tagging.');
+    console.warn('[Valut AI] No Gemini API key configured. Skipping tag generation.');
     return {
-      tags: generateHeuristicTags(params),
+      tags: [],
       rawDetails: null,
     };
   }
@@ -535,7 +540,7 @@ export async function generateGeminiTags(params: {
   const YOUTUBE_BOILERPLATE = 'enjoy the videos and music you love, upload original content';
 
   if (cleanContent.toLowerCase().includes(YOUTUBE_BOILERPLATE)) {
-    cleanContent = `YouTube video by ${channelName}. Focus strictly on title domain.`;
+    cleanContent = `Focus strictly on title domain. Channel: ${channelName}`;
   }
 
   const promptContent = `Title: ${title}
@@ -548,7 +553,6 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
     'gemini-3.5-flash',
     'gemini-3.7-flash',
     'gemini-2.0-flash-lite',
-    'gemini-2.5-flash',
   ];
 
   try {
@@ -583,22 +587,22 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
           const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (resultText) {
             rawJsonText = resultText;
-            console.log(`[Valut] AI tags generated successfully via model: ${model}`);
+            console.log(`[Valut AI] Tags successfully generated via model ${model}`);
             break;
           }
         } else {
           const errBody = await res.text().catch(() => '');
-          console.warn(`[Valut] Model ${model} returned HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+          console.warn(`[Valut AI] Model ${model} returned HTTP ${res.status}: ${errBody.slice(0, 200)}`);
         }
       } catch (innerErr) {
-        console.warn(`[Valut] Model ${model} attempt failed:`, innerErr);
+        console.warn(`[Valut AI] Model ${model} attempt failed:`, innerErr);
       }
     }
 
     if (!rawJsonText) {
-      console.warn('[Valut] All Gemini endpoints failed, using heuristic fallback tags');
+      console.warn('[Valut AI] All Gemini model endpoints failed. No tags generated.');
       return {
-        tags: generateHeuristicTags(params),
+        tags: [],
         rawDetails: null,
       };
     }
@@ -607,19 +611,16 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
     const tagsToProcess = Array.isArray(parsed.tags) ? parsed.tags : [];
     
     // Step 3: Normalizer & Guardrail
-    let cleanTags = processIncomingTags(tagsToProcess);
-    if (cleanTags.length === 0) {
-      cleanTags = generateHeuristicTags(params);
-    }
+    const cleanTags = processIncomingTags(tagsToProcess);
 
     return {
       tags: cleanTags,
       rawDetails: parsed,
     };
   } catch (err: any) {
-    console.error('[Valut] Gemini tag generation error:', err.message || err);
+    console.error('[Valut AI] Gemini tag generation error:', err.message || err);
     return {
-      tags: generateHeuristicTags(params),
+      tags: [],
       rawDetails: null,
     };
   }

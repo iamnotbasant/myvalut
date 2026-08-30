@@ -465,28 +465,6 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
   }, [generatingTagIds, user]);
 
-  // Auto-generate tags for untagged bookmarks (e.g. newly saved from extension or newly added)
-  useEffect(() => {
-    if (!isLoaded || bookmarks.length === 0) return;
-
-    // Find active bookmarks that have no tags and haven't been queued yet
-    const untaggedBookmarks = bookmarks.filter(
-      b => (!b.tags || b.tags.length === 0) && !b.isArchived && !processedAutoTagIdsRef.current.has(b.id)
-    );
-
-    if (untaggedBookmarks.length === 0) return;
-
-    // Mark as processed in ref
-    untaggedBookmarks.forEach(b => processedAutoTagIdsRef.current.add(b.id));
-
-    // Stagger auto-tagging calls
-    untaggedBookmarks.forEach((b, index) => {
-      setTimeout(() => {
-        handleGenerateTagsForBookmark(b);
-      }, index * 350);
-    });
-  }, [bookmarks, isLoaded, handleGenerateTagsForBookmark]);
-
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
     soundFx.playSaveSound();
     const created: BookmarkItem = {
