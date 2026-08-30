@@ -83,7 +83,7 @@ function DynamicCardTags({
   onGenerateTags?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 2));
+  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 3));
 
   useEffect(() => {
     if (!containerRef.current || tags.length === 0) return;
@@ -92,43 +92,71 @@ function DynamicCardTags({
       const container = containerRef.current;
       if (!container) return;
 
-      const availableWidth = container.clientWidth;
+      const availableWidth = container.clientWidth || container.getBoundingClientRect().width;
       if (availableWidth <= 0) return;
 
-      const badgeWidth = 36;
-      const gap = 6;
-      let totalWidth = 0;
-      let count = 0;
+      // Exact canvas font metrics for pixel-perfect measurement
+      let ctx: CanvasRenderingContext2D | null = null;
+      try {
+        const canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.font = '12px Inter, system-ui, -apple-system, sans-serif';
+        }
+      } catch {}
 
-      // Estimate tag widths (12px font ~7.2px per char + 26px for dot & padding)
-      const tagWidths = tags.map(t => Math.max(36, Math.ceil(t.name.length * 7.2 + 26)));
+      const badgeWidth = 28; // compact +N badge width
+      const gap = 5;
 
-      // 1. Check if all tags fit in 1 line without a +N badge
-      const allFitWidth = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
-      if (allFitWidth <= availableWidth) {
+      // Accurate pixel width for each tag:
+      // tag text width + 16px padding (px-2) + 8px dot + 4px gap = ~25px
+      const tagWidths = tags.map(t => {
+        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 5.6;
+        return Math.ceil(textW + 25);
+      });
+
+      // 1. If all tags fit in 1 line without any +N badge, show all
+      const totalAll = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
+      if (totalAll <= availableWidth) {
         setVisibleCount(tags.length);
         return;
       }
 
-      // 2. Otherwise calculate how many fit alongside the +N badge
+      // 2. Greedy single-line fitting: fit as many tags as physically possible right up to the boundary
+      let currentW = 0;
+      let count = 0;
+
       for (let i = 0; i < tagWidths.length; i++) {
-        const nextWidth = totalWidth + (i > 0 ? gap : 0) + tagWidths[i];
-        if (nextWidth + gap + badgeWidth <= availableWidth) {
-          totalWidth = nextWidth;
+        const nextW = currentW + (i > 0 ? gap : 0) + tagWidths[i];
+        if (nextW + gap + badgeWidth <= availableWidth) {
+          currentW = nextW;
           count++;
         } else {
           break;
         }
       }
 
+      // If at least 1 tag fits or default to 1
       setVisibleCount(Math.max(1, count));
     };
 
     calculateVisibleTags();
+    const rafId = requestAnimationFrame(calculateVisibleTags);
+    const timerId = setTimeout(calculateVisibleTags, 100);
 
-    const resizeObserver = new ResizeObserver(calculateVisibleTags);
+    const resizeObserver = new ResizeObserver(() => {
+      calculateVisibleTags();
+    });
     resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
+
+    window.addEventListener('resize', calculateVisibleTags);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', calculateVisibleTags);
+    };
   }, [tags]);
 
   if (isGeneratingTags) {
