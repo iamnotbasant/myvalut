@@ -12,6 +12,7 @@ interface BookmarksContainerProps {
   columns: number;
   selectedIds: Set<string>;
   isSelectionMode: boolean;
+  generatingTagIds?: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
@@ -26,6 +27,7 @@ interface BookmarksContainerProps {
   onOpenImage: (url: string) => void;
   onOpenDetail: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
+  onGenerateTags?: (bookmark: BookmarkItem) => void;
 }
 
 export function BookmarksContainer({
@@ -35,6 +37,7 @@ export function BookmarksContainer({
   columns,
   selectedIds,
   isSelectionMode,
+  generatingTagIds,
   onToggleSelect,
   onSelectAll,
   onClearSelection,
@@ -48,7 +51,8 @@ export function BookmarksContainer({
   onOpenAddBookmark,
   onOpenImage,
   onOpenDetail,
-  onSelectTag
+  onSelectTag,
+  onGenerateTags
 }: BookmarksContainerProps) {
   // Empty State
   if (bookmarks.length === 0) {
@@ -116,6 +120,7 @@ export function BookmarksContainer({
               viewMode="row"
               isSelected={selectedIds.has(bm.id)}
               isSelectionMode={isSelectionMode}
+              isGeneratingTags={generatingTagIds?.has(bm.id)}
               onToggleSelect={() => onToggleSelect(bm.id)}
               onToggleFavorite={onToggleFavorite}
               onOpenNote={onOpenNote}
@@ -124,6 +129,7 @@ export function BookmarksContainer({
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
               onSelectTag={onSelectTag}
+              onGenerateTags={onGenerateTags}
             />
           ))}
         </div>
@@ -139,6 +145,7 @@ export function BookmarksContainer({
               viewMode="timeline"
               isSelected={selectedIds.has(bm.id)}
               isSelectionMode={isSelectionMode}
+              isGeneratingTags={generatingTagIds?.has(bm.id)}
               onToggleSelect={() => onToggleSelect(bm.id)}
               onToggleFavorite={onToggleFavorite}
               onOpenNote={onOpenNote}
@@ -147,6 +154,7 @@ export function BookmarksContainer({
               onOpenImage={onOpenImage}
               onOpenDetail={onOpenDetail}
               onSelectTag={onSelectTag}
+              onGenerateTags={onGenerateTags}
             />
           ))}
         </div>
@@ -179,6 +187,7 @@ export function BookmarksContainer({
                   viewMode="mosaic"
                   isSelected={selectedIds.has(bm.id)}
                   isSelectionMode={isSelectionMode}
+                  isGeneratingTags={generatingTagIds?.has(bm.id)}
                   onToggleSelect={() => onToggleSelect(bm.id)}
                   onToggleFavorite={onToggleFavorite}
                   onOpenNote={onOpenNote}
@@ -187,6 +196,7 @@ export function BookmarksContainer({
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
+                  onGenerateTags={onGenerateTags}
                 />
               ))}
             </div>
@@ -200,6 +210,7 @@ export function BookmarksContainer({
                   viewMode="mosaic"
                   isSelected={selectedIds.has(bm.id)}
                   isSelectionMode={isSelectionMode}
+                  isGeneratingTags={generatingTagIds?.has(bm.id)}
                   onToggleSelect={() => onToggleSelect(bm.id)}
                   onToggleFavorite={onToggleFavorite}
                   onOpenNote={onOpenNote}
@@ -208,6 +219,7 @@ export function BookmarksContainer({
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
+                  onGenerateTags={onGenerateTags}
                 />
               ))}
             </div>
@@ -221,6 +233,7 @@ export function BookmarksContainer({
                   viewMode="mosaic"
                   isSelected={selectedIds.has(bm.id)}
                   isSelectionMode={isSelectionMode}
+                  isGeneratingTags={generatingTagIds?.has(bm.id)}
                   onToggleSelect={() => onToggleSelect(bm.id)}
                   onToggleFavorite={onToggleFavorite}
                   onOpenNote={onOpenNote}
@@ -229,6 +242,7 @@ export function BookmarksContainer({
                   onOpenImage={onOpenImage}
                   onOpenDetail={onOpenDetail}
                   onSelectTag={onSelectTag}
+                  onGenerateTags={onGenerateTags}
                 />
               ))}
             </div>
@@ -251,6 +265,7 @@ export function BookmarksContainer({
                     viewMode="grid"
                     isSelected={selectedIds.has(bm.id)}
                     isSelectionMode={isSelectionMode}
+                    isGeneratingTags={generatingTagIds?.has(bm.id)}
                     onToggleSelect={() => onToggleSelect(bm.id)}
                     onToggleFavorite={onToggleFavorite}
                     onOpenNote={onOpenNote}
@@ -259,6 +274,7 @@ export function BookmarksContainer({
                     onOpenImage={onOpenImage}
                     onOpenDetail={onOpenDetail}
                     onSelectTag={onSelectTag}
+                    onGenerateTags={onGenerateTags}
                   />
                 ))}
               </div>

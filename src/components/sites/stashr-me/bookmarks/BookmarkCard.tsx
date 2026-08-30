@@ -13,7 +13,8 @@ import {
   Trash2,
   Copy,
   Check,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
@@ -23,6 +24,7 @@ interface BookmarkCardProps {
   viewMode?: ViewMode;
   isSelected?: boolean;
   isSelectionMode?: boolean;
+  isGeneratingTags?: boolean;
   onToggleSelect?: () => void;
   onToggleFavorite: (id: string) => void;
   onOpenNote: (bookmark: BookmarkItem) => void;
@@ -31,6 +33,7 @@ interface BookmarkCardProps {
   onOpenImage?: (url: string) => void;
   onOpenDetail?: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
+  onGenerateTags?: (bookmark: BookmarkItem) => void;
 }
 
 import { TagColor } from '@/types/stashr';
@@ -41,13 +44,41 @@ function getCleanImageUrl(url?: string | null): string | undefined {
   return url;
 }
 
+export function getCleanCardContent(bookmark: BookmarkItem) {
+  const title = bookmark.title?.trim() || '';
+  const rawText = bookmark.text?.trim() || '';
+
+  const isBoilerplate =
+    rawText.toLowerCase().includes('enjoy the videos and music you love') ||
+    rawText.toLowerCase().includes('upload original content') ||
+    rawText.toLowerCase().includes('saved from valut extension');
+
+  // Check if text is same as title or boilerplate
+  const isDuplicate =
+    !rawText ||
+    isBoilerplate ||
+    (title && rawText.toLowerCase() === title.toLowerCase()) ||
+    (title && rawText.toLowerCase().startsWith(title.toLowerCase()) && rawText.length <= title.length + 12);
+
+  const cleanText = isDuplicate ? '' : rawText;
+
+  return {
+    displayTitle: title || rawText,
+    displayDescription: cleanText
+  };
+}
+
 // Dynamically calculates how many whole tags fit in the available container width before showing +N badge
 function DynamicCardTags({
   tags,
-  onSelectTag
+  isGeneratingTags,
+  onSelectTag,
+  onGenerateTags
 }: {
   tags: Array<{ name: string; color: TagColor }>;
+  isGeneratingTags?: boolean;
   onSelectTag?: (tagName: string) => void;
+  onGenerateTags?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 3));
@@ -97,6 +128,39 @@ function DynamicCardTags({
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
   }, [tags]);
+
+  if (isGeneratingTags) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center overflow-visible">
+        <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+          <Sparkles className="size-3 text-purple-400 animate-spin" />
+          <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
+            Generating tags...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (tags.length === 0) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center overflow-visible">
+        {onGenerateTags ? (
+          <button
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              onGenerateTags();
+            }}
+            className="group/tagbtn inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/25 px-2 py-0.5 text-[11px] text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
+          >
+            <Sparkles className="size-2.5 text-purple-400 group-hover/tagbtn:rotate-12 transition-transform" />
+            <span>Generate AI tags</span>
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   const visibleTags = tags.slice(0, visibleCount);
   const remainingTags = tags.slice(visibleCount);
@@ -158,6 +222,7 @@ export function BookmarkCard({
   viewMode = 'grid',
   isSelected = false,
   isSelectionMode = false,
+  isGeneratingTags = false,
   onToggleSelect,
   onToggleFavorite,
   onOpenNote,
@@ -165,7 +230,8 @@ export function BookmarkCard({
   onDelete,
   onOpenImage,
   onOpenDetail,
-  onSelectTag
+  onSelectTag,
+  onGenerateTags
 }: BookmarkCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -248,6 +314,12 @@ export function BookmarkCard({
       label: bookmark.note ? 'Edit Note' : 'Add Note',
       icon: <FileText className="size-3.5" />,
       onClick: () => onOpenNote(bookmark)
+    },
+    {
+      id: 'ai-tags',
+      label: isGeneratingTags ? 'Generating tags...' : 'Generate AI Tags',
+      icon: <Sparkles className={`size-3.5 ${isGeneratingTags ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />,
+      onClick: () => onGenerateTags?.(bookmark)
     },
     {
       id: 'copy',
@@ -403,7 +475,12 @@ export function BookmarkCard({
 
         {/* Bottom Row: Tags + Date & Platform Badge */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
-          <DynamicCardTags tags={bookmark.tags || []} onSelectTag={onSelectTag} />
+          <DynamicCardTags
+            tags={bookmark.tags || []}
+            isGeneratingTags={isGeneratingTags}
+            onSelectTag={onSelectTag}
+            onGenerateTags={() => onGenerateTags?.(bookmark)}
+          />
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
@@ -525,7 +602,14 @@ export function BookmarkCard({
         {/* Footer: Tags & Date */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.length > 0 ? (
+            {isGeneratingTags ? (
+              <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+                <Sparkles className="size-3 text-purple-400 animate-spin" />
+                <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
+                  Generating tags...
+                </span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
               bookmark.tags.map((tag, idx) => (
                 <button
                   type="button"
@@ -540,6 +624,18 @@ export function BookmarkCard({
                   <span>{tag.name}</span>
                 </button>
               ))
+            ) : onGenerateTags ? (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onGenerateTags(bookmark);
+                }}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border border-dashed border-white/15 bg-white/[0.03] hover:bg-white/[0.08] text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                <Sparkles className="size-3 text-purple-400" />
+                <span>Generate AI tags</span>
+              </button>
             ) : null}
           </div>
           <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
@@ -614,6 +710,17 @@ export function BookmarkCard({
                 >
                   <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
                   <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    onGenerateTags?.(bookmark);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Sparkles className={`size-3.5 ${isGeneratingTags ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />
+                  <span>{isGeneratingTags ? 'Generating tags...' : 'Generate AI tags'}</span>
                 </button>
                 <button
                   onClick={e => {
@@ -810,7 +917,12 @@ export function BookmarkCard({
 
       {/* Footer with Tags and Date/Platform */}
       <div className="relative z-10 flex items-center justify-between gap-2.5 mt-auto pt-1">
-        <DynamicCardTags tags={bookmark.tags || []} onSelectTag={onSelectTag} />
+        <DynamicCardTags
+          tags={bookmark.tags || []}
+          isGeneratingTags={isGeneratingTags}
+          onSelectTag={onSelectTag}
+          onGenerateTags={() => onGenerateTags?.(bookmark)}
+        />
 
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>

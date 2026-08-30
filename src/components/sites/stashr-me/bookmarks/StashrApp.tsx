@@ -136,6 +136,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
+  // Background tag generation tracking state
+  const [generatingTagIds, setGeneratingTagIds] = useState<Set<string>>(new Set());
+  const processedAutoTagIdsRef = useRef<Set<string>>(new Set());
+
   // Sync pinned creators to localStorage
   useEffect(() => {
     try {
@@ -392,6 +396,96 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       };
     });
   };
+
+  // AI Tag Generator for a Bookmark (manual trigger or auto-queue)
+  const handleGenerateTagsForBookmark = useCallback(async (bookmark: BookmarkItem) => {
+    if (!bookmark || !bookmark.id || generatingTagIds.has(bookmark.id)) return;
+
+    setGeneratingTagIds(prev => new Set(prev).add(bookmark.id));
+
+    try {
+      const response = await fetch('/api/ai/tag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: bookmark.id,
+          url: bookmark.url || '',
+          title: bookmark.title || '',
+          text: bookmark.text || '',
+          platform: bookmark.platform || 'web',
+          displayName: bookmark.displayName || '',
+          username: bookmark.username || '',
+          userId: user?.id,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const newTags = Array.isArray(result.tags) ? result.tags : [];
+
+        if (newTags.length > 0) {
+          // Update bookmark in local state
+          setBookmarks(prev =>
+            prev.map(b => (b.id === bookmark.id ? { ...b, tags: newTags } : b))
+          );
+
+          // Update tags catalog if new tags added
+          setTags(prevTags => {
+            const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
+            const toAdd: Tag[] = [];
+            for (const nt of newTags) {
+              if (!existingNames.has(nt.name.toLowerCase())) {
+                const newTagObj: Tag = {
+                  id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+                  name: nt.name,
+                  color: nt.color,
+                };
+                toAdd.push(newTagObj);
+                existingNames.add(nt.name.toLowerCase());
+                insertTagToDb(newTagObj, user?.id);
+              }
+            }
+            return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
+          });
+
+          // Save bookmark tags update to Supabase
+          updateBookmarkInDb(bookmark.id, { tags: newTags });
+        }
+      }
+    } catch (err) {
+      console.warn('Auto-tagging error for bookmark:', bookmark.id, err);
+    } finally {
+      setGeneratingTagIds(prev => {
+        const next = new Set(prev);
+        next.delete(bookmark.id);
+        return next;
+      });
+    }
+  }, [generatingTagIds, user]);
+
+  // Auto-generate tags for untagged bookmarks (e.g. newly saved from extension or newly added)
+  useEffect(() => {
+    if (!isLoaded || bookmarks.length === 0) return;
+
+    // Find active bookmarks that have no tags and haven't been queued yet
+    const untaggedBookmarks = bookmarks.filter(
+      b => (!b.tags || b.tags.length === 0) && !b.isArchived && !processedAutoTagIdsRef.current.has(b.id)
+    );
+
+    if (untaggedBookmarks.length === 0) return;
+
+    // Mark as processed in ref
+    untaggedBookmarks.forEach(b => processedAutoTagIdsRef.current.add(b.id));
+
+    // Stagger auto-tagging calls
+    untaggedBookmarks.forEach((b, index) => {
+      setTimeout(() => {
+        handleGenerateTagsForBookmark(b);
+      }, index * 350);
+    });
+  }, [bookmarks, isLoaded, handleGenerateTagsForBookmark]);
 
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
     soundFx.playSaveSound();
@@ -773,6 +867,8 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onOpenImage={setActiveLightboxImage}
                 onOpenDetail={setActiveDetailBookmark}
                 onSelectTag={handleSelectTag}
+                generatingTagIds={generatingTagIds}
+                onGenerateTags={handleGenerateTagsForBookmark}
               />
             </div>
           </div>
@@ -783,8 +879,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       <BookmarkDetailModal
         bookmark={activeDetailBookmark}
         isOpen={!!activeDetailBookmark}
+        isGeneratingTags={activeDetailBookmark ? generatingTagIds.has(activeDetailBookmark.id) : false}
         onClose={() => setActiveDetailBookmark(null)}
         onSelectTag={handleSelectTag}
+        onGenerateTags={handleGenerateTagsForBookmark}
       />
 
       <CommandPalette

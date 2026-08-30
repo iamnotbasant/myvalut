@@ -447,6 +447,58 @@ export interface GeminiTagResponse {
   tags: string[];
 }
 
+// 8.5 Smart Fallback Heuristic Tagger (when offline, rate-limited, or AI unavailable)
+export function generateHeuristicTags(params: {
+  platform: string;
+  title: string;
+  text?: string;
+  displayName?: string;
+  username?: string;
+}): Array<{ name: string; color: TagColor }> {
+  const combined = `${params.title || ''} ${params.text || ''} ${params.displayName || ''} ${params.username || ''}`.toLowerCase();
+  const extractedTags: string[] = [];
+
+  const TOPIC_RULES: Array<{ match: RegExp | string; tag: string }> = [
+    { match: /\b(ai|artificial intelligence|gpt|gemini|llm|claude|openai|agent|deepseek|midjourney|prompt|machine learning)\b/i, tag: 'ai' },
+    { match: /\b(nextjs|next\.js|react|vue|svelte|angular|frontend|webdev|javascript|typescript|js|ts)\b/i, tag: 'web dev' },
+    { match: /\b(tailwind|css|design system|figma|ui ux|interface|frontend|styling|components)\b/i, tag: 'ui ux' },
+    { match: /\b(python|rust|golang|backend|postgres|supabase|database|api|docker|sql|developer|code)\b/i, tag: 'coding' },
+    { match: /\b(video editing|premiere|davinci|after effects|animation|motion|vfx|cut|render|cinematic)\b/i, tag: 'video editing' },
+    { match: /\b(sound design|audio|sfx|mixing|music|soundtrack|foley|beats)\b/i, tag: 'sound design' },
+    { match: /\b(tutorial|how to|guide|breakdown|learn|walkthrough|course|tips)\b/i, tag: 'tutorial' },
+    { match: /\b(workflow|productivity|tools|setup|automation|efficiency|system)\b/i, tag: 'workflow' },
+    { match: /\b(gta|gaming|gameplay|ps5|xbox|steam|trailer|game|gamer)\b/i, tag: 'gaming' },
+    { match: /\b(crypto|bitcoin|eth|finance|investing|stocks|business|startup|saas)\b/i, tag: 'finance' },
+    { match: /\b(design|typography|branding|logo|graphic design|art|illustration|creative)\b/i, tag: 'design' },
+  ];
+
+  for (const rule of TOPIC_RULES) {
+    if (typeof rule.match === 'string' ? combined.includes(rule.match) : rule.match.test(combined)) {
+      extractedTags.push(rule.tag);
+    }
+  }
+
+  // Also extract words from title if not enough tags
+  if (extractedTags.length < 2 && params.title) {
+    const words = params.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !HARD_BLACKLIST.has(w) && !['this', 'that', 'with', 'from', 'your', 'about', 'more', 'into', 'some', 'what', 'when', 'will', 'have', 'been', 'post', 'view', 'read'].includes(w));
+    
+    if (words.length > 0) {
+      extractedTags.push(words[0]);
+      if (words.length > 1) extractedTags.push(words[1]);
+    }
+  }
+
+  if (extractedTags.length === 0) {
+    extractedTags.push('inspiration', 'resource');
+  }
+
+  return processIncomingTags(extractedTags);
+}
+
 // 9. Pure Gemini AI Tagger
 export async function generateGeminiTags(params: {
   platform: string;
@@ -469,9 +521,9 @@ export async function generateGeminiTags(params: {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
-    console.warn('[Valut] No Gemini API key configured. Skipping AI tagging.');
+    console.warn('[Valut] No Gemini API key configured. Using heuristic fallback tagging.');
     return {
-      tags: [],
+      tags: generateHeuristicTags(params),
       rawDetails: null,
     };
   }
@@ -492,11 +544,11 @@ Platform: ${platform}
 Content/Description: ${cleanContent.slice(0, 3000)}`;
 
   const modelCandidates = [
-    'gemini-3.7-flash',
+    'gemini-3.6-flash',
     'gemini-3.5-flash',
-    'gemini-3.1-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-2.0-flash-lite',
     'gemini-2.5-flash',
-    'gemini-2.0-flash',
   ];
 
   try {
@@ -544,14 +596,21 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
     }
 
     if (!rawJsonText) {
-      throw new Error('All Gemini model endpoints failed');
+      console.warn('[Valut] All Gemini endpoints failed, using heuristic fallback tags');
+      return {
+        tags: generateHeuristicTags(params),
+        rawDetails: null,
+      };
     }
 
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
     const tagsToProcess = Array.isArray(parsed.tags) ? parsed.tags : [];
     
     // Step 3: Normalizer & Guardrail
-    const cleanTags = processIncomingTags(tagsToProcess);
+    let cleanTags = processIncomingTags(tagsToProcess);
+    if (cleanTags.length === 0) {
+      cleanTags = generateHeuristicTags(params);
+    }
 
     return {
       tags: cleanTags,
@@ -560,7 +619,7 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
   } catch (err: any) {
     console.error('[Valut] Gemini tag generation error:', err.message || err);
     return {
-      tags: [],
+      tags: generateHeuristicTags(params),
       rawDetails: null,
     };
   }

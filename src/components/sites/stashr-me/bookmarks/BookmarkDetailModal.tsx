@@ -1,21 +1,25 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
-import { TagDot, PlatformIcon, RedditIcon, ExternalLink } from '@/components/icons';
+import { TagDot, PlatformIcon, RedditIcon, ExternalLink, Sparkles } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkDetailModalProps {
   bookmark: BookmarkItem | null;
   isOpen: boolean;
+  isGeneratingTags?: boolean;
   onClose: () => void;
   onSelectTag?: (tagName: string) => void;
+  onGenerateTags?: (bookmark: BookmarkItem) => void;
 }
 
 export function BookmarkDetailModal({
   bookmark,
   isOpen,
+  isGeneratingTags = false,
   onClose,
-  onSelectTag
+  onSelectTag,
+  onGenerateTags
 }: BookmarkDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -185,7 +189,14 @@ export function BookmarkDetailModal({
         <div className="flex items-center justify-between gap-3 pt-1">
           {/* Tags list */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {bookmark.tags && bookmark.tags.length > 0 ? (
+            {isGeneratingTags ? (
+              <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-1 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+                <Sparkles className="size-3.5 text-purple-400 animate-spin" />
+                <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
+                  Generating tags...
+                </span>
+              </div>
+            ) : bookmark.tags && bookmark.tags.length > 0 ? (
               bookmark.tags.map((tag, idx) => (
                 <button
                   type="button"
@@ -200,6 +211,15 @@ export function BookmarkDetailModal({
                   <span>{tag.name}</span>
                 </button>
               ))
+            ) : onGenerateTags ? (
+              <button
+                type="button"
+                onClick={() => onGenerateTags(bookmark)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-dashed border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <Sparkles className="size-3 text-purple-400" />
+                <span>Generate AI tags</span>
+              </button>
             ) : (
               <span className="text-xs text-neutral-500">No tags</span>
             )}
