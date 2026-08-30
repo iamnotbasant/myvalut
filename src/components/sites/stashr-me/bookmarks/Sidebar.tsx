@@ -94,17 +94,6 @@ export function Sidebar({
     collection: null
   });
 
-  // Context Menu state for Tags
-  const [tagContextMenu, setTagContextMenu] = React.useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    tag: Tag | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    tag: null
-  });
-
   const navItemClass = "group/button inline-flex shrink-0 select-none items-center whitespace-nowrap rounded-lg border-transparent bg-clip-padding text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 h-8 justify-start gap-3 border-0 px-2 font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground/80 data-[active=true]:hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:w-8 group-data-[state=collapsed]/sidebar:justify-center group-data-[state=collapsed]/sidebar:gap-0 group-data-[state=collapsed]/sidebar:px-0 cursor-pointer";
 
   const isNavActive = (navName: string) => {
@@ -323,91 +312,6 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* Tags Section */}
-        <div className="flex flex-col px-3 min-h-0 pt-2 pb-2 group-data-[state=collapsed]/sidebar:hidden border-t border-sidebar-border/30">
-          <div className="mr-2 mb-1 ml-2 flex shrink-0 items-center justify-between text-muted-foreground text-xs">
-            <span className="font-medium">Tags ({tags.length})</span>
-            <button
-              type="button"
-              onClick={onOpenAddTag}
-              className="inline-flex size-4 items-center justify-center rounded border border-border bg-background hover:bg-accent text-foreground shadow-xs cursor-pointer"
-              title="New Tag"
-            >
-              <Plus className="size-3" />
-            </button>
-          </div>
-
-          <div className="-m-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto p-1">
-            {tags.length === 0 ? (
-              <p className="px-2 py-1.5 text-[11px] text-muted-foreground italic">No tags yet</p>
-            ) : (
-              [...tags]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map(t => {
-                  const isActive = filterState.tags.includes(t.name);
-                  const tagCount = bookmarksCountByTag?.[t.name.toLowerCase()] ?? 0;
-
-                  return (
-                    <div
-                      key={t.id}
-                      className="group/tagrow relative flex items-center"
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setTagContextMenu({
-                          isOpen: true,
-                          position: { x: e.clientX, y: e.clientY },
-                          tag: t
-                        });
-                      }}
-                    >
-                      <a
-                        role="button"
-                        data-active={isActive ? "true" : undefined}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const updated = isActive
-                            ? filterState.tags.filter(n => n !== t.name)
-                            : [t.name];
-                          onFilterChange({ tags: updated, collectionId: null, activeNav: 'bookmarks' });
-                          onCloseMobile?.();
-                        }}
-                        className="inline-flex h-7 w-full items-center justify-between rounded-lg px-2 text-xs font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground cursor-pointer pr-7 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <TagDot color={t.color} />
-                          <span className="min-w-0 truncate">{t.name}</span>
-                        </div>
-                        {tagCount > 0 && (
-                          <span className="text-[10px] text-muted-foreground tabular-nums group-hover/tagrow:hidden">{tagCount}</span>
-                        )}
-                      </a>
-
-                      {/* 3-dots actions trigger on hover */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setTagContextMenu({
-                            isOpen: true,
-                            position: { x: rect.right + 4, y: rect.top },
-                            tag: t
-                          });
-                        }}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 flex size-5.5 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/tagrow:opacity-100 hover:bg-accent hover:text-foreground transition-all cursor-pointer"
-                        title="Tag options"
-                      >
-                        <MoreHorizontal className="size-3" />
-                      </button>
-                    </div>
-                  );
-                })
-            )}
-          </div>
-        </div>
-
         {/* Collections Context Menu */}
         <ContextMenu
           isOpen={contextMenu.isOpen}
@@ -453,50 +357,6 @@ export function Sidebar({
                     danger: true,
                     onClick: () => {
                       if (contextMenu.collection) onDeleteCollection?.(contextMenu.collection.id);
-                    }
-                  }
-                ]
-              : []
-          }
-        />
-
-        {/* Tag Context Menu */}
-        <ContextMenu
-          isOpen={tagContextMenu.isOpen}
-          position={tagContextMenu.position}
-          title={tagContextMenu.tag?.name}
-          onClose={() => setTagContextMenu({ isOpen: false, position: { x: 0, y: 0 }, tag: null })}
-          items={
-            tagContextMenu.tag
-              ? [
-                  {
-                    id: 'edit-tag',
-                    label: 'Edit Tag / Color',
-                    icon: <Pencil className="size-3.5" />,
-                    onClick: () => {
-                      if (tagContextMenu.tag) onEditTag?.(tagContextMenu.tag);
-                    }
-                  },
-                  {
-                    id: 'copy-tag',
-                    label: 'Copy Tag Name',
-                    icon: <Copy className="size-3.5" />,
-                    onClick: () => {
-                      if (tagContextMenu.tag) navigator.clipboard.writeText(tagContextMenu.tag.name);
-                    }
-                  },
-                  {
-                    id: 'sep-tag',
-                    label: '',
-                    separator: true
-                  },
-                  {
-                    id: 'delete-tag',
-                    label: 'Delete Tag',
-                    icon: <Trash2 className="size-3.5" />,
-                    danger: true,
-                    onClick: () => {
-                      if (tagContextMenu.tag) onDeleteTag?.(tagContextMenu.tag.id);
                     }
                   }
                 ]
