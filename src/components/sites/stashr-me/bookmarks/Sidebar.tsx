@@ -23,7 +23,8 @@ import {
   Pin,
   PinOff,
   Copy,
-  MoreHorizontal
+  MoreHorizontal,
+  Activity
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 import { LogIn, User } from 'lucide-react';
@@ -91,7 +92,7 @@ export function Sidebar({
     return filterState.activeNav === navName || pathname === `/${navName}`;
   };
 
-  const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'connections') => {
+  const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'connections' | 'logs') => {
     if (pathname.startsWith('/settings')) {
       router.push(`/${nav}`);
     } else {
@@ -192,6 +193,16 @@ export function Sidebar({
           >
             <Radio className="size-4" />
             <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Connections</span>
+          </a>
+          <a
+            role="button"
+            data-active={isNavActive('logs') ? "true" : undefined}
+            onClick={(e) => { e.preventDefault(); handleNavClick('logs'); }}
+            className={navItemClass + (isNavActive('logs') ? " active" : "")}
+            href="/logs"
+          >
+            <Activity className="size-4 text-purple-400" />
+            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Activity & Logs</span>
           </a>
         </div>
 

@@ -241,6 +241,15 @@ export function BookmarkCard({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const isTextIdenticalToTitle = Boolean(
+    bookmark.title &&
+    bookmark.text &&
+    (bookmark.text.trim().toLowerCase() === bookmark.title.trim().toLowerCase() ||
+     bookmark.text.trim().replace(/\s+/g, ' ').toLowerCase() === bookmark.title.trim().replace(/\s+/g, ' ').toLowerCase() ||
+     (bookmark.text.length < bookmark.title.length + 10 && bookmark.title.toLowerCase().includes(bookmark.text.toLowerCase().slice(0, 30))))
+  );
+  const hasDistinctText = Boolean(bookmark.text && !isTextIdenticalToTitle);
+
   useEffect(() => {
     setImgSrc(getCleanImageUrl(bookmark.imageUrl));
     setHasImageError(false);
@@ -441,7 +450,7 @@ export function BookmarkCard({
         {/* Middle Content & Optional Right Thumbnail */}
         <div className="relative z-10 flex items-start justify-between gap-4">
           <p className="flex-1 text-[13.5px] leading-relaxed text-neutral-200 line-clamp-3">
-            {bookmark.text}
+            {bookmark.title || bookmark.text}
           </p>
 
           {imgSrc && !hasImageError && (
@@ -565,10 +574,19 @@ export function BookmarkCard({
           </div>
         </div>
 
+        {/* Title */}
+        {bookmark.title && (
+          <h3 className="relative z-10 font-semibold text-white text-[15px] leading-snug">
+            {bookmark.title}
+          </h3>
+        )}
+
         {/* Content text */}
-        <p className="relative z-10 text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
-          {bookmark.text}
-        </p>
+        {hasDistinctText && (
+          <p className="relative z-10 text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
+            {bookmark.text}
+          </p>
+        )}
 
         {/* Big Media Container */}
         {imgSrc && !hasImageError && (
@@ -835,7 +853,7 @@ export function BookmarkCard({
       )}
 
       {/* Post Text & Show More */}
-      {bookmark.text && (
+      {hasDistinctText && bookmark.text && (
         <div className="relative z-10 space-y-2 whitespace-pre-line text-[13.5px] leading-relaxed text-neutral-200">
           <p className={!isExpanded && bookmark.text.length > 220 ? "line-clamp-4" : ""}>
             <span>{bookmark.text}</span>

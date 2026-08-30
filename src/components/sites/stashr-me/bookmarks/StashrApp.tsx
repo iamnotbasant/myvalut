@@ -14,6 +14,7 @@ import { FilterBar } from './FilterBar';
 import { SecondaryToolbar } from './SecondaryToolbar';
 import { BookmarksContainer } from './BookmarksContainer';
 import { CreatorsView, ConnectionsView } from './OtherViews';
+import { SystemLogsView } from './SystemLogsView';
 import { CommandPalette } from './CommandPalette';
 import {
   AddBookmarkModal,
@@ -49,7 +50,7 @@ import { useAuth } from '@/lib/auth-context';
 import { soundFx } from '@/lib/sound-effects';
 
 interface StashrAppProps {
-  initialNav?: 'bookmarks' | 'archived' | 'creators' | 'connections';
+  initialNav?: 'bookmarks' | 'archived' | 'creators' | 'connections' | 'logs';
 }
 
 function getInitialLocalStorageData<T>(key: string, fallback: T): T {
@@ -785,6 +786,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         )}
 
         {filterState.activeNav === 'connections' && <ConnectionsView bookmarks={bookmarks} />}
+
+        {filterState.activeNav === 'logs' && (
+          <SystemLogsView bookmarks={bookmarks} onGenerateTags={handleGenerateTagsForBookmark} />
+        )}
 
         {(filterState.activeNav === 'bookmarks' || filterState.activeNav === 'archived') && (
           <div className="flex-1 overflow-y-auto">

@@ -738,3 +738,49 @@ export function TagDot({ color = 'blue' }: { color: TagColor }) {
 
   return <span className={`size-2 shrink-0 rounded-full ${colorMap[color] || 'bg-neutral-400'}`} />;
 }
+
+export function Activity({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </svg>
+  );
+}
+
+export function Terminal({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <polyline points="4 17 10 11 4 5" />
+      <line x1="12" y1="19" x2="20" y2="19" />
+    </svg>
+  );
+}
+
+export function AlertTriangle({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+export function CheckCircle2({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+export function XCircle({ className = 'size-4', ...props }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  );
+}

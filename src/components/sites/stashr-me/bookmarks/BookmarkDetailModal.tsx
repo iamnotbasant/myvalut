@@ -50,6 +50,15 @@ export function BookmarkDetailModal({
     bookmark.text?.toLowerCase().includes('animation') ||
     bookmark.text?.toLowerCase().includes('video');
 
+  const isTextIdenticalToTitle = Boolean(
+    bookmark.title &&
+    bookmark.text &&
+    (bookmark.text.trim().toLowerCase() === bookmark.title.trim().toLowerCase() ||
+     bookmark.text.trim().replace(/\s+/g, ' ').toLowerCase() === bookmark.title.trim().replace(/\s+/g, ' ').toLowerCase() ||
+     (bookmark.text.length < bookmark.title.length + 10 && bookmark.title.toLowerCase().includes(bookmark.text.toLowerCase().slice(0, 30))))
+  );
+  const hasDistinctText = Boolean(bookmark.text && !isTextIdenticalToTitle);
+
   const cleanImageUrl = bookmark.imageUrl?.includes('hqdefault.jpg')
     ? bookmark.imageUrl.replace('hqdefault.jpg', 'maxresdefault.jpg')
     : bookmark.imageUrl;
@@ -136,7 +145,7 @@ export function BookmarkDetailModal({
         )}
 
         {/* Post Text */}
-        {bookmark.text && (
+        {hasDistinctText && bookmark.text && (
           <div className="space-y-3 whitespace-pre-line text-[14.5px] leading-relaxed text-neutral-100 font-normal">
             <p>{bookmark.text}</p>
           </div>
