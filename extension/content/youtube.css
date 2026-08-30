@@ -2,23 +2,36 @@
 .valut-yt-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 36px;
   padding: 0 16px;
   border-radius: 18px;
   background-color: rgba(255, 255, 255, 0.1);
   color: #f1f1f1;
-  font-family: "Roboto", "Arial", sans-serif;
+  font-family: "Roboto", "YouTube Noto", Arial, sans-serif;
   font-size: 14px;
   font-weight: 500;
+  line-height: 36px;
   border: none;
   cursor: pointer;
-  margin-left: 8px;
-  margin-right: 0px;
+  margin-left: 0px;
+  margin-right: 8px;
   transition: background-color 0.2s cubic-bezier(0.05, 0, 0.2, 1), transform 0.1s;
   user-select: none;
   vertical-align: middle;
   flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Light Theme support */
+html:not([dark]) .valut-yt-btn {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #0f0f0f;
+}
+
+html:not([dark]) .valut-yt-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .valut-yt-btn:hover {
@@ -36,8 +49,13 @@
 }
 
 .valut-yt-btn.valut-saved {
-  background-color: #10b981 !important;
-  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+html:not([dark]) .valut-yt-btn.valut-saved {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #0f0f0f;
 }
 
 .valut-yt-icon {
@@ -46,11 +64,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .valut-yt-icon svg {
   width: 20px;
   height: 20px;
+  display: block;
+}
+
+.valut-yt-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Video Player Control Bar Button */
@@ -67,11 +93,14 @@
   cursor: pointer !important;
   opacity: 0.9 !important;
   transition: opacity 0.1s cubic-bezier(0.4, 0, 1, 1), transform 0.1s !important;
+  vertical-align: top !important;
+  box-sizing: border-box !important;
 }
 
 .valut-yt-player-btn:hover {
   opacity: 1 !important;
-  transform: scale(1.08) !important;
+  transform: scale(1.06) !important;
+  color: #ffffff !important;
 }
 
 .valut-player-icon-wrapper {
@@ -83,11 +112,13 @@
 }
 
 .valut-player-icon-wrapper svg {
-  width: 22px;
-  height: 22px;
-  fill: #ffffff;
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
 }
 
 .valut-yt-player-btn.valut-saved .valut-player-icon-wrapper svg {
-  fill: #10b981 !important;
+  fill: #ffffff !important;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
 }

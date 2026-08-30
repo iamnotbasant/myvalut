@@ -479,15 +479,9 @@ export async function generateGeminiTags(params: {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
-    // Fallback heuristic tags if no API key is configured
-    const fallbackWords = (title + ' ' + text)
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(/\s+/)
-      .filter(w => w.length > 3 && !['this', 'that', 'with', 'from', 'have', 'what'].includes(w));
-    const fallbackTags = processIncomingTags([platform, ...fallbackWords.slice(0, 3)]);
+    console.warn('[Valut] No Gemini API key found — using intelligent heuristic fallback for tags.');
     return {
-      tags: fallbackTags,
+      tags: generateIntelligentFallbackTags(platform, title, text),
       rawDetails: null,
     };
   }
@@ -496,11 +490,13 @@ export async function generateGeminiTags(params: {
 Title: ${title}
 Context: ${text.slice(0, 3000)}`;
 
+  // Correct Gemini model IDs (as of 2026)
   const modelCandidates = [
-    'gemini-3.6-flash',
+    'gemini-3.7-flash',
     'gemini-3.5-flash',
     'gemini-3.1-flash-lite',
-    'gemini-flash-latest'
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
   ];
 
   try {
@@ -532,19 +528,23 @@ Context: ${text.slice(0, 3000)}`;
 
         if (res.ok) {
           const data = await res.json();
-          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            rawJsonText = text;
+          const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (resultText) {
+            rawJsonText = resultText;
+            console.log(`[Valut] AI tags generated successfully via model: ${model}`);
             break;
           }
+        } else {
+          const errBody = await res.text().catch(() => '');
+          console.warn(`[Valut] Model ${model} returned HTTP ${res.status}: ${errBody.slice(0, 200)}`);
         }
       } catch (innerErr) {
-        console.warn(`Model ${model} attempt failed:`, innerErr);
+        console.warn(`[Valut] Model ${model} attempt failed:`, innerErr);
       }
     }
 
     if (!rawJsonText) {
-      throw new Error('All Gemini model endpoints failed');
+      throw new Error('All Gemini model endpoints failed — check your API key (should start with "AIza")');
     }
 
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
@@ -556,11 +556,185 @@ Context: ${text.slice(0, 3000)}`;
       rawDetails: parsed,
     };
   } catch (err: any) {
-    console.error('Gemini tag generation error:', err);
-    const fallback = processIncomingTags([platform, ...title.toLowerCase().split(/\s+/).slice(0, 3)]);
+    console.error('[Valut] Gemini tag generation error:', err.message || err);
+    console.warn('[Valut] Falling back to intelligent heuristic tagging.');
     return {
-      tags: fallback,
+      tags: generateIntelligentFallbackTags(platform, title, text),
       rawDetails: null,
     };
   }
+}
+
+// 8. Intelligent Heuristic Fallback — used when Gemini API is unavailable
+// Extracts meaningful multi-word phrases instead of just splitting title into words
+function generateIntelligentFallbackTags(
+  platform: string,
+  title: string,
+  text: string
+): Array<{ name: string; color: TagColor }> {
+  const combined = (title + ' ' + text).toLowerCase();
+
+  // Stop words to filter out
+  const STOP_WORDS = new Set([
+    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her',
+    'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its',
+    'may', 'new', 'now', 'old', 'see', 'way', 'who', 'did', 'let', 'say', 'she',
+    'too', 'use', 'will', 'with', 'this', 'that', 'from', 'have', 'what', 'been',
+    'more', 'when', 'some', 'them', 'than', 'each', 'make', 'like', 'long', 'look',
+    'many', 'most', 'over', 'such', 'take', 'into', 'just', 'know', 'your', 'come',
+    'could', 'about', 'other', 'would', 'after', 'their', 'which', 'these', 'being',
+    'very', 'also', 'here', 'much', 'then', 'those', 'made', 'they', 'only',
+    'first', 'where', 'does', 'doing', 'every', 'should', 'through', 'back',
+    'video', 'watch', 'https', 'http', 'www', 'com', 'best', 'ever', 'real',
+    'official', 'full', 'extended', 'look', 'part', 'episode', 'season',
+  ]);
+
+  // Known multi-word entity patterns to detect as single tags
+  const KNOWN_ENTITIES: Array<{ pattern: RegExp; tag: string }> = [
+    { pattern: /grand theft auto\s*(vi|6)/i, tag: 'gta 6' },
+    { pattern: /grand theft auto\s*(v|5)/i, tag: 'gta 5' },
+    { pattern: /grand theft auto/i, tag: 'gta' },
+    { pattern: /red dead redemption\s*2/i, tag: 'rdr2' },
+    { pattern: /red dead redemption/i, tag: 'rdr' },
+    { pattern: /call of duty/i, tag: 'call of duty' },
+    { pattern: /counter\s*strike\s*2/i, tag: 'cs2' },
+    { pattern: /playstation\s*5/i, tag: 'ps5' },
+    { pattern: /playstation\s*4/i, tag: 'ps4' },
+    { pattern: /xbox series/i, tag: 'xbox' },
+    { pattern: /nintendo switch/i, tag: 'nintendo switch' },
+    { pattern: /artificial intelligence/i, tag: 'ai' },
+    { pattern: /machine learning/i, tag: 'ml' },
+    { pattern: /deep learning/i, tag: 'dl' },
+    { pattern: /premiere pro/i, tag: 'premiere pro' },
+    { pattern: /after effects/i, tag: 'after effects' },
+    { pattern: /davinci resolve/i, tag: 'davinci resolve' },
+    { pattern: /final cut/i, tag: 'final cut pro' },
+    { pattern: /visual studio code|vs\s*code/i, tag: 'vs code' },
+    { pattern: /next\.?js/i, tag: 'next js' },
+    { pattern: /react\.?js|reactjs/i, tag: 'react' },
+    { pattern: /tailwind\s*css/i, tag: 'tailwind' },
+    { pattern: /open\s*ai/i, tag: 'openai' },
+    { pattern: /chat\s*gpt|gpt[\s-]*4/i, tag: 'chatgpt' },
+    { pattern: /web\s*development/i, tag: 'web dev' },
+    { pattern: /game\s*play/i, tag: 'gameplay' },
+    { pattern: /unreal engine/i, tag: 'unreal engine' },
+    { pattern: /rockstar games/i, tag: 'rockstar' },
+    { pattern: /elon musk/i, tag: 'elon musk' },
+    { pattern: /iphone\s*\d*/i, tag: 'iphone' },
+    { pattern: /apple\s*vision/i, tag: 'apple vision pro' },
+    { pattern: /mr\.?\s*beast|mrbeast/i, tag: 'mrbeast' },
+    { pattern: /mkbhd|marques brownlee/i, tag: 'mkbhd' },
+    { pattern: /linus tech/i, tag: 'linus tech tips' },
+    { pattern: /crypto\s*currency/i, tag: 'crypto' },
+    { pattern: /block\s*chain/i, tag: 'blockchain' },
+  ];
+
+  // Content-type detection patterns
+  const CONTENT_TYPES: Array<{ pattern: RegExp; tag: string }> = [
+    { pattern: /\btutorial\b/i, tag: 'tutorial' },
+    { pattern: /\breview\b/i, tag: 'review' },
+    { pattern: /\btrailer\b/i, tag: 'trailer' },
+    { pattern: /\bunboxing\b/i, tag: 'unboxing' },
+    { pattern: /\bpodcast\b/i, tag: 'podcast' },
+    { pattern: /\binterview\b/i, tag: 'interview' },
+    { pattern: /\bbreaking news\b/i, tag: 'breaking news' },
+    { pattern: /\bhow[\s-]to\b/i, tag: 'how to' },
+    { pattern: /\bdiy\b/i, tag: 'diy' },
+    { pattern: /\brecipe\b/i, tag: 'recipe' },
+    { pattern: /\bvlog\b/i, tag: 'vlog' },
+    { pattern: /\bshorts?\b/i, tag: 'short' },
+    { pattern: /\bexplained\b/i, tag: 'explainer' },
+    { pattern: /\bcooking\b/i, tag: 'cooking' },
+    { pattern: /\bfitness|workout\b/i, tag: 'fitness' },
+    { pattern: /\bmusic\b/i, tag: 'music' },
+    { pattern: /\bcomedy|funny\b/i, tag: 'comedy' },
+    { pattern: /\bscience\b/i, tag: 'science' },
+    { pattern: /\bgaming\b/i, tag: 'gaming' },
+    { pattern: /\bprogramming|coding\b/i, tag: 'programming' },
+    { pattern: /\bdesign\b/i, tag: 'design' },
+    { pattern: /\bphotography\b/i, tag: 'photography' },
+    { pattern: /\banimation|animated\b/i, tag: 'animation' },
+  ];
+
+  // Domain/topic detection patterns
+  const DOMAIN_PATTERNS: Array<{ pattern: RegExp; tag: string }> = [
+    { pattern: /\bgame|gaming|gamer\b/i, tag: 'gaming' },
+    { pattern: /\bcrypto|bitcoin|ethereum\b/i, tag: 'crypto' },
+    { pattern: /\btech|technology\b/i, tag: 'tech' },
+    { pattern: /\bsports?\b/i, tag: 'sports' },
+    { pattern: /\bfashion|style\b/i, tag: 'fashion' },
+    { pattern: /\btravel\b/i, tag: 'travel' },
+    { pattern: /\bfood\b/i, tag: 'food' },
+    { pattern: /\bhealth\b/i, tag: 'health' },
+    { pattern: /\bpolitics|political\b/i, tag: 'politics' },
+    { pattern: /\bfinance|investing|stock\b/i, tag: 'finance' },
+    { pattern: /\bstartup\b/i, tag: 'startup' },
+    { pattern: /\beducation|learn\b/i, tag: 'education' },
+    { pattern: /\bfilm|movie|cinema\b/i, tag: 'film' },
+    { pattern: /\banime|manga\b/i, tag: 'anime' },
+    { pattern: /\bart|artist\b/i, tag: 'art' },
+    { pattern: /\bcar|automotive|vehicle\b/i, tag: 'automotive' },
+    { pattern: /\bspace|nasa|rocket\b/i, tag: 'space' },
+  ];
+
+  const extractedTags: string[] = [];
+
+  // 1. Match known multi-word entities first
+  for (const { pattern, tag } of KNOWN_ENTITIES) {
+    if (pattern.test(combined) && !extractedTags.includes(tag)) {
+      extractedTags.push(tag);
+    }
+  }
+
+  // 2. Match content types
+  for (const { pattern, tag } of CONTENT_TYPES) {
+    if (pattern.test(combined) && !extractedTags.includes(tag)) {
+      extractedTags.push(tag);
+    }
+  }
+
+  // 3. Match domain/topic patterns
+  for (const { pattern, tag } of DOMAIN_PATTERNS) {
+    if (pattern.test(combined) && !extractedTags.includes(tag)) {
+      extractedTags.push(tag);
+    }
+  }
+
+  // 4. Extract significant standalone words from title (as last resort filler)
+  if (extractedTags.length < 3) {
+    const titleWords = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length >= 4 && !STOP_WORDS.has(w));
+
+    // Prefer words that appear in synonym map or are proper nouns (capitalized in original)
+    for (const word of titleWords) {
+      const mapped = SYNONYM_MAP[word] || word;
+      if (!extractedTags.includes(mapped) && extractedTags.length < 5) {
+        extractedTags.push(mapped);
+      }
+    }
+  }
+
+  // 5. Always include platform as context (but don't let it dominate)
+  if (!extractedTags.includes(platform) && extractedTags.length < 6) {
+    extractedTags.push(platform);
+  }
+
+  // Ensure minimum 2 tags
+  if (extractedTags.length < 2) {
+    // Use the full title as a tag if nothing else matched
+    const titleTag = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 30);
+    if (titleTag && !extractedTags.includes(titleTag)) {
+      extractedTags.push(titleTag);
+    }
+  }
+
+  return processIncomingTags(extractedTags.slice(0, 6));
 }
