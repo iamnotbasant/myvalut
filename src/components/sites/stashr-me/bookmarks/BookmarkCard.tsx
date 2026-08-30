@@ -83,7 +83,7 @@ function DynamicCardTags({
   onGenerateTags?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(1);
+  const [visibleIndices, setVisibleIndices] = useState<number[]>([0]);
 
   useEffect(() => {
     if (!containerRef.current || tags.length === 0) return;
@@ -95,8 +95,8 @@ function DynamicCardTags({
       const rawWidth = container.clientWidth || container.getBoundingClientRect().width;
       if (rawWidth <= 0) return;
 
-      // 8px safety buffer ensures tags NEVER collide with or touch the date
-      const availableWidth = Math.max(0, rawWidth - 8);
+      // 6px safety buffer ensures tags NEVER collide with or touch the date
+      const availableWidth = Math.max(0, rawWidth - 6);
 
       // Exact canvas font metrics for pixel-perfect measurement
       let ctx: CanvasRenderingContext2D | null = null;
@@ -108,39 +108,42 @@ function DynamicCardTags({
         }
       } catch {}
 
-      const badgeWidth = 36; // "+1", "+2", "+3" button width
+      const badgeWidth = 34; // "+1", "+2", "+3" button width
       const gap = 6;
 
       // Accurate pixel width for each tag:
       // tag text width + 16px padding (px-2) + 8px dot + 6px gap + 2px border = 32px
       const tagWidths = tags.map(t => {
-        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 7.0;
+        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 6.5;
         return Math.ceil(textW + 32);
       });
 
       // 1. If all tags fit in 1 line without any +N badge, show all
       const totalAll = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
       if (totalAll <= availableWidth) {
-        setVisibleCount(tags.length);
+        setVisibleIndices(tags.map((_, i) => i));
         return;
       }
 
-      // 2. Greedy single-line fitting with safety buffer: fit as many tags as physically possible
+      // 2. Adaptive Packing: Greedily fit any and all tags that fit within budget alongside +N badge
+      const maxTagBudget = availableWidth - badgeWidth - gap;
+      const chosen: number[] = [];
       let currentW = 0;
-      let count = 0;
 
-      for (let i = 0; i < tagWidths.length; i++) {
-        const nextW = currentW + (i > 0 ? gap : 0) + tagWidths[i];
-        if (nextW + gap + badgeWidth <= availableWidth) {
-          currentW = nextW;
-          count++;
-        } else {
-          break;
+      for (let i = 0; i < tags.length; i++) {
+        const addedW = (chosen.length > 0 ? gap : 0) + tagWidths[i];
+        if (currentW + addedW <= maxTagBudget) {
+          chosen.push(i);
+          currentW += addedW;
         }
       }
 
-      // If at least 1 tag fits, show it; otherwise keep 1
-      setVisibleCount(Math.max(1, count));
+      // If nothing fit, at least show tag 0
+      if (chosen.length === 0) {
+        chosen.push(0);
+      }
+
+      setVisibleIndices(chosen);
     };
 
     calculateVisibleTags();
@@ -195,8 +198,8 @@ function DynamicCardTags({
     );
   }
 
-  const visibleTags = tags.slice(0, visibleCount);
-  const remainingTags = tags.slice(visibleCount);
+  const visibleTags = tags.filter((_, idx) => visibleIndices.includes(idx));
+  const remainingTags = tags.filter((_, idx) => !visibleIndices.includes(idx));
 
   return (
     <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1.5 overflow-visible">
