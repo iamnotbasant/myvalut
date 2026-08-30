@@ -37,6 +37,72 @@
     }, 4000);
   }
 
+  async function sendSaveRequest(saveData) {
+    if (
+      typeof chrome !== 'undefined' &&
+      chrome.runtime &&
+      typeof chrome.runtime.sendMessage === 'function' &&
+      chrome.runtime.id
+    ) {
+      try {
+        const response = await new Promise((resolve) => {
+          try {
+            chrome.runtime.sendMessage(
+              {
+                action: 'SAVE_BOOKMARK',
+                data: saveData,
+              },
+              (res) => {
+                if (chrome.runtime.lastError) {
+                  resolve(null);
+                } else {
+                  resolve(res);
+                }
+              }
+            );
+          } catch {
+            resolve(null);
+          }
+        });
+        if (response && response.success) {
+          return response;
+        }
+      } catch {
+        // Fall through
+      }
+    }
+
+    const candidateEndpoints = [
+      'https://myvalut.vercel.app/api/extension/save',
+      'http://localhost:3000/api/extension/save',
+      'http://127.0.0.1:3000/api/extension/save',
+    ];
+
+    for (const endpoint of candidateEndpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: saveData.url,
+            platform: saveData.platform || 'twitter',
+          }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            return json;
+          }
+        }
+      } catch {}
+    }
+
+    throw new Error('Please refresh this page (Extension updated)');
+  }
+
   async function handleSaveTweet(button, tweetUrl) {
     if (button.classList.contains('valut-saving')) return;
 
@@ -44,12 +110,9 @@
     button.innerHTML = SPINNER_ICON;
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'SAVE_BOOKMARK',
-        data: {
-          url: tweetUrl,
-          platform: 'twitter'
-        }
+      const response = await sendSaveRequest({
+        url: tweetUrl,
+        platform: 'twitter',
       });
 
       if (response && response.success) {

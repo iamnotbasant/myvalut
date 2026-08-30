@@ -64,6 +64,76 @@
     }, 5500);
   }
 
+  async function sendSaveRequest(saveData) {
+    // 1. Try Chrome runtime messaging if context is valid
+    if (
+      typeof chrome !== 'undefined' &&
+      chrome.runtime &&
+      typeof chrome.runtime.sendMessage === 'function' &&
+      chrome.runtime.id
+    ) {
+      try {
+        const response = await new Promise((resolve) => {
+          try {
+            chrome.runtime.sendMessage(
+              {
+                action: 'SAVE_BOOKMARK',
+                data: saveData,
+              },
+              (res) => {
+                if (chrome.runtime.lastError) {
+                  resolve(null);
+                } else {
+                  resolve(res);
+                }
+              }
+            );
+          } catch {
+            resolve(null);
+          }
+        });
+        if (response && response.success) {
+          return response;
+        }
+      } catch {
+        // Fall through to direct fetch
+      }
+    }
+
+    // 2. Direct fetch fallback (works even if extension reloaded or context invalidated)
+    const candidateEndpoints = [
+      'https://myvalut.vercel.app/api/extension/save',
+      'http://localhost:3000/api/extension/save',
+      'http://127.0.0.1:3000/api/extension/save',
+    ];
+
+    for (const endpoint of candidateEndpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: saveData.url,
+            platform: saveData.platform || 'youtube',
+          }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            return json;
+          }
+        }
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    throw new Error('Please refresh this YouTube page (Extension was updated)');
+  }
+
   async function handleSaveClick(button) {
     if (button.classList.contains('valut-saving')) return;
 
@@ -77,12 +147,9 @@
     const videoUrl = window.location.href;
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'SAVE_BOOKMARK',
-        data: {
-          url: videoUrl,
-          platform: 'youtube'
-        }
+      const response = await sendSaveRequest({
+        url: videoUrl,
+        platform: 'youtube',
       });
 
       if (response && response.success) {
