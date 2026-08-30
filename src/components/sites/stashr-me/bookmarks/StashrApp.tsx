@@ -5,6 +5,7 @@ import {
   BookmarkItem,
   Collection,
   Tag,
+  TagColor,
   FilterState,
   ViewMode
 } from '@/types/stashr';
@@ -24,7 +25,9 @@ import {
   NoteModal,
   ImageLightboxModal,
   FeedbackModal,
-  EditTagsModal
+  EditTagsModal,
+  AddTagModal,
+  EditTagModal
 } from './Modals';
 import { BookmarkDetailModal } from './BookmarkDetailModal';
 import {
@@ -40,6 +43,8 @@ import {
   updateCollectionInDb,
   deleteCollectionFromDb,
   insertTagToDb,
+  updateTagInDb,
+  deleteTagFromDb,
   mapDbBookmarkToApp,
   DbBookmark
 } from '@/lib/supabase-db';
@@ -112,7 +117,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   // 4. Modal States
   const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false);
   const [isAddCollectionOpen, setIsAddCollectionOpen] = useState(false);
+  const [isAddTagOpen, setIsAddTagOpen] = useState(false);
   const [activeEditCollection, setActiveEditCollection] = useState<Collection | null>(null);
+  const [activeEditTag, setActiveEditTag] = useState<Tag | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -568,17 +575,109 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
     setConfirmDialog({
       isOpen: true,
-      title: 'Delete collection?',
-      description: `Are you sure you want to delete "${targetName}"? Any bookmarks in this collection will remain safe in your vault.`,
-      confirmText: 'Delete',
+      title: 'Delete Collection',
+      description: `Are you sure you want to delete "${targetName}"? Bookmarks inside it will not be deleted.`,
+      confirmText: 'Delete Collection',
+      cancelText: 'Cancel',
       isDestructive: true,
       onConfirm: () => {
-        soundFx.playArchiveSound();
+        soundFx.playClickSound();
         setCollections(prev => prev.filter(c => c.id !== id));
         if (filterState.collectionId === id) {
           setFilterState(prev => ({ ...prev, collectionId: null }));
         }
         deleteCollectionFromDb(id);
+      }
+    });
+  };
+
+  // Tag Management Handlers
+  const handleCreateTag = (name: string, color: TagColor) => {
+    const cleanName = name.trim().toLowerCase();
+    if (!cleanName) return;
+
+    const newTag: Tag = {
+      id: `tag_${Date.now()}_${cleanName.replace(/[^a-z0-9]/g, '_')}`,
+      name: cleanName,
+      color: color,
+    };
+
+    setTags(prev => [...prev, newTag]);
+    if (isSupabaseConfigured) {
+      insertTagToDb(newTag, user?.id).catch(console.error);
+    }
+  };
+
+  const handleSaveEditTag = (id: string, newName: string, newColor: TagColor) => {
+    const cleanName = newName.trim().toLowerCase();
+    const oldTag = tags.find(t => t.id === id);
+    if (!oldTag) return;
+
+    const oldName = oldTag.name.toLowerCase();
+
+    // 1. Update tag in tags catalog
+    setTags(prev =>
+      prev.map(t => (t.id === id ? { ...t, name: cleanName, color: newColor } : t))
+    );
+
+    // 2. Update tag across all bookmarks that have this tag
+    setBookmarks(prev =>
+      prev.map(bm => {
+        if (!bm.tags || !Array.isArray(bm.tags)) return bm;
+        const hasOld = bm.tags.some(t => t.name.toLowerCase() === oldName);
+        if (!hasOld) return bm;
+
+        const updatedBmTags = bm.tags.map(t =>
+          t.name.toLowerCase() === oldName ? { name: cleanName, color: newColor } : t
+        );
+
+        if (isSupabaseConfigured) {
+          updateBookmarkInDb(bm.id, { tags: updatedBmTags }).catch(console.error);
+        }
+
+        return { ...bm, tags: updatedBmTags };
+      })
+    );
+
+    // 3. Update in DB
+    if (isSupabaseConfigured) {
+      updateTagInDb(id, { name: cleanName, color: newColor }).catch(console.error);
+    }
+
+    // 4. Update filterState if currently filtered by this tag
+    if (filterState.tags.includes(oldTag.name)) {
+      setFilterState(prev => ({
+        ...prev,
+        tags: prev.tags.map(n => (n.toLowerCase() === oldName ? cleanName : n))
+      }));
+    }
+  };
+
+  const handleDeleteTag = (id: string) => {
+    const target = tags.find(t => t.id === id);
+    const targetName = target?.name || 'this tag';
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Tag',
+      description: `Are you sure you want to delete "${targetName}"? It will be removed from your vault catalog.`,
+      confirmText: 'Delete Tag',
+      cancelText: 'Cancel',
+      isDestructive: true,
+      onConfirm: () => {
+        soundFx.playClickSound();
+        setTags(prev => prev.filter(t => t.id !== id));
+
+        if (target) {
+          setFilterState(prev => ({
+            ...prev,
+            tags: prev.tags.filter(n => n.toLowerCase() !== target.name.toLowerCase())
+          }));
+        }
+
+        if (isSupabaseConfigured) {
+          deleteTagFromDb(id).catch(console.error);
+        }
       }
     });
   };
@@ -739,6 +838,20 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
   const activeBookmarksCount = bookmarks.filter(b => !b.isArchived).length;
   const archivedBookmarksCount = bookmarks.filter(b => b.isArchived).length;
+  
+  const bookmarksCountByTag = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const bm of bookmarks) {
+      if (bm.tags && Array.isArray(bm.tags)) {
+        for (const t of bm.tags) {
+          const key = t.name.toLowerCase();
+          map[key] = (map[key] || 0) + 1;
+        }
+      }
+    }
+    return map;
+  }, [bookmarks]);
+
   const uniqueCreatorsCount = useMemo(() => {
     const activeBms = bookmarks.filter(b => !b.isArchived);
     const sourceBms = activeBms.length > 0 ? activeBms : bookmarks;
@@ -758,6 +871,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onFilterChange={handleFilterChange}
         collections={collections}
         tags={allAvailableTags}
+        bookmarksCountByTag={bookmarksCountByTag}
         bookmarksCount={activeBookmarksCount}
         archivedCount={archivedBookmarksCount}
         creatorsCount={uniqueCreatorsCount}
@@ -766,6 +880,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onEditCollection={handleEditCollection}
         onDeleteCollection={handleDeleteCollection}
         onTogglePinCollection={handleTogglePinCollection}
+        onOpenAddTag={() => setIsAddTagOpen(true)}
+        onEditTag={setActiveEditTag}
+        onDeleteTag={handleDeleteTag}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
@@ -939,12 +1056,27 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onAdd={handleAddCollection}
       />
 
+      <AddTagModal
+        isOpen={isAddTagOpen}
+        onClose={() => setIsAddTagOpen(false)}
+        onAdd={handleCreateTag}
+        existingTags={allAvailableTags}
+      />
+
       <EditCollectionModal
         isOpen={!!activeEditCollection}
         collection={activeEditCollection}
         onClose={() => setActiveEditCollection(null)}
         onSave={handleSaveEditCollection}
         onDelete={handleDeleteCollection}
+      />
+
+      <EditTagModal
+        isOpen={!!activeEditTag}
+        tag={activeEditTag}
+        onClose={() => setActiveEditTag(null)}
+        onSave={handleSaveEditTag}
+        onDelete={handleDeleteTag}
       />
 
       <ConfirmDialogModal

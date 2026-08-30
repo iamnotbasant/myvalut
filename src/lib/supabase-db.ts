@@ -342,3 +342,40 @@ export async function insertTagToDb(item: Tag, userId?: string | null): Promise<
     return false;
   }
 }
+
+export async function updateTagInDb(id: string, updates: Partial<Tag>): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const dbUpdates: { name?: string; color?: string } = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
+
+    const { error } = await supabase
+      .from('tags')
+      .update(dbUpdates)
+      .eq('id', id);
+    if (error) {
+      console.error('Error updating tag in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to update tag in Supabase:', err);
+    return false;
+  }
+}
+
+export async function deleteTagFromDb(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { error } = await supabase.from('tags').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting tag from Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to delete tag from Supabase:', err);
+    return false;
+  }
+}

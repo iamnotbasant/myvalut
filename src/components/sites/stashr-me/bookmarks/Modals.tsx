@@ -1250,3 +1250,261 @@ export function EditTagsModal({
     </div>
   );
 }
+
+// 10. Add Tag Modal (Sidebar / Global)
+interface AddTagModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (name: string, color: TagColor) => void;
+  existingTags?: Tag[];
+}
+
+export function AddTagModal({
+  isOpen,
+  onClose,
+  onAdd,
+  existingTags = []
+}: AddTagModalProps) {
+  const [name, setName] = useState('');
+  const [color, setColor] = useState<TagColor>('cyan');
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const colors: TagColor[] = ['cyan', 'teal', 'blue', 'indigo', 'violet', 'pink', 'amber', 'orange', 'green', 'red'];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = name.trim().toLowerCase();
+    if (!cleanName) {
+      setError('Tag name is required');
+      return;
+    }
+    if (existingTags.some(t => t.name.toLowerCase() === cleanName)) {
+      setError('Tag already exists with this name');
+      return;
+    }
+
+    soundFx.playTagSound();
+    onAdd(cleanName, color);
+    setName('');
+    setColor('cyan');
+    setError(null);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#121214] p-5 shadow-2xl space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2">
+            <TagDot color={color} />
+            <h2 className="text-sm font-semibold text-white">Create New Tag</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tag Name Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-neutral-300">Tag Name</label>
+            <input
+              type="text"
+              autoFocus
+              value={name}
+              onChange={e => {
+                setName(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. design system, finance, tutorials..."
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-neutral-500 focus:border-purple-500 focus:outline-none"
+            />
+            {error && <p className="text-[11px] text-rose-400">{error}</p>}
+          </div>
+
+          {/* Color Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-neutral-300">Tag Color</label>
+            <div className="flex items-center gap-2 py-1">
+              {colors.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`size-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121214] scale-110' : 'opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <TagDot color={c} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="space-y-1.5 rounded-xl border border-white/[0.06] bg-black/30 p-2.5">
+            <span className="text-[11px] text-neutral-400 block mb-1">Preview</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.06] text-xs text-neutral-200">
+              <TagDot color={color} />
+              <span>{name.trim() || 'preview tag'}</span>
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 border-t border-white/[0.08] pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-lg border border-white/10 text-xs text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              Create Tag
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// 11. Edit / Manage Tag Modal
+interface EditTagModalProps {
+  isOpen: boolean;
+  tag: Tag | null;
+  onClose: () => void;
+  onSave: (id: string, name: string, color: TagColor) => void;
+  onDelete?: (id: string) => void;
+}
+
+export function EditTagModal({
+  isOpen,
+  tag,
+  onClose,
+  onSave,
+  onDelete
+}: EditTagModalProps) {
+  const [name, setName] = useState('');
+  const [color, setColor] = useState<TagColor>('cyan');
+
+  React.useEffect(() => {
+    if (tag) {
+      setName(tag.name);
+      setColor(tag.color);
+    }
+  }, [tag, isOpen]);
+
+  if (!isOpen || !tag) return null;
+
+  const colors: TagColor[] = ['cyan', 'teal', 'blue', 'indigo', 'violet', 'pink', 'amber', 'orange', 'green', 'red'];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = name.trim().toLowerCase();
+    if (!cleanName) return;
+
+    soundFx.playTagSound();
+    onSave(tag.id, cleanName, color);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#121214] p-5 shadow-2xl space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2">
+            <TagDot color={color} />
+            <h2 className="text-sm font-semibold text-white">Edit Tag</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tag Name Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-neutral-300">Tag Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Tag name"
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-neutral-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Color Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-neutral-300">Tag Color</label>
+            <div className="flex items-center gap-2 py-1">
+              {colors.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`size-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121214] scale-110' : 'opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <TagDot color={c} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between border-t border-white/[0.08] pt-3">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete(tag.id);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+              >
+                <Trash2 className="size-3.5" />
+                <span>Delete</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3.5 py-1.5 rounded-lg border border-white/10 text-xs text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!name.trim()}
+                className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                Save Tag
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
