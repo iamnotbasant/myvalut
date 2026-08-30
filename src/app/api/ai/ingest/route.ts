@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
       platform: metadata.platform,
       title: metadata.title,
       text: metadata.text,
+      displayName: metadata.displayName,
+      username: metadata.username,
       apiKey,
     });
 

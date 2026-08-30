@@ -64,63 +64,38 @@ export const SYNONYM_MAP: Record<string, string> = {
   'user experience': 'ui ux'
 };
 
-// 3. Normalizer & Cleanup Function
-export function normalizeAndCleanTags(rawTags: string[]): Array<{ name: string; color: TagColor }> {
+// 3. Hard Blacklist for Clickbait verbs and Platform words
+export const HARD_BLACKLIST = new Set([
+  'tells', 'tell', 'know', 'youtube', 'video', 'videos', 
+  'tips', 'tricks', 'secret', 'secrets', 'best', 'watch',
+  'learn', 'using', 'insane', 'things', 'stop', 'make',
+  'twitter', 'x', 'reddit', 'instagram', 'tiktok', 'threads'
+]);
+
+// 4. Normalizer & Cleanup Function with Post-Filter Guardrail
+export function normalizeVaultTags(rawTags: string[]): string[] {
   if (!Array.isArray(rawTags)) return [];
 
   const cleaned = rawTags
-    .map(tag => {
-      if (typeof tag !== 'string') return '';
-      return tag
+    .map(tag => 
+      String(tag)
         .toLowerCase()
-        .replace(/[-_]/g, ' ')             // Hyphens and underscores -> normal space
-        .replace(/[^a-z0-9\s]/g, '')       // Remove special characters (#, @, etc.)
-        .replace(/\s+/g, ' ')              // Collapse multiple spaces to single space
-        .trim();
-    })
+        .replace(/[-_]/g, ' ')             // Hyphens -> Spaces
+        .replace(/[^a-z0-9\s]/g, '')       // Special characters removed
+        .replace(/\s+/g, ' ')              // Extra spacing removed
+        .trim()
+    )
     .map(tag => SYNONYM_MAP[tag] || tag)
-    .filter(tag => tag.length >= 2);       // Remove single-character junk
+    .filter(tag => tag.length >= 2 && !HARD_BLACKLIST.has(tag));
 
-  // Deduplicate while preserving order
-  const uniqueTagNames = Array.from(new Set(cleaned));
-
-  // Dynamic cap: Minimum 2, maximum 6 tags
-  const cappedTagNames = uniqueTagNames.slice(0, 6);
-
-  // Assign deterministic, aesthetic colors
-  return cappedTagNames.map((name, index) => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const colorIndex = Math.abs(hash) % TAG_COLORS.length;
-    return {
-      name,
-      color: TAG_COLORS[colorIndex] || TAG_COLORS[index % TAG_COLORS.length]
-    };
-  });
+  return Array.from(new Set(cleaned)).slice(0, 6);
 }
 
-// 4. Safe Backend Processing (Safe-Pass & Sanitization)
+// 5. Safe Backend Processing (Assigns deterministic colors)
 export function processIncomingTags(tagsArray: any[]): Array<{ name: string; color: TagColor }> {
-  if (!Array.isArray(tagsArray)) return [];
+  const cleanTagNames = normalizeVaultTags(tagsArray);
 
-  const sanitized = tagsArray
-    .map(tag => {
-      return String(tag)
-        .toLowerCase()
-        .replace(/[-_]/g, ' ')           // Convert hyphens/underscores to spaces
-        .replace(/[^a-z0-9\s]/g, '')     // Strip special chars (#, @, etc.)
-        .replace(/\s+/g, ' ')            // Normalize multiple spaces
-        .trim();
-    })
-    .map(tag => SYNONYM_MAP[tag] || tag)
-    .filter(tag => tag.length >= 2);     // Strip meaningless 1-letter noise
-
-  // Deduplicate and hard-cap at 6
-  const uniqueTagNames = Array.from(new Set(sanitized)).slice(0, 6);
-
-  return uniqueTagNames.map((name, index) => {
+  return cleanTagNames.map((name, index) => {
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -134,6 +109,8 @@ export function processIncomingTags(tagsArray: any[]): Array<{ name: string; col
 }
 
 // Alias for backward compatibility
+export const normalizeAndCleanTags = processIncomingTags;
+
 export const assembleFinalTags = (aiJson: any) => {
   if (!aiJson || typeof aiJson !== 'object') return [];
   const tags = Array.isArray(aiJson.tags)
@@ -142,7 +119,7 @@ export const assembleFinalTags = (aiJson: any) => {
   return processIncomingTags(tags);
 };
 
-// 5. Platform Detection
+// 6. Platform Detection
 export function detectPlatformFromUrl(url: string): PlatformType {
   const lowercaseUrl = url.toLowerCase();
   if (lowercaseUrl.includes('youtube.com') || lowercaseUrl.includes('youtu.be')) return 'youtube';
@@ -167,7 +144,7 @@ export interface ExtractedMetadata {
   url: string;
 }
 
-// 6. High-Signal Platform Scrapers
+// 7. High-Signal Platform Scrapers
 export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMetadata> {
   const platform = detectPlatformFromUrl(inputUrl);
   let title = '';
@@ -233,7 +210,8 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             $('meta[property="og:description"]').attr('content') ||
             '';
 
-          if (!metaDesc || metaDesc.includes('Enjoy the videos and music you love')) {
+          const YOUTUBE_BOILERPLATE = 'enjoy the videos and music you love, upload original content';
+          if (metaDesc.toLowerCase().includes(YOUTUBE_BOILERPLATE)) {
             const descMatch = html.match(/"description":\{"simpleText":"(.*?)"\}/);
             if (descMatch) {
               metaDesc = descMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"');
@@ -241,6 +219,8 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
               const shortDescMatch = html.match(/"shortDescription":"(.*?)"/);
               if (shortDescMatch) {
                 metaDesc = shortDescMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"');
+              } else {
+                metaDesc = '';
               }
             }
           }
@@ -252,7 +232,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         console.warn('YouTube page scraping fallback:', err);
       }
     } else if (platform === 'reddit') {
-      // Reddit JSON endpoint for public posts
       try {
         let cleanRedditUrl = inputUrl.split('?')[0].replace(/\/$/, '');
         if (!cleanRedditUrl.endsWith('.json')) cleanRedditUrl += '.json';
@@ -274,7 +253,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
               post.preview?.images?.[0]?.source?.url?.replace(/&amp;/g, '&') ||
               (post.thumbnail?.startsWith('http') ? post.thumbnail : '');
 
-            // Subreddit Icon
             avatarUrl =
               post.sr_detail?.community_icon?.replace(/&amp;/g, '&') ||
               post.sr_detail?.icon_img?.replace(/&amp;/g, '&') ||
@@ -285,7 +263,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         console.warn('Reddit json fallback:', e);
       }
     } else if (platform === 'twitter') {
-      // X / Twitter syndication or fxtwitter API
       try {
         const fxUrl = inputUrl.replace(/twitter\.com|x\.com/, 'api.fxtwitter.com');
         const fxRes = await fetch(fxUrl, {
@@ -307,7 +284,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         console.warn('Twitter fx fallback:', e);
       }
 
-      // Twitter oEmbed fallback if fxtwitter fails
       if (!text) {
         try {
           const oembedRes = await fetch(
@@ -330,7 +306,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         } catch {}
       }
     } else {
-      // General Web Page / Blog / GitHub scraper
       const pageRes = await fetch(inputUrl, {
         headers: {
           'User-Agent':
@@ -355,7 +330,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           $('meta[name="twitter:description"]').attr('content') ||
           '';
 
-        // Extract first 2 paragraphs for rich article context
         let bodyText = '';
         $('p').slice(0, 3).each((_, el) => {
           bodyText += $(el).text() + ' ';
@@ -376,7 +350,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         displayName = siteName;
         username = new URL(inputUrl).hostname.replace(/^www\./, '');
 
-        // GitHub Avatar or High-Res Web Favicon
         if (inputUrl.includes('github.com')) {
           const userSegment = new URL(inputUrl).pathname.split('/').filter(Boolean)[0];
           if (userSegment) {
@@ -403,7 +376,6 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
     console.error('Error scraping URL:', err);
   }
 
-  // Fallbacks if scraping couldn't find fields
   if (!title) {
     try {
       title = new URL(inputUrl).pathname.split('/').filter(Boolean).pop() || new URL(inputUrl).hostname;
@@ -428,49 +400,67 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
   };
 }
 
-// 7. Open-World Gemini System Prompt & Caller
-const GEMINI_SYSTEM_PROMPT = `You are an autonomous, high-precision content indexing engine for a personal knowledge vault.
-Analyze the given content and extract between 2 to 6 high-utility search tags based strictly on its actual substance.
+// 8. Exact Knowledge Vault Production Prompt
+const TAGGER_SYSTEM_PROMPT = `
+You are the core metadata extraction and search-indexing engine for a knowledge vault.
+Your job is to generate 2 to 6 high-utility search tags from the provided content metadata.
 
-EXTRACTION PRINCIPLES:
-1. True Subject Identification: Detect the actual domain or primary theme organically without forcing pre-defined categories.
-2. Entity Priority: If a specific software, tool, framework, person, device, method, or named concept is central to the content, tag it directly by name.
-3. Depth-Driven Scaling (Dynamic 2-6):
-   - Low information density (simple remark, short quote, basic image): Output 2-3 tags.
-   - High information density (detailed guide, deep breakdown, technical post, multi-step process): Output 4-6 tags.
-4. Search Utility: Every tag must be a phrase or term a user would naturally search to find this content later.
-5. Strict Format Constraints:
-   - Output must be purely lowercase words with normal spaces.
-   - Strictly NO hyphens (-), NO hashtags (#), NO underscores (_).
-   - Strictly NO duplicate tags or trivial variations (e.g., do not output both "chatgpt" and "gpt").
+CRITICAL EXTRACTION RULES:
+1. COMPOUND NOUN PHRASES ONLY:
+   - NEVER split multi-word concepts into separate words.
+   - Example: Output "sound design", NEVER "sound" and "design".
+   - Example: Output "video editing", NEVER "video" and "editing".
+   - Example: Output "audio mixing", NEVER "audio" and "mixing".
+
+2. STRICT FORBIDDEN WORDS (NEVER TAG THESE):
+   - NO Common Verbs / Clickbait Fillers: "tells", "know", "learn", "using", "secret", "secrets", "insane", "best", "tips", "tricks", "watch", "things", "stop", "make".
+   - NO Platform Names: DO NOT output "youtube", "twitter", "x", "reddit", "instagram" unless the video is specifically an analytical guide about that platform's algorithm.
+
+3. BOILERPLATE CONTAMINATION HANDLING:
+   - If the description/content contains generic platform fallback text (e.g., "Enjoy the videos and music you love, upload original content..."), IGNORE IT COMPLETELY. 
+   - Rely strictly on the Title, Channel/Author name, and infer the core technical discipline.
+
+4. TAGGING PRIORITY & DENSITY (DYNAMIC 2-6 TAGS):
+   - Primary Subject / Discipline (e.g., "sound design", "video editing", "color grading")
+   - Specific Tools / Assets / Entities (e.g., "sfx", "epidemic sound", "premiere pro", "davinci resolve")
+   - Technique / Sub-topic (e.g., "audio mixing", "foley", "sound variation")
+   - Format / Intent (e.g., "tutorial", "breakdown", "workflow")
+
+5. FORMAT REQUIREMENTS:
+   - Strictly lowercase words with normal spaces.
+   - Absolutely NO hyphens (-), NO hashtags (#), NO underscores (_).
    - Maximum 6 tags, Minimum 2 tags.
 
-INPUT:
-Platform: {platform}
+INPUT FORMAT:
 Title: {title}
-Context: {content_text}
+Author/Channel: {author}
+Platform: {platform}
+Content/Description: {content}
 
-OUTPUT FORMAT (JSON ONLY):
+OUTPUT FORMAT (STRICT JSON ONLY):
 {
-  "content_density": "low" | "medium" | "high",
   "tags": ["string", "string", "string"]
-}`;
+}
+`;
 
 export interface GeminiTagResponse {
-  content_density: 'low' | 'medium' | 'high';
   tags: string[];
 }
 
+// 9. Pure Gemini AI Tagger
 export async function generateGeminiTags(params: {
   platform: string;
   title: string;
   text: string;
+  displayName?: string;
+  author?: string;
+  username?: string;
   apiKey?: string;
 }): Promise<{
   tags: Array<{ name: string; color: TagColor }>;
   rawDetails: GeminiTagResponse | null;
 }> {
-  const { platform, title, text, apiKey: providedKey } = params;
+  const { platform, title, text, displayName, author, username, apiKey: providedKey } = params;
 
   // Resolve API Key: provided key > server GEMINI_API_KEY > NEXT_PUBLIC_GEMINI_API_KEY
   const apiKey =
@@ -479,18 +469,28 @@ export async function generateGeminiTags(params: {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
-    console.warn('[Valut] No Gemini API key found — using intelligent heuristic fallback for tags.');
+    console.warn('[Valut] No Gemini API key configured. Skipping AI tagging.');
     return {
-      tags: generateIntelligentFallbackTags(platform, title, text),
+      tags: [],
       rawDetails: null,
     };
   }
 
-  const promptContent = `Platform: ${platform}
-Title: ${title}
-Context: ${text.slice(0, 3000)}`;
+  const channelName = author || displayName || username || 'Creator';
 
-  // Correct Gemini model IDs (as of 2026)
+  // Step 1: Input Sanitization (Drop boilerplate before sending to Gemini)
+  let cleanContent = text || '';
+  const YOUTUBE_BOILERPLATE = 'enjoy the videos and music you love, upload original content';
+
+  if (cleanContent.toLowerCase().includes(YOUTUBE_BOILERPLATE)) {
+    cleanContent = `YouTube video by ${channelName}. Focus strictly on title domain.`;
+  }
+
+  const promptContent = `Title: ${title}
+Author/Channel: ${channelName}
+Platform: ${platform}
+Content/Description: ${cleanContent.slice(0, 3000)}`;
+
   const modelCandidates = [
     'gemini-3.7-flash',
     'gemini-3.5-flash',
@@ -512,7 +512,7 @@ Context: ${text.slice(0, 3000)}`;
           },
           body: JSON.stringify({
             systemInstruction: {
-              parts: [{ text: GEMINI_SYSTEM_PROMPT }],
+              parts: [{ text: TAGGER_SYSTEM_PROMPT }],
             },
             contents: [
               {
@@ -521,7 +521,7 @@ Context: ${text.slice(0, 3000)}`;
             ],
             generationConfig: {
               responseMimeType: 'application/json',
-              temperature: 0.2,
+              temperature: 0.1,
             },
           }),
         });
@@ -544,11 +544,13 @@ Context: ${text.slice(0, 3000)}`;
     }
 
     if (!rawJsonText) {
-      throw new Error('All Gemini model endpoints failed — check your API key (should start with "AIza")');
+      throw new Error('All Gemini model endpoints failed');
     }
 
     const parsed: GeminiTagResponse = JSON.parse(rawJsonText);
     const tagsToProcess = Array.isArray(parsed.tags) ? parsed.tags : [];
+    
+    // Step 3: Normalizer & Guardrail
     const cleanTags = processIncomingTags(tagsToProcess);
 
     return {
@@ -557,184 +559,9 @@ Context: ${text.slice(0, 3000)}`;
     };
   } catch (err: any) {
     console.error('[Valut] Gemini tag generation error:', err.message || err);
-    console.warn('[Valut] Falling back to intelligent heuristic tagging.');
     return {
-      tags: generateIntelligentFallbackTags(platform, title, text),
+      tags: [],
       rawDetails: null,
     };
   }
-}
-
-// 8. Intelligent Heuristic Fallback — used when Gemini API is unavailable
-// Extracts meaningful multi-word phrases instead of just splitting title into words
-function generateIntelligentFallbackTags(
-  platform: string,
-  title: string,
-  text: string
-): Array<{ name: string; color: TagColor }> {
-  const combined = (title + ' ' + text).toLowerCase();
-
-  // Stop words to filter out
-  const STOP_WORDS = new Set([
-    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her',
-    'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its',
-    'may', 'new', 'now', 'old', 'see', 'way', 'who', 'did', 'let', 'say', 'she',
-    'too', 'use', 'will', 'with', 'this', 'that', 'from', 'have', 'what', 'been',
-    'more', 'when', 'some', 'them', 'than', 'each', 'make', 'like', 'long', 'look',
-    'many', 'most', 'over', 'such', 'take', 'into', 'just', 'know', 'your', 'come',
-    'could', 'about', 'other', 'would', 'after', 'their', 'which', 'these', 'being',
-    'very', 'also', 'here', 'much', 'then', 'those', 'made', 'they', 'only',
-    'first', 'where', 'does', 'doing', 'every', 'should', 'through', 'back',
-    'video', 'watch', 'https', 'http', 'www', 'com', 'best', 'ever', 'real',
-    'official', 'full', 'extended', 'look', 'part', 'episode', 'season',
-  ]);
-
-  // Known multi-word entity patterns to detect as single tags
-  const KNOWN_ENTITIES: Array<{ pattern: RegExp; tag: string }> = [
-    { pattern: /grand theft auto\s*(vi|6)/i, tag: 'gta 6' },
-    { pattern: /grand theft auto\s*(v|5)/i, tag: 'gta 5' },
-    { pattern: /grand theft auto/i, tag: 'gta' },
-    { pattern: /red dead redemption\s*2/i, tag: 'rdr2' },
-    { pattern: /red dead redemption/i, tag: 'rdr' },
-    { pattern: /call of duty/i, tag: 'call of duty' },
-    { pattern: /counter\s*strike\s*2/i, tag: 'cs2' },
-    { pattern: /playstation\s*5/i, tag: 'ps5' },
-    { pattern: /playstation\s*4/i, tag: 'ps4' },
-    { pattern: /xbox series/i, tag: 'xbox' },
-    { pattern: /nintendo switch/i, tag: 'nintendo switch' },
-    { pattern: /artificial intelligence/i, tag: 'ai' },
-    { pattern: /machine learning/i, tag: 'ml' },
-    { pattern: /deep learning/i, tag: 'dl' },
-    { pattern: /premiere pro/i, tag: 'premiere pro' },
-    { pattern: /after effects/i, tag: 'after effects' },
-    { pattern: /davinci resolve/i, tag: 'davinci resolve' },
-    { pattern: /final cut/i, tag: 'final cut pro' },
-    { pattern: /visual studio code|vs\s*code/i, tag: 'vs code' },
-    { pattern: /next\.?js/i, tag: 'next js' },
-    { pattern: /react\.?js|reactjs/i, tag: 'react' },
-    { pattern: /tailwind\s*css/i, tag: 'tailwind' },
-    { pattern: /open\s*ai/i, tag: 'openai' },
-    { pattern: /chat\s*gpt|gpt[\s-]*4/i, tag: 'chatgpt' },
-    { pattern: /web\s*development/i, tag: 'web dev' },
-    { pattern: /game\s*play/i, tag: 'gameplay' },
-    { pattern: /unreal engine/i, tag: 'unreal engine' },
-    { pattern: /rockstar games/i, tag: 'rockstar' },
-    { pattern: /elon musk/i, tag: 'elon musk' },
-    { pattern: /iphone\s*\d*/i, tag: 'iphone' },
-    { pattern: /apple\s*vision/i, tag: 'apple vision pro' },
-    { pattern: /mr\.?\s*beast|mrbeast/i, tag: 'mrbeast' },
-    { pattern: /mkbhd|marques brownlee/i, tag: 'mkbhd' },
-    { pattern: /linus tech/i, tag: 'linus tech tips' },
-    { pattern: /crypto\s*currency/i, tag: 'crypto' },
-    { pattern: /block\s*chain/i, tag: 'blockchain' },
-  ];
-
-  // Content-type detection patterns
-  const CONTENT_TYPES: Array<{ pattern: RegExp; tag: string }> = [
-    { pattern: /\btutorial\b/i, tag: 'tutorial' },
-    { pattern: /\breview\b/i, tag: 'review' },
-    { pattern: /\btrailer\b/i, tag: 'trailer' },
-    { pattern: /\bunboxing\b/i, tag: 'unboxing' },
-    { pattern: /\bpodcast\b/i, tag: 'podcast' },
-    { pattern: /\binterview\b/i, tag: 'interview' },
-    { pattern: /\bbreaking news\b/i, tag: 'breaking news' },
-    { pattern: /\bhow[\s-]to\b/i, tag: 'how to' },
-    { pattern: /\bdiy\b/i, tag: 'diy' },
-    { pattern: /\brecipe\b/i, tag: 'recipe' },
-    { pattern: /\bvlog\b/i, tag: 'vlog' },
-    { pattern: /\bshorts?\b/i, tag: 'short' },
-    { pattern: /\bexplained\b/i, tag: 'explainer' },
-    { pattern: /\bcooking\b/i, tag: 'cooking' },
-    { pattern: /\bfitness|workout\b/i, tag: 'fitness' },
-    { pattern: /\bmusic\b/i, tag: 'music' },
-    { pattern: /\bcomedy|funny\b/i, tag: 'comedy' },
-    { pattern: /\bscience\b/i, tag: 'science' },
-    { pattern: /\bgaming\b/i, tag: 'gaming' },
-    { pattern: /\bprogramming|coding\b/i, tag: 'programming' },
-    { pattern: /\bdesign\b/i, tag: 'design' },
-    { pattern: /\bphotography\b/i, tag: 'photography' },
-    { pattern: /\banimation|animated\b/i, tag: 'animation' },
-  ];
-
-  // Domain/topic detection patterns
-  const DOMAIN_PATTERNS: Array<{ pattern: RegExp; tag: string }> = [
-    { pattern: /\bgame|gaming|gamer\b/i, tag: 'gaming' },
-    { pattern: /\bcrypto|bitcoin|ethereum\b/i, tag: 'crypto' },
-    { pattern: /\btech|technology\b/i, tag: 'tech' },
-    { pattern: /\bsports?\b/i, tag: 'sports' },
-    { pattern: /\bfashion|style\b/i, tag: 'fashion' },
-    { pattern: /\btravel\b/i, tag: 'travel' },
-    { pattern: /\bfood\b/i, tag: 'food' },
-    { pattern: /\bhealth\b/i, tag: 'health' },
-    { pattern: /\bpolitics|political\b/i, tag: 'politics' },
-    { pattern: /\bfinance|investing|stock\b/i, tag: 'finance' },
-    { pattern: /\bstartup\b/i, tag: 'startup' },
-    { pattern: /\beducation|learn\b/i, tag: 'education' },
-    { pattern: /\bfilm|movie|cinema\b/i, tag: 'film' },
-    { pattern: /\banime|manga\b/i, tag: 'anime' },
-    { pattern: /\bart|artist\b/i, tag: 'art' },
-    { pattern: /\bcar|automotive|vehicle\b/i, tag: 'automotive' },
-    { pattern: /\bspace|nasa|rocket\b/i, tag: 'space' },
-  ];
-
-  const extractedTags: string[] = [];
-
-  // 1. Match known multi-word entities first
-  for (const { pattern, tag } of KNOWN_ENTITIES) {
-    if (pattern.test(combined) && !extractedTags.includes(tag)) {
-      extractedTags.push(tag);
-    }
-  }
-
-  // 2. Match content types
-  for (const { pattern, tag } of CONTENT_TYPES) {
-    if (pattern.test(combined) && !extractedTags.includes(tag)) {
-      extractedTags.push(tag);
-    }
-  }
-
-  // 3. Match domain/topic patterns
-  for (const { pattern, tag } of DOMAIN_PATTERNS) {
-    if (pattern.test(combined) && !extractedTags.includes(tag)) {
-      extractedTags.push(tag);
-    }
-  }
-
-  // 4. Extract significant standalone words from title (as last resort filler)
-  if (extractedTags.length < 3) {
-    const titleWords = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(/\s+/)
-      .filter(w => w.length >= 4 && !STOP_WORDS.has(w));
-
-    // Prefer words that appear in synonym map or are proper nouns (capitalized in original)
-    for (const word of titleWords) {
-      const mapped = SYNONYM_MAP[word] || word;
-      if (!extractedTags.includes(mapped) && extractedTags.length < 5) {
-        extractedTags.push(mapped);
-      }
-    }
-  }
-
-  // 5. Always include platform as context (but don't let it dominate)
-  if (!extractedTags.includes(platform) && extractedTags.length < 6) {
-    extractedTags.push(platform);
-  }
-
-  // Ensure minimum 2 tags
-  if (extractedTags.length < 2) {
-    // Use the full title as a tag if nothing else matched
-    const titleTag = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 30);
-    if (titleTag && !extractedTags.includes(titleTag)) {
-      extractedTags.push(titleTag);
-    }
-  }
-
-  return processIncomingTags(extractedTags.slice(0, 6));
 }

@@ -68,6 +68,8 @@ export async function POST(req: NextRequest) {
           platform: finalPlatform,
           title: title || '',
           text: text || title || url || '',
+          displayName,
+          username,
           apiKey,
         });
         tags = tagResult.tags;
