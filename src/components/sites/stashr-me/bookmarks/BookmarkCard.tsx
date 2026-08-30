@@ -83,7 +83,7 @@ function DynamicCardTags({
   onGenerateTags?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 3));
+  const [visibleCount, setVisibleCount] = useState<number>(1);
 
   useEffect(() => {
     if (!containerRef.current || tags.length === 0) return;
@@ -92,8 +92,11 @@ function DynamicCardTags({
       const container = containerRef.current;
       if (!container) return;
 
-      const availableWidth = container.clientWidth || container.getBoundingClientRect().width;
-      if (availableWidth <= 0) return;
+      const rawWidth = container.clientWidth || container.getBoundingClientRect().width;
+      if (rawWidth <= 0) return;
+
+      // 8px safety buffer ensures tags NEVER collide with or touch the date
+      const availableWidth = Math.max(0, rawWidth - 8);
 
       // Exact canvas font metrics for pixel-perfect measurement
       let ctx: CanvasRenderingContext2D | null = null;
@@ -101,18 +104,18 @@ function DynamicCardTags({
         const canvas = document.createElement('canvas');
         ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.font = '12px Inter, system-ui, -apple-system, sans-serif';
+          ctx.font = '500 12px Inter, system-ui, -apple-system, sans-serif';
         }
       } catch {}
 
-      const badgeWidth = 28; // compact +N badge width
-      const gap = 5;
+      const badgeWidth = 36; // "+1", "+2", "+3" button width
+      const gap = 6;
 
       // Accurate pixel width for each tag:
-      // tag text width + 16px padding (px-2) + 8px dot + 4px gap = ~25px
+      // tag text width + 16px padding (px-2) + 8px dot + 6px gap + 2px border = 32px
       const tagWidths = tags.map(t => {
-        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 5.6;
-        return Math.ceil(textW + 25);
+        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 7.0;
+        return Math.ceil(textW + 32);
       });
 
       // 1. If all tags fit in 1 line without any +N badge, show all
@@ -122,7 +125,7 @@ function DynamicCardTags({
         return;
       }
 
-      // 2. Greedy single-line fitting: fit as many tags as physically possible right up to the boundary
+      // 2. Greedy single-line fitting with safety buffer: fit as many tags as physically possible
       let currentW = 0;
       let count = 0;
 
@@ -136,7 +139,7 @@ function DynamicCardTags({
         }
       }
 
-      // If at least 1 tag fits or default to 1
+      // If at least 1 tag fits, show it; otherwise keep 1
       setVisibleCount(Math.max(1, count));
     };
 
@@ -956,7 +959,7 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex items-center justify-between gap-2.5 mt-auto pt-2 border-t border-white/[0.04]">
+      <div className="relative z-10 flex items-center justify-between gap-3 mt-auto pt-2 border-t border-white/[0.04] w-full min-w-0">
         <DynamicCardTags
           tags={bookmark.tags || []}
           isGeneratingTags={isGeneratingTags}
@@ -964,7 +967,7 @@ export function BookmarkCard({
           onGenerateTags={() => onGenerateTags?.(bookmark)}
         />
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 select-none ml-2">
           <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
           <PlatformIcon platform={bookmark.platform} />
