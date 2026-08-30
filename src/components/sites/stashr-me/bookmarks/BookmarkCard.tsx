@@ -80,58 +80,9 @@ function DynamicCardTags({
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: () => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(tags.length, 3));
-
-  useEffect(() => {
-    if (!containerRef.current || tags.length === 0) return;
-
-    const calculateVisibleTags = () => {
-      const container = containerRef.current;
-      if (!container) return;
-
-      const availableWidth = container.clientWidth;
-      if (availableWidth <= 0) return;
-
-      const badgeWidth = 36;
-      const gap = 6;
-      let totalWidth = 0;
-      let count = 0;
-
-      // Estimate tag widths based on font and padding (12px font ~7.2px per char + 26px padding & dot)
-      const tagWidths = tags.map(t => Math.max(36, Math.ceil(t.name.length * 7.2 + 26)));
-
-      // 1. Check if all tags fit without a +N badge
-      const allFitWidth = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
-      if (allFitWidth <= availableWidth) {
-        setVisibleCount(tags.length);
-        return;
-      }
-
-      // 2. Otherwise calculate how many tags fit alongside the +N badge
-      for (let i = 0; i < tagWidths.length; i++) {
-        const nextWidth = totalWidth + (i > 0 ? gap : 0) + tagWidths[i];
-        if (nextWidth + gap + badgeWidth <= availableWidth) {
-          totalWidth = nextWidth;
-          count++;
-        } else {
-          break;
-        }
-      }
-
-      setVisibleCount(Math.max(1, count));
-    };
-
-    calculateVisibleTags();
-
-    const resizeObserver = new ResizeObserver(calculateVisibleTags);
-    resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
-  }, [tags]);
-
   if (isGeneratingTags) {
     return (
-      <div className="flex min-w-0 flex-1 items-center overflow-visible">
+      <div className="flex min-w-0 flex-1 items-center">
         <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
           <Sparkles className="size-3 text-purple-400 animate-spin" />
           <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
@@ -142,9 +93,9 @@ function DynamicCardTags({
     );
   }
 
-  if (tags.length === 0) {
+  if (!tags || tags.length === 0) {
     return (
-      <div className="flex min-w-0 flex-1 items-center overflow-visible">
+      <div className="flex min-w-0 flex-1 items-center">
         {onGenerateTags ? (
           <button
             type="button"
@@ -162,11 +113,13 @@ function DynamicCardTags({
     );
   }
 
-  const visibleTags = tags.slice(0, visibleCount);
-  const remainingTags = tags.slice(visibleCount);
+  // Show up to 4 tags directly wrapped; if more than 4 tags, show 3 + (+N badge)
+  const maxDirect = tags.length <= 4 ? tags.length : 3;
+  const visibleTags = tags.slice(0, maxDirect);
+  const remainingTags = tags.slice(maxDirect);
 
   return (
-    <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1.5 overflow-visible">
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
       {visibleTags.map((tag, idx) => (
         <button
           key={idx}
@@ -186,13 +139,14 @@ function DynamicCardTags({
         <div className="relative group/tagtooltip shrink-0">
           <button
             type="button"
-            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] rounded-lg font-normal text-xs h-5.5 text-neutral-400 hover:text-white gap-1 px-2 py-0.5 transition-colors cursor-pointer"
+            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1 px-2 py-0.5 transition-colors cursor-pointer"
           >
             +{remainingTags.length}
           </button>
-          {/* Floating Tag Tooltip - Matching Screenshot 2 */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tagtooltip:flex flex-col items-center z-50 pointer-events-auto">
-            <div className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a] px-2.5 py-1 text-xs text-neutral-900 dark:text-white shadow-2xl backdrop-blur-md whitespace-nowrap">
+
+          {/* Floating Tag Tooltip - Safe positioning and individual pills without clipping */}
+          <div className="absolute bottom-full left-0 mb-2.5 hidden group-hover/tagtooltip:flex flex-col items-start z-50 pointer-events-auto animate-in fade-in-50">
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-2 text-xs text-white shadow-[0_12px_30px_rgba(0,0,0,0.85)] backdrop-blur-md max-w-[260px]">
               {remainingTags.map((tag, idx) => (
                 <button
                   key={idx}
@@ -201,15 +155,14 @@ function DynamicCardTags({
                     e.stopPropagation();
                     onSelectTag?.(tag.name);
                   }}
-                  className="flex items-center gap-1.5 font-medium hover:opacity-80 cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-white/10 bg-white/[0.06] hover:bg-white/[0.15] text-xs text-neutral-200 hover:text-white transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <TagDot color={tag.color} />
                   <span>{tag.name}</span>
-                  {idx < remainingTags.length - 1 && <span className="text-neutral-400">,</span>}
                 </button>
               ))}
             </div>
-            <div className="size-2 -mt-1 rotate-45 border-r border-b border-neutral-300 dark:border-white/20 bg-[#e4e4e7] dark:bg-[#27272a]" />
+            <div className="size-2 -mt-1 ml-3 rotate-45 border-r border-b border-neutral-700/90 bg-[#1c1c1f]" />
           </div>
         </div>
       )}
@@ -618,45 +571,19 @@ export function BookmarkCard({
         )}
 
         {/* Footer: Tags & Date */}
-        <div className="relative z-10 flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            {isGeneratingTags ? (
-              <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
-                <Sparkles className="size-3 text-purple-400 animate-spin" />
-                <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
-                  Generating tags...
-                </span>
-              </div>
-            ) : bookmark.tags && bookmark.tags.length > 0 ? (
-              bookmark.tags.map((tag, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  onClick={e => {
-                    e.stopPropagation();
-                    onSelectTag?.(tag.name);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border border-neutral-700/70 bg-[#27272a]/70 hover:bg-[#3f3f46] text-xs text-neutral-300 hover:text-white"
-                >
-                  <TagDot color={tag.color} />
-                  <span>{tag.name}</span>
-                </button>
-              ))
-            ) : onGenerateTags ? (
-              <button
-                type="button"
-                onClick={e => {
-                  e.stopPropagation();
-                  onGenerateTags(bookmark);
-                }}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border border-dashed border-white/15 bg-white/[0.03] hover:bg-white/[0.08] text-xs text-neutral-400 hover:text-white transition-colors"
-              >
-                <Sparkles className="size-3 text-purple-400" />
-                <span>Generate AI tags</span>
-              </button>
-            ) : null}
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-2 border-t border-white/[0.06]">
+          <DynamicCardTags
+            tags={bookmark.tags || []}
+            isGeneratingTags={isGeneratingTags}
+            onSelectTag={onSelectTag}
+            onGenerateTags={() => onGenerateTags?.(bookmark)}
+          />
+
+          <div className="flex shrink-0 items-center gap-2 ml-auto self-end py-0.5">
+            <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
+            <div className="h-3.5 w-px bg-white/[0.15]"></div>
+            <PlatformIcon platform={bookmark.platform} />
           </div>
-          <span className="text-neutral-400 text-xs shrink-0">{bookmark.date}</span>
         </div>
 
         <ContextMenu
@@ -934,7 +861,7 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex items-center justify-between gap-2.5 mt-auto pt-1">
+      <div className="relative z-10 flex flex-wrap items-end justify-between gap-x-2.5 gap-y-2 mt-auto pt-2 border-t border-white/[0.04]">
         <DynamicCardTags
           tags={bookmark.tags || []}
           isGeneratingTags={isGeneratingTags}
@@ -942,8 +869,8 @@ export function BookmarkCard({
           onGenerateTags={() => onGenerateTags?.(bookmark)}
         />
 
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
+        <div className="flex shrink-0 items-center gap-2 ml-auto self-end py-0.5">
+          <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
           <PlatformIcon platform={bookmark.platform} />
         </div>
