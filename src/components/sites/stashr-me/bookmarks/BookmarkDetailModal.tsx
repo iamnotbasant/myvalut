@@ -13,6 +13,7 @@ interface BookmarkDetailModalProps {
   onClose: () => void;
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: (bookmark: BookmarkItem) => void;
+  onOpenImage?: (imageUrl: string) => void;
 }
 
 export function BookmarkDetailModal({
@@ -21,7 +22,8 @@ export function BookmarkDetailModal({
   isGeneratingTags = false,
   onClose,
   onSelectTag,
-  onGenerateTags
+  onGenerateTags,
+  onOpenImage
 }: BookmarkDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -50,9 +52,10 @@ export function BookmarkDetailModal({
     bookmark.platform === 'github' ||
     (bookmark.url && bookmark.url.toLowerCase().includes('github.com'));
 
-  const isSocialPlatform = ['youtube', 'twitter', 'reddit', 'instagram', 'tiktok', 'bluesky', 'threads'].includes(
-    bookmark.platform
-  ) && !isGitHub;
+  const isSocialPlatform =
+    ['youtube', 'twitter', 'reddit', 'instagram', 'tiktok', 'bluesky', 'threads'].includes(
+      bookmark.platform
+    ) && !isGitHub;
 
   const isVideo =
     bookmark.imageUrl?.includes('13_') ||
@@ -76,49 +79,49 @@ export function BookmarkDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
     >
       <div
         onClick={e => e.stopPropagation()}
-        onDoubleClick={handleOpenOriginalPost}
-        title="Double-click to open original post in a new tab"
-        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 scrollbar-none select-none group/modal"
+        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 pb-6 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 group/modal select-text"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
         }}
       >
         {/* Top Right Action Bar: Open Original Post Button + Close Button */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-          {bookmark.url && (
+        <div className="sticky top-0 z-20 -mt-1 flex items-center justify-end gap-2 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto bg-[#0e0e0e]/80 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
+            {bookmark.url && (
+              <button
+                type="button"
+                onClick={handleOpenOriginalPost}
+                title="Open original post in new tab"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                <span>Open Post</span>
+                <ExternalLink className="size-3" />
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={handleOpenOriginalPost}
-              title="Open original post (or double-click anywhere)"
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95"
+              onClick={() => {
+                soundFx.playClickSound();
+                onClose();
+              }}
+              aria-label="Close"
+              className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <span>Open Post</span>
-              <ExternalLink className="size-3" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFx.playClickSound();
-              onClose();
-            }}
-            aria-label="Close"
-            className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18M6 6l12 12"/>
-            </svg>
-          </button>
+          </div>
         </div>
 
         {/* Header with Avatar & Author / Platform Logo */}
-        <div className="flex items-center gap-3 pr-32">
+        <div className="flex items-center gap-3 -mt-6 pr-32">
           {isGitHub ? (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-black text-white shadow-md">
               <GitHubIcon className="size-6 text-white" />
@@ -147,7 +150,6 @@ export function BookmarkDetailModal({
             <span className="truncate font-semibold text-white text-base leading-tight tracking-tight">
               {isGitHub ? 'GitHub' : bookmark.displayName || 'Web'}
             </span>
-            {/* Show username ONLY for social platforms (Twitter, Reddit, Instagram, YouTube) */}
             {isSocialPlatform && bookmark.username && (
               <span className="truncate text-xs text-neutral-400 leading-tight mt-0.5">
                 {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
@@ -170,18 +172,19 @@ export function BookmarkDetailModal({
           </div>
         )}
 
-        {/* Media / Video Preview (Full-Height Natural Scroll, No Cut-Off) */}
+        {/* Media / Video Preview (Full Natural Height with Smooth Scrolling, Zero Cut-off) */}
         {cleanImageUrl && (
           <div
             onDoubleClick={handleOpenOriginalPost}
-            title="Double-click to open original post"
+            title="Double-click to open original post | Click to enlarge"
             className="relative rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer flex flex-col items-center justify-center overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={cleanImageUrl}
               alt={bookmark.displayName}
-              className={`w-full h-auto max-h-[70vh] object-contain transition-transform duration-300 group-hover/media:scale-[1.005] ${
+              onClick={() => onOpenImage?.(cleanImageUrl)}
+              className={`w-full h-auto object-contain rounded-xl transition-transform duration-300 ${
                 bookmark.platform === 'youtube' ? 'aspect-video object-cover' : ''
               }`}
               onError={(e) => {
@@ -212,7 +215,7 @@ export function BookmarkDetailModal({
         )}
 
         {/* Footer: Tags and Platform */}
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/[0.06] mt-auto">
           {/* Tags list */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {isGeneratingTags ? (

@@ -79,7 +79,19 @@ export function DynamicCardTags({
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: () => void;
 }) {
-  const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 150);
+  };
 
   if (isGeneratingTags) {
     return (
@@ -111,12 +123,13 @@ export function DynamicCardTags({
     return <span className="text-[11px] text-neutral-500 italic">No tags</span>;
   }
 
-  const visibleTags = isTagsExpanded ? tags : tags.slice(0, 2);
-  const hiddenCount = tags.length - 2;
+  const primaryTags = tags.slice(0, 2);
+  const overflowTags = tags.slice(2);
+  const hiddenCount = overflowTags.length;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-      {visibleTags.map((tag, idx) => (
+    <div className="flex items-center gap-1.5 min-w-0">
+      {primaryTags.map((tag, idx) => (
         <button
           type="button"
           key={idx}
@@ -132,18 +145,57 @@ export function DynamicCardTags({
         </button>
       ))}
 
-      {!isTagsExpanded && hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation();
-            setIsTagsExpanded(true);
-          }}
-          className="inline-flex items-center justify-center rounded-md border border-white/10 bg-[#171717] hover:bg-[#222222] px-1.5 py-0.5 text-[10.5px] font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
-          title={`${hiddenCount} more tags`}
+      {hiddenCount > 0 && (
+        <div
+          className="relative inline-block"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          +{hiddenCount}
-        </button>
+          <button
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              setIsHovered(!isHovered);
+            }}
+            className="inline-flex select-none items-center justify-center rounded-md border border-white/10 bg-[#171717] hover:bg-[#252525] hover:border-white/25 px-1.5 py-0.5 text-[10.5px] font-medium text-neutral-300 hover:text-white transition-all cursor-pointer shadow-2xs"
+            title={`${hiddenCount} more tags`}
+          >
+            +{hiddenCount}
+          </button>
+
+          {/* Floating Hover Popover with all hidden tags */}
+          {isHovered && (
+            <div
+              onClick={e => e.stopPropagation()}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              className="absolute bottom-full left-0 z-50 mb-1.5 flex flex-col gap-1 rounded-xl border border-white/15 bg-[#141414]/95 p-2 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.9)] backdrop-blur-md min-w-[140px] max-w-[220px] animate-in fade-in-0 zoom-in-95 duration-150 pointer-events-auto"
+            >
+              <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider px-1 pb-1 border-b border-white/10 flex items-center justify-between">
+                <span>More Tags</span>
+                <span className="tabular-nums text-neutral-500">{overflowTags.length}</span>
+              </div>
+              <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto pt-1 scrollbar-none">
+                {overflowTags.map((tag, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      soundFx.playTagSound();
+                      setIsHovered(false);
+                      onSelectTag?.(tag.name);
+                    }}
+                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#1e1e1e] hover:bg-[#2a2a2a] hover:border-white/25 rounded-md font-normal text-[11px] h-5.5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <TagDot color={tag.color} />
+                    <span className="truncate max-w-[130px]">{tag.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
