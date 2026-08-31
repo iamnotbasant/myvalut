@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -13,13 +13,13 @@ import {
   EditPencilIcon,
   TagIcon,
   Key,
-  Shield,
-  CreditCard
+  Shield
 } from '@/components/icons';
+import { soundFx } from '@/lib/sound-effects';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
-  activeTab: 'account' | 'appearance' | 'tags' | 'billing' | 'authorized-apps' | 'api-keys';
+  activeTab: 'account' | 'appearance' | 'tags' | 'authorized-apps' | 'api-keys';
 }
 
 export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
@@ -29,7 +29,7 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
   const tabs = [
     {
       id: 'account',
-      label: 'Account',
+      label: 'Account & Profile',
       href: '/settings/account',
       icon: User
     },
@@ -56,19 +56,13 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
       label: 'API Keys',
       href: '/settings/api-keys',
       icon: Key
-    },
-    {
-      id: 'billing',
-      label: 'Billing',
-      href: '/settings/billing',
-      icon: CreditCard
     }
   ];
 
   const getBreadcrumbTitle = () => {
     switch (activeTab) {
       case 'account':
-        return 'Account';
+        return 'Account & Profile';
       case 'appearance':
         return 'Appearance';
       case 'tags':
@@ -77,10 +71,8 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
         return 'Authorized apps';
       case 'api-keys':
         return 'API Keys';
-      case 'billing':
-        return 'Billing';
       default:
-        return 'Account';
+        return 'Account & Profile';
     }
   };
 
@@ -110,22 +102,25 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
 
       {/* Main Content Floating Container */}
       <main className="flex flex-1 flex-col overflow-hidden bg-background md:my-2 md:mr-2 md:rounded-xl md:border md:border-border shadow-xs">
-        {/* Header Bar matching Screenshots 3, 4, 5 */}
+        {/* Header Bar */}
         <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-border bg-background pr-[9px] pl-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setIsMobileOpen(true)}
+                onClick={() => {
+                  soundFx.playClickSound();
+                  setIsMobileOpen(true);
+                }}
                 type="button"
                 aria-label="Toggle navigation"
-                className="group/button inline-flex size-8 shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-accent text-muted-foreground hover:text-foreground"
+                className="group/button inline-flex size-8 shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <SidebarToggleIcon className="size-4" />
               </button>
               <div className="hidden h-4 w-px bg-border md:block" />
             </div>
 
-            {/* Breadcrumb: Settings > Tab */}
+            {/* Breadcrumb */}
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-muted-foreground font-normal">Settings</span>
               <span className="text-muted-foreground/60">&gt;</span>
@@ -135,29 +130,19 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
             </div>
           </div>
 
-          {/* Right side extension & avatar */}
+          {/* Right side extension */}
           <div className="flex items-center gap-2">
-            <a
-              href="#"
-              aria-label="Extension indicator"
+            <Link
+              href="/settings/account"
+              aria-label="Account Settings"
               className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <ExtensionPuzzleIcon className="size-4" />
-            </a>
-
-            <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-border bg-muted">
-              <Image
-                src="/stashr_files/unnamed.jpg"
-                alt="Profile"
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
+            </Link>
           </div>
         </header>
 
-        {/* Settings Navigation Tabs Bar (Exact Match with Icons) */}
+        {/* Settings Navigation Tabs Bar */}
         <div className="flex items-center border-b border-border bg-background px-6 md:px-8">
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
             {tabs.map(tab => {
@@ -167,7 +152,8 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
                 <Link
                   key={tab.id}
                   href={tab.href}
-                  className={`group relative flex items-center gap-2 py-3 text-xs transition-colors ${
+                  onClick={() => soundFx.playClickSound()}
+                  className={`group relative flex items-center gap-2 py-3 text-xs transition-colors cursor-pointer ${
                     isActive
                       ? 'text-strong font-semibold'
                       : 'text-muted-foreground hover:text-foreground font-medium'

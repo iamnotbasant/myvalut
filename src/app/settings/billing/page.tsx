@@ -1,16 +1,5 @@
-import { Metadata } from 'next';
-import { SettingsLayout } from '@/components/sites/stashr-me/settings/SettingsLayout';
-import { BillingSettings } from '@/components/sites/stashr-me/settings/BillingSettings';
-
-export const metadata: Metadata = {
-  title: 'Billing Settings | Stashr',
-  description: 'Manage subscription and billing.'
-};
+import { redirect } from 'next/navigation';
 
 export default function BillingSettingsPage() {
-  return (
-    <SettingsLayout activeTab="billing">
-      <BillingSettings />
-    </SettingsLayout>
-  );
+  redirect('/settings/account');
 }

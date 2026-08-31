@@ -373,38 +373,8 @@ export function Sidebar({
           }
         />
 
-        {/* User Account / Auth Trigger & Footer */}
-        <div className="mt-auto flex flex-col gap-1 px-3 py-3 group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0">
-          {user ? (
-            <div className="mb-2 rounded-xl border border-sidebar-border bg-sidebar-accent/50 p-2.5 group-data-[state=collapsed]/sidebar:hidden flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-semibold text-xs border border-primary/30">
-                  {user.email?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">
-                    {user.email?.split('@')[0]}
-                  </p>
-                  <p className="truncate text-[10px] text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                soundFx.playClickSound();
-                onOpenAuth?.();
-              }}
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors group-data-[state=collapsed]/sidebar:hidden cursor-pointer"
-            >
-              <LogIn className="size-3.5" />
-              <span>Sign In / Register</span>
-            </button>
-          )}
-
+        {/* Footer: Settings & Feedback */}
+        <div className="mt-auto flex flex-col gap-1 px-3 py-3 group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0 border-t border-sidebar-border/40">
           {/* Settings */}
           <Link
             href="/settings/account"
@@ -435,37 +405,6 @@ export function Sidebar({
               Feedback
             </span>
           </button>
-
-          {/* Logout / Login button */}
-          {user ? (
-            <button
-              type="button"
-              onClick={() => {
-                soundFx.playClickSound();
-                signOut();
-              }}
-              className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-destructive hover:bg-destructive/10 cursor-pointer"
-            >
-              <Trash2 className="size-4 shrink-0 text-destructive" />
-              <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
-                Sign Out
-              </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                soundFx.playClickSound();
-                onOpenAuth?.();
-              }}
-              className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-primary hover:bg-primary/10 cursor-pointer"
-            >
-              <LogIn className="size-4 shrink-0 text-primary" />
-              <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
-                Sign In
-              </span>
-            </button>
-          )}
         </div>
       </aside>
     </>

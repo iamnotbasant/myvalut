@@ -3,74 +3,173 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { LogIn, LogOut, User, Mail, Shield, Key } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { soundFx } from '@/lib/sound-effects';
+import {
+  LogIn,
+  LogOut,
+  User,
+  Mail,
+  Shield,
+  Trash2,
+  AlertTriangle,
+  Check,
+  Copy,
+  RefreshCw,
+  Database
+} from 'lucide-react';
 
 export function AccountSettings() {
   const { user, signOut } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [deletionRequested, setDeletionRequested] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+  const [confirmInput, setConfirmInput] = useState('');
+
+  const handleCopyUserId = () => {
+    if (user?.id) {
+      navigator.clipboard.writeText(user.id);
+      soundFx.playClickSound();
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
+
+  const handleSignOut = () => {
+    soundFx.playClickSound();
+    signOut();
+  };
+
+  const handleResetAllData = async () => {
+    setIsResetting(true);
+    soundFx.playArchiveSound();
+
+    try {
+      // 1. Wipe Supabase Cloud Bookmarks if user logged in
+      if (user && isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('bookmarks').delete().eq('user_id', user.id);
+        } catch (dbErr) {
+          console.warn('Supabase wipe error:', dbErr);
+        }
+      }
+
+      // 2. Clear all local storage keys
+      if (typeof window !== 'undefined') {
+        const keysToRemove = [
+          'stashr_bookmarks',
+          'stashr_collections',
+          'stashr_tags',
+          'stashr_custom_tags',
+          'stashr_system_logs',
+          'stashr_pinned_creators',
+          'stashr_filter_state',
+          'stashr_view_mode',
+          'stashr_grid_columns',
+          'stashr_mosaic_columns'
+        ];
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+      }
+
+      setResetSuccess(true);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1200);
+    } catch (err) {
+      console.error('Reset all data error:', err);
+      setIsResetting(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-10 px-6 py-8 md:px-10 md:py-10 animate-in fade-in duration-150">
-      {/* 1. Profile Section */}
+      {/* 1. Account & Profile Section */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-strong tracking-tight">Account Profile</h2>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Account & Profile</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your authenticated personal vault session.
+            Manage your personal profile, cloud sync status, and active session.
           </p>
         </div>
 
         {user ? (
-          <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-4 shadow-xs">
-            <div className="flex items-center gap-4">
-              <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary text-xl font-bold border border-primary/25 shadow-xs">
-                {user.email?.charAt(0).toUpperCase() || 'U'}
+          <div className="rounded-2xl border border-border/80 bg-card/60 p-5 space-y-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xl font-bold border border-primary/30 shadow-xs">
+                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <h3 className="font-semibold text-base text-foreground truncate">
+                    {user.email?.split('@')[0]}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                    <Mail className="size-3.5 text-muted-foreground" />
+                    <span>{user.email}</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                    <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Cloud Database Connected (Supabase)</span>
+                  </p>
+                </div>
               </div>
-              <div className="space-y-0.5 min-w-0 flex-1">
-                <h3 className="font-semibold text-sm text-foreground truncate">
-                  {user.email?.split('@')[0]}
-                </h3>
-                <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
-                  <Mail className="size-3" />
-                  <span>{user.email}</span>
-                </p>
-                <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">
-                  <Shield className="size-3" />
-                  <span>Cloud Database Connected (Supabase)</span>
-                </p>
-              </div>
-            </div>
 
-            <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-              <div className="text-[11px] text-muted-foreground">
-                User ID: <span className="font-mono text-foreground/80">{user.id.slice(0, 12)}...</span>
-              </div>
               <button
                 type="button"
-                onClick={() => signOut()}
-                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
+                onClick={handleSignOut}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 text-xs font-medium text-destructive hover:bg-destructive/20 transition-all cursor-pointer shadow-xs active:scale-95 self-start sm:self-auto"
               >
                 <LogOut className="size-3.5" />
                 <span>Sign Out</span>
               </button>
             </div>
+
+            <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span>User ID:</span>
+                <span className="font-mono text-foreground text-[11px] bg-muted/60 px-2 py-0.5 rounded-md">
+                  {user.id}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyUserId}
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                {copiedId ? (
+                  <>
+                    <Check className="size-3 text-emerald-400" />
+                    <span className="text-emerald-400">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3" />
+                    <span>Copy ID</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card/60 p-5 text-center space-y-3 shadow-xs">
-            <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <User className="size-5" />
+          <div className="rounded-2xl border border-border/80 bg-card/60 p-6 text-center space-y-4 shadow-xs">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground shadow-xs">
+              <User className="size-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-medium text-foreground">Guest Mode</h3>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                You are currently not signed in. Sign in or create an account to permanently sync bookmarks across all your devices.
+              <h3 className="text-sm font-semibold text-foreground">Guest Mode</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                You are currently browsing locally. Sign in or create an account to permanently sync bookmarks, collections, and AI tags across all your devices.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setIsAuthOpen(true)}
-              className="inline-flex h-8.5 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+              onClick={() => {
+                soundFx.playClickSound();
+                setIsAuthOpen(true);
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-all cursor-pointer active:scale-95"
             >
               <LogIn className="size-3.5" />
               <span>Sign In / Create Account</span>
@@ -79,45 +178,138 @@ export function AccountSettings() {
         )}
       </div>
 
-      {/* 2. Security Section */}
+      {/* 2. Security & Storage Section */}
       <div className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold text-strong tracking-tight">Cloud Security & Data</h2>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Security & Storage</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Your data is encrypted and isolated with Supabase Row Level Security.
+            Your vault data is protected with Row Level Security (RLS).
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card/40 p-3.5 text-xs text-muted-foreground space-y-1">
-          <p>• Only your authenticated account has access to your bookmarks.</p>
-          <p>• Offline cache is automatically updated in your browser.</p>
+        <div className="rounded-2xl border border-border/80 bg-card/40 p-4 text-xs text-muted-foreground space-y-2">
+          <div className="flex items-center gap-2 text-foreground font-medium">
+            <Database className="size-4 text-primary" />
+            <span>Vault Data Security</span>
+          </div>
+          <p>• Only your authenticated account can access, create, or modify your stored bookmarks.</p>
+          <p>• Offline caching enables instant zero-latency loading and search without internet delays.</p>
         </div>
       </div>
 
-      {/* 3. Delete Account Section */}
-      <div className="space-y-3 pt-2">
+      {/* 3. DANGER ZONE: Reset / Wipe All Data */}
+      <div className="space-y-3 pt-4 border-t border-destructive/20">
         <div>
-          <h2 className="text-sm font-semibold text-strong tracking-tight">Delete account</h2>
+          <h2 className="text-sm font-semibold text-destructive tracking-tight flex items-center gap-1.5">
+            <AlertTriangle className="size-4" />
+            <span>Danger Zone: Reset Vault Data</span>
+          </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Permanently remove your account and all associated bookmarks from the database.
+            Permanently wipe all bookmarks, collections, tags, notes, and local storage caches.
           </p>
         </div>
 
-        <div>
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-xs font-semibold text-foreground">Factory Reset Vault</h3>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              This action will completely erase all your saved items, tags, collections, system logs, and cached media. Once wiped, this data cannot be recovered.
+            </p>
+          </div>
+
           <button
             type="button"
-            onClick={() => setDeletionRequested(true)}
-            className="inline-flex h-8.5 items-center gap-2 rounded-xl border border-input bg-card/80 px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent shadow-xs cursor-pointer"
+            onClick={() => {
+              soundFx.playClickSound();
+              setConfirmInput('');
+              setIsResetModalOpen(true);
+            }}
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-destructive px-4 text-xs font-medium text-destructive-foreground shadow-xs hover:bg-destructive/90 transition-all cursor-pointer active:scale-95"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 text-muted-foreground">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-            <span>{deletionRequested ? 'Request received' : 'Request account deletion'}</span>
+            <Trash2 className="size-3.5" />
+            <span>Reset All Vault Data</span>
           </button>
         </div>
       </div>
 
+      {/* 4. Reset Confirmation Modal */}
+      {isResetModalOpen && (
+        <div
+          onClick={() => setIsResetModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-2xl border border-destructive/40 bg-[#121212] p-6 text-foreground shadow-2xl space-y-5 animate-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/20 text-destructive border border-destructive/30">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base text-foreground">Wipe All Vault Data?</h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3.5 text-xs text-neutral-300 space-y-1.5 leading-relaxed">
+              <p className="font-medium text-destructive">⚠️ What will happen:</p>
+              <p>• All your bookmarks will be permanently erased.</p>
+              <p>• All custom tags, folders, and collections will be deleted.</p>
+              <p>• Cloud database entries associated with your account will be cleared.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Type <span className="font-mono text-destructive font-bold">RESET</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={confirmInput}
+                onChange={e => setConfirmInput(e.target.value)}
+                placeholder="RESET"
+                className="w-full h-9 rounded-xl border border-input bg-card/60 px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-destructive"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                disabled={isResetting}
+                className="h-9 px-4 rounded-xl border border-border bg-card hover:bg-accent text-xs font-medium text-foreground transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetAllData}
+                disabled={confirmInput.trim() !== 'RESET' || isResetting}
+                className="h-9 px-4 rounded-xl bg-destructive text-xs font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
+              >
+                {isResetting ? (
+                  <>
+                    <RefreshCw className="size-3.5 animate-spin" />
+                    <span>Wiping Data...</span>
+                  </>
+                ) : resetSuccess ? (
+                  <>
+                    <Check className="size-3.5" />
+                    <span>Wiped! Reloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="size-3.5" />
+                    <span>Confirm Wipe & Reset</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );

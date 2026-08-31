@@ -195,14 +195,7 @@ export function Header({
                   onClick={() => setIsUserMenuOpen(false)}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
-                  Account Settings
-                </Link>
-                <Link
-                  href="/settings/billing"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                >
-                  Subscription & Billing
+                  Account & Profile Settings
                 </Link>
                 <button
                   type="button"
