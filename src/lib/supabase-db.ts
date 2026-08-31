@@ -379,3 +379,22 @@ export async function deleteTagFromDb(id: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function wipeAllVaultDataFromDb(userId?: string | null): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return true;
+  try {
+    const validUserId = sanitizeUuid(userId);
+    if (validUserId) {
+      await supabase.from('bookmarks').delete().eq('user_id', validUserId);
+      await supabase.from('collections').delete().eq('user_id', validUserId);
+      await supabase.from('tags').delete().eq('user_id', validUserId);
+    }
+    // Also delete any anonymous/guest bookmarks
+    await supabase.from('bookmarks').delete().is('user_id', null);
+    await supabase.from('collections').delete().is('user_id', null);
+    return true;
+  } catch (err) {
+    console.error('Failed to wipe data from Supabase:', err);
+    return false;
+  }
+}

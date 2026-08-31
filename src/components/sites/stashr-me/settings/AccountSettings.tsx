@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { wipeAllVaultDataFromDb } from '@/lib/supabase-db';
 import { soundFx } from '@/lib/sound-effects';
 import {
   LogIn,
@@ -47,39 +47,58 @@ export function AccountSettings() {
     soundFx.playArchiveSound();
 
     try {
-      // 1. Wipe Supabase Cloud Bookmarks if user logged in
-      if (user && isSupabaseConfigured && supabase) {
-        try {
-          await supabase.from('bookmarks').delete().eq('user_id', user.id);
-        } catch (dbErr) {
-          console.warn('Supabase wipe error:', dbErr);
-        }
+      // 1. Call API reset route
+      try {
+        await fetch('/api/vault/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user?.id || null })
+        });
+      } catch (apiErr) {
+        console.warn('API reset fallback:', apiErr);
       }
 
-      // 2. Clear all local storage keys
+      // 2. Direct client DB wipe
+      try {
+        await wipeAllVaultDataFromDb(user?.id || null);
+      } catch (dbErr) {
+        console.warn('Direct DB wipe fallback:', dbErr);
+      }
+
+      // 3. Clear ALL localStorage items
       if (typeof window !== 'undefined') {
-        const keysToRemove = [
+        const allVaultKeys = [
+          'stashr_bookmarks_v3',
+          'stashr_collections_v3',
+          'stashr_tags_v3',
+          'stashr_pinned_creators_v1',
+          'stashr_custom_tags_v1',
+          'stashr_system_logs_v1',
           'stashr_bookmarks',
           'stashr_collections',
           'stashr_tags',
-          'stashr_custom_tags',
-          'stashr_system_logs',
           'stashr_pinned_creators',
           'stashr_filter_state',
           'stashr_view_mode',
           'stashr_grid_columns',
           'stashr_mosaic_columns'
         ];
-        keysToRemove.forEach(key => localStorage.removeItem(key));
+        allVaultKeys.forEach(k => localStorage.removeItem(k));
       }
 
       setResetSuccess(true);
       setTimeout(() => {
-        window.location.href = '/';
-      }, 1200);
+        window.location.replace('/');
+      }, 800);
     } catch (err) {
       console.error('Reset all data error:', err);
-      setIsResetting(false);
+      // Even on error, clear local storage and redirect
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('stashr_bookmarks_v3');
+        localStorage.removeItem('stashr_collections_v3');
+        localStorage.removeItem('stashr_tags_v3');
+        window.location.replace('/');
+      }
     }
   };
 
@@ -254,20 +273,20 @@ export function AccountSettings() {
 
             <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3.5 text-xs text-neutral-300 space-y-1.5 leading-relaxed">
               <p className="font-medium text-destructive">⚠️ What will happen:</p>
-              <p>• All your bookmarks will be permanently erased.</p>
-              <p>• All custom tags, folders, and collections will be deleted.</p>
-              <p>• Cloud database entries associated with your account will be cleared.</p>
+              <p>• All saved bookmarks will be deleted.</p>
+              <p>• All custom tags and collections will be deleted.</p>
+              <p>• Local storage and cloud database will be wiped clean.</p>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                Type <span className="font-mono text-destructive font-bold">RESET</span> to confirm:
+                Type <span className="font-mono text-destructive font-bold">RESET</span> below to confirm:
               </label>
               <input
                 type="text"
                 value={confirmInput}
                 onChange={e => setConfirmInput(e.target.value)}
-                placeholder="RESET"
+                placeholder="Type RESET"
                 className="w-full h-9 rounded-xl border border-input bg-card/60 px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-destructive"
               />
             </div>
@@ -284,8 +303,8 @@ export function AccountSettings() {
               <button
                 type="button"
                 onClick={handleResetAllData}
-                disabled={confirmInput.trim() !== 'RESET' || isResetting}
-                className="h-9 px-4 rounded-xl bg-destructive text-xs font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
+                disabled={confirmInput.trim().toUpperCase() !== 'RESET' || isResetting}
+                className="h-9 px-4 rounded-xl bg-destructive text-xs font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shadow-xs"
               >
                 {isResetting ? (
                   <>
