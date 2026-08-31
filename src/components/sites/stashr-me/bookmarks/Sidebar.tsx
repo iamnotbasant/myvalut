@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Collection, Tag, FilterState } from '@/types/stashr';
@@ -12,8 +11,6 @@ import {
   Radio,
   Plus,
   Folder,
-  Sparkles,
-  Lightbulb,
   Search,
   Settings,
   HelpCircle,
@@ -25,12 +22,12 @@ import {
   Copy,
   MoreHorizontal,
   Activity,
-  TagDot,
   Tag as TagIcon
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
-import { LogIn, User } from 'lucide-react';
-import { ContextMenu, ContextMenuItem } from './ContextMenu';
+import { LogIn } from 'lucide-react';
+import { ContextMenu } from './ContextMenu';
+import { soundFx } from '@/lib/sound-effects';
 
 interface SidebarProps {
   filterState: FilterState;
@@ -61,7 +58,6 @@ export function Sidebar({
   onFilterChange,
   collections,
   tags,
-  bookmarksCountByTag,
   bookmarksCount,
   archivedCount,
   creatorsCount,
@@ -70,9 +66,6 @@ export function Sidebar({
   onEditCollection,
   onDeleteCollection,
   onTogglePinCollection,
-  onOpenAddTag,
-  onEditTag,
-  onDeleteTag,
   onOpenFeedback,
   onOpenCommandPalette,
   onOpenAuth,
@@ -103,6 +96,7 @@ export function Sidebar({
   };
 
   const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs') => {
+    soundFx.playClickSound();
     if (pathname.startsWith('/settings')) {
       router.push(`/${nav}`);
     } else {
@@ -116,7 +110,7 @@ export function Sidebar({
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden"
           onClick={onCloseMobile}
         />
       )}
@@ -127,7 +121,11 @@ export function Sidebar({
       >
         {/* Brand Header */}
         <div className="flex h-12 items-center justify-between px-3 border-b border-sidebar-border/40">
-          <Link href="/" className="flex items-center gap-2.5 px-1 font-semibold text-sm tracking-tight text-foreground">
+          <Link
+            href="/"
+            onClick={() => soundFx.playClickSound()}
+            className="flex items-center gap-2.5 px-1 font-semibold text-sm tracking-tight text-foreground"
+          >
             <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-xs">
               V
             </div>
@@ -148,7 +146,10 @@ export function Sidebar({
         <div className="px-3 pt-3 pb-1">
           <button
             type="button"
-            onClick={onOpenCommandPalette}
+            onClick={() => {
+              soundFx.playClickSound();
+              onOpenCommandPalette();
+            }}
             className="flex h-8 w-full items-center gap-2 rounded-lg border border-border/80 bg-background/50 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
           >
             <Search className="size-3.5" />
@@ -234,7 +235,10 @@ export function Sidebar({
               <span>Collections</span>
               <button
                 type="button"
-                onClick={onOpenAddCollection}
+                onClick={() => {
+                  soundFx.playClickSound();
+                  onOpenAddCollection();
+                }}
                 className="inline-flex size-4 items-center justify-center rounded border border-border bg-background hover:bg-accent text-foreground shadow-xs cursor-pointer"
                 title="New collection"
               >
@@ -271,7 +275,12 @@ export function Sidebar({
                         <a
                           role="button"
                           data-active={isActive ? "true" : undefined}
-                          onClick={(e) => { e.preventDefault(); onFilterChange({ collectionId: isActive ? null : col.id, activeNav: 'bookmarks' }); onCloseMobile?.(); }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            soundFx.playClickSound();
+                            onFilterChange({ collectionId: isActive ? null : col.id, activeNav: 'bookmarks' });
+                            onCloseMobile?.();
+                          }}
                           className="inline-flex h-8 w-full items-center justify-between rounded-lg px-2 text-xs font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground cursor-pointer pr-7"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -385,7 +394,10 @@ export function Sidebar({
           ) : (
             <button
               type="button"
-              onClick={onOpenAuth}
+              onClick={() => {
+                soundFx.playClickSound();
+                onOpenAuth?.();
+              }}
               className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors group-data-[state=collapsed]/sidebar:hidden cursor-pointer"
             >
               <LogIn className="size-3.5" />
@@ -397,7 +409,10 @@ export function Sidebar({
           <Link
             href="/settings/account"
             data-active={pathname.startsWith('/settings') ? "true" : undefined}
-            onClick={() => onCloseMobile?.()}
+            onClick={() => {
+              soundFx.playClickSound();
+              onCloseMobile?.();
+            }}
             className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground cursor-pointer"
           >
             <Settings className="size-4 shrink-0" />
@@ -409,7 +424,10 @@ export function Sidebar({
           {/* Feedback */}
           <button
             type="button"
-            onClick={onOpenFeedback}
+            onClick={() => {
+              soundFx.playClickSound();
+              onOpenFeedback();
+            }}
             className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
           >
             <HelpCircle className="size-4 shrink-0" />
@@ -422,7 +440,10 @@ export function Sidebar({
           {user ? (
             <button
               type="button"
-              onClick={() => signOut()}
+              onClick={() => {
+                soundFx.playClickSound();
+                signOut();
+              }}
               className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-destructive hover:bg-destructive/10 cursor-pointer"
             >
               <Trash2 className="size-4 shrink-0 text-destructive" />
@@ -433,7 +454,10 @@ export function Sidebar({
           ) : (
             <button
               type="button"
-              onClick={onOpenAuth}
+              onClick={() => {
+                soundFx.playClickSound();
+                onOpenAuth?.();
+              }}
               className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-primary hover:bg-primary/10 cursor-pointer"
             >
               <LogIn className="size-4 shrink-0 text-primary" />

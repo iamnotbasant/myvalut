@@ -36,10 +36,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      style={{ backgroundColor: '#000000', colorScheme: 'dark' }}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-sidebar text-foreground selection:bg-primary/20 overflow-hidden">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('stashr_theme')||'dark';if(t==='light'){document.documentElement.classList.remove('dark');document.documentElement.style.backgroundColor='#ffffff';}else{document.documentElement.classList.add('dark');document.documentElement.style.backgroundColor='#000000';}}catch(e){document.documentElement.classList.add('dark');document.documentElement.style.backgroundColor='#000000';}})();`
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/20 overflow-hidden">
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -936,48 +936,68 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           />
         )}
 
-        {/* Dynamic View Body */}
+        {/* Dynamic View Body with Silky Smooth Transitions */}
         {filterState.activeNav === 'creators' && (
-          <CreatorsView
-            bookmarks={bookmarks}
-            onSelectCreator={username => {
-              setFilterState({
-                query: username,
-                activeNav: 'bookmarks',
-                platforms: [],
-                tags: [],
-                onlyFavorites: false,
-                collectionId: null
-              });
-            }}
-            onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
-            onDeleteCreatorBookmarks={handleDeleteCreatorBookmarks}
-            onTogglePinCreator={handleTogglePinCreator}
-            pinnedCreatorIds={pinnedCreatorIds}
-          />
+          <div key="view-creators" className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
+            <CreatorsView
+              bookmarks={bookmarks}
+              onSelectCreator={username => {
+                soundFx.playClickSound();
+                setFilterState({
+                  query: username,
+                  activeNav: 'bookmarks',
+                  platforms: [],
+                  tags: [],
+                  onlyFavorites: false,
+                  collectionId: null
+                });
+              }}
+              onOpenAddBookmark={() => {
+                soundFx.playClickSound();
+                setIsAddBookmarkOpen(true);
+              }}
+              onDeleteCreatorBookmarks={handleDeleteCreatorBookmarks}
+              onTogglePinCreator={handleTogglePinCreator}
+              pinnedCreatorIds={pinnedCreatorIds}
+            />
+          </div>
         )}
 
-        {filterState.activeNav === 'connections' && <ConnectionsView bookmarks={bookmarks} />}
+        {filterState.activeNav === 'connections' && (
+          <div key="view-connections" className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
+            <ConnectionsView bookmarks={bookmarks} />
+          </div>
+        )}
 
         {filterState.activeNav === 'tags' && (
-          <TagsView
-            tags={allAvailableTags}
-            bookmarks={bookmarks}
-            onSelectTag={handleSelectTag}
-            onOpenAddTag={() => setIsAddTagOpen(true)}
-            onEditTag={setActiveEditTag}
-            onDeleteTag={handleDeleteTag}
-            onAutoTagUntagged={handleBatchAutoTagUntagged}
-            isAutoTagging={generatingTagIds.size > 0}
-          />
+          <div key="view-tags" className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
+            <TagsView
+              tags={allAvailableTags}
+              bookmarks={bookmarks}
+              onSelectTag={(tagName) => {
+                soundFx.playTagSound();
+                handleSelectTag(tagName);
+              }}
+              onOpenAddTag={() => {
+                soundFx.playClickSound();
+                setIsAddTagOpen(true);
+              }}
+              onEditTag={setActiveEditTag}
+              onDeleteTag={handleDeleteTag}
+              onAutoTagUntagged={handleBatchAutoTagUntagged}
+              isAutoTagging={generatingTagIds.size > 0}
+            />
+          </div>
         )}
 
         {filterState.activeNav === 'logs' && (
-          <SystemLogsView bookmarks={bookmarks} onGenerateTags={handleGenerateTagsForBookmark} />
+          <div key="view-logs" className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
+            <SystemLogsView bookmarks={bookmarks} onGenerateTags={handleGenerateTagsForBookmark} />
+          </div>
         )}
 
         {(filterState.activeNav === 'bookmarks' || filterState.activeNav === 'archived') && (
-          <div className="flex-1 overflow-y-auto">
+          <div key={`view-bookmarks-${filterState.activeNav}-${filterState.collectionId || 'all'}`} className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
             <div className="relative flex h-full flex-col">
               <SecondaryToolbar
                 filterState={filterState}
@@ -986,10 +1006,14 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onViewModeChange={handleViewModeChange}
                 isSelectionMode={isSelectionMode}
                 onToggleSelectionMode={() => {
+                  soundFx.playClickSound();
                   setIsSelectionMode(!isSelectionMode);
                   setSelectedIds(new Set());
                 }}
-                onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
+                onOpenAddBookmark={() => {
+                  soundFx.playClickSound();
+                  setIsAddBookmarkOpen(true);
+                }}
                 onShuffle={handleShuffle}
                 tags={allAvailableTags}
                 platforms={[
@@ -1021,7 +1045,8 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onDelete={handleDelete}
                 onArchiveSelected={handleArchiveSelected}
                 onDeleteSelected={handleDeleteSelected}
-                onResetFilters={() =>
+                onResetFilters={() => {
+                  soundFx.playClickSound();
                   setFilterState({
                     query: '',
                     platforms: [],
@@ -1029,9 +1054,12 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                     onlyFavorites: false,
                     collectionId: null,
                     activeNav: filterState.activeNav
-                  })
-                }
-                onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
+                  });
+                }}
+                onOpenAddBookmark={() => {
+                  soundFx.playClickSound();
+                  setIsAddBookmarkOpen(true);
+                }}
                 onOpenImage={setActiveLightboxImage}
                 onOpenDetail={setActiveDetailBookmark}
                 onSelectTag={handleSelectTag}

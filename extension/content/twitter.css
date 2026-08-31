@@ -1,29 +1,58 @@
-/* X / Twitter Injected Button */
+/* X / Twitter Injected Valut Button */
+
+/* Spinner Animation */
+@keyframes valut-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.valut-spin {
+  animation: valut-spin 0.75s linear infinite !important;
+  transform-origin: center center !important;
+  display: block !important;
+}
+
+.valut-spin circle {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+
 .valut-x-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: rgb(113, 118, 123);
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  user-select: none;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  color: rgb(113, 118, 123) !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+  user-select: none !important;
+  padding: 0 !important;
 }
 
 .valut-x-btn:hover {
-  background-color: rgba(29, 155, 240, 0.1);
-  color: rgb(29, 155, 240);
+  background-color: rgba(29, 155, 240, 0.1) !important;
+  color: rgb(29, 155, 240) !important;
 }
 
+/* Unsaved state */
+.valut-x-btn:not(.valut-is-saved):not(.valut-saved) {
+  color: rgb(113, 118, 123) !important;
+}
+
+/* Saved State - Signature Twitter Blue Color (No Glow) */
+.valut-x-btn.valut-is-saved,
 .valut-x-btn.valut-saved {
-  color: #10b981 !important;
+  color: #1d9bf0 !important;
 }
 
 .valut-x-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 18px !important;
+  height: 18px !important;
+  fill: currentColor !important;
+  display: block !important;
+  transition: fill 0.2s ease, color 0.2s ease !important;
 }

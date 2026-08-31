@@ -1,124 +1,93 @@
-/* YouTube Injected Button Styling - Exact Reference Match */
-.valut-yt-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 18px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #f1f1f1;
-  font-family: "Roboto", "YouTube Noto", Arial, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 36px;
-  border: none;
-  cursor: pointer;
-  margin-left: 0px;
-  margin-right: 8px;
-  transition: background-color 0.2s cubic-bezier(0.05, 0, 0.2, 1), transform 0.1s;
-  user-select: none;
-  vertical-align: middle;
-  flex-shrink: 0;
-  box-sizing: border-box;
+/* YouTube Injected Valut Button (Video Player Control Bar) */
+
+/* Spinner Animation - Clean Rotating Stroke */
+@keyframes valut-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-/* Light Theme support */
-html:not([dark]) .valut-yt-btn {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #0f0f0f;
+.valut-spin {
+  animation: valut-spin 0.75s linear infinite !important;
+  transform-origin: center center !important;
+  display: block !important;
 }
 
-html:not([dark]) .valut-yt-btn:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+.valut-spin circle {
+  fill: none !important;
+  stroke: currentColor !important;
 }
 
-.valut-yt-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.valut-yt-btn:active {
-  transform: scale(0.96);
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
-.valut-yt-btn.valut-saving {
-  opacity: 0.8;
-  pointer-events: none;
-}
-
-.valut-yt-btn.valut-saved {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-
-html:not([dark]) .valut-yt-btn.valut-saved {
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #0f0f0f;
-}
-
-.valut-yt-icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.valut-yt-icon svg {
-  width: 20px;
-  height: 20px;
-  display: block;
-}
-
-.valut-yt-label {
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Video Player Control Bar Button */
-.valut-yt-player-btn {
+/* Video Player Control Bar Button - Clean Transparent Matching All Icons */
+.valut-yt-player-btn,
+.ytp-button.valut-yt-player-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 46px !important;
+  width: 42px !important;
   height: 100% !important;
   padding: 0 !important;
+  margin: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   color: #eeeeee !important;
   cursor: pointer !important;
   opacity: 0.9 !important;
   transition: opacity 0.1s cubic-bezier(0.4, 0, 1, 1), transform 0.1s !important;
   vertical-align: top !important;
   box-sizing: border-box !important;
+  user-select: none !important;
+  text-align: center !important;
 }
 
-.valut-yt-player-btn:hover {
+.valut-yt-player-btn:hover,
+.ytp-button.valut-yt-player-btn:hover {
   opacity: 1 !important;
-  transform: scale(1.06) !important;
   color: #ffffff !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .valut-player-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
+/* Scaled Icon to match Aperture, Shield, and CC icons */
 .valut-player-icon-wrapper svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-  display: block;
+  width: 22px !important;
+  height: 22px !important;
+  fill: currentColor !important;
+  color: #eeeeee !important;
+  display: block !important;
+  transition: fill 0.2s ease, color 0.2s ease;
 }
 
+/* Unsaved state: pure white/light grey matching player buttons */
+.valut-yt-player-btn:not(.valut-is-saved):not(.valut-saved) .valut-player-icon-wrapper svg {
+  fill: #eeeeee !important;
+  color: #eeeeee !important;
+  filter: none !important;
+}
+
+/* Saved State - Crisp Blue Color (No Blur / No Glow) */
+.valut-yt-player-btn.valut-is-saved .valut-player-icon-wrapper svg,
 .valut-yt-player-btn.valut-saved .valut-player-icon-wrapper svg {
-  fill: #ffffff !important;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+  fill: #3ea6ff !important;
+  color: #3ea6ff !important;
+  filter: none !important;
 }

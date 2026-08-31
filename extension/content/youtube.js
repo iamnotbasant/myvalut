@@ -1,10 +1,68 @@
 // YouTube Content Script for Valut
 (function () {
-  // Exact Bookmark Icon from Valut / Stashr website
-  const BOOKMARK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4854 1.39731C15.348 1.24998 13.8393 1.24999 12 1.25C10.1607 1.24999 8.652 1.24998 7.51458 1.39731C6.34712 1.54853 5.40051 1.86672 4.65121 2.58863C3.898 3.31431 3.56243 4.23743 3.40365 5.37525C3.38356 5.51919 3.3661 5.66833 3.35092 5.8228C3.33154 6.02004 3.32185 6.11866 3.38139 6.18433C3.44092 6.25 3.54199 6.25 3.74412 6.25H20.2559C20.458 6.25 20.5591 6.25 20.6186 6.18433C20.6782 6.11866 20.6685 6.02004 20.6491 5.8228C20.6339 5.66833 20.6164 5.51919 20.5964 5.37525C20.4376 4.23743 20.102 3.31431 19.3488 2.58863C18.5995 1.86672 17.6529 1.54853 16.4854 1.39731Z"/><path d="M20.7458 8.1438C20.7441 7.95852 20.7433 7.86588 20.6848 7.80794C20.6263 7.75 20.5333 7.75 20.3472 7.75H3.65284C3.46674 7.75 3.37368 7.75 3.31522 7.80794C3.25675 7.86588 3.25591 7.95852 3.25424 8.1438C3.24999 8.61366 3.25 9.115 3.25001 9.64943L3.25 18.0458C3.24996 19.1433 3.24993 20.0553 3.35533 20.7405C3.46438 21.4495 3.71857 22.1395 4.41958 22.5139C5.04476 22.8477 5.7324 22.7798 6.31544 22.6028C6.90514 22.4238 7.50454 22.0989 8.05335 21.7521C8.60739 21.402 9.15065 21.0029 9.623 20.6538C10.0858 20.3117 10.5131 19.9958 10.7969 19.8249C11.1965 19.5843 11.4488 19.4335 11.6533 19.3371C11.842 19.2482 11.9337 19.234 12 19.234C12.0663 19.234 12.158 19.2482 12.3467 19.3371C12.5513 19.4335 12.8035 19.5843 13.2031 19.8249C13.4869 19.9958 13.9142 20.3117 14.377 20.6538C14.8494 21.0029 15.3926 21.402 15.9467 21.7521C16.4955 22.0989 17.0949 22.4238 17.6846 22.6028C18.2676 22.7798 18.9553 22.8477 19.5804 22.5139C20.2814 22.1395 20.5356 21.4495 20.6447 20.7405C20.7501 20.0553 20.75 19.1434 20.75 18.0458V9.64945C20.75 9.11501 20.75 8.61366 20.7458 8.1438Z"/></svg>`;
-  const SPINNER_ICON = `<svg class="valut-spin" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>`;
-  const CHECK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  // 1. Exact Custom Valut Dashboard Bookmark Icon (22x22 scale to match YouTube player icons)
+  const VALUT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4854 1.39731C15.348 1.24998 13.8393 1.24999 12 1.25C10.1607 1.24999 8.652 1.24998 7.51458 1.39731C6.34712 1.54853 5.40051 1.86672 4.65121 2.58863C3.898 3.31431 3.56243 4.23743 3.40365 5.37525C3.38356 5.51919 3.3661 5.66833 3.35092 5.8228C3.33154 6.02004 3.32185 6.11866 3.38139 6.18433C3.44092 6.25 3.54199 6.25 3.74412 6.25H20.2559C20.458 6.25 20.5591 6.25 20.6186 6.18433C20.6782 6.11866 20.6685 6.02004 20.6491 5.8228C20.6339 5.66833 20.6164 5.51919 20.5964 5.37525C20.4376 4.23743 20.102 3.31431 19.3488 2.58863C18.5995 1.86672 17.6529 1.54853 16.4854 1.39731Z"/><path d="M20.7458 8.1438C20.7441 7.95852 20.7433 7.86588 20.6848 7.80794C20.6263 7.75 20.5333 7.75 20.3472 7.75H3.65284C3.46674 7.75 3.37368 7.75 3.31522 7.80794C3.25675 7.86588 3.25591 7.95852 3.25424 8.1438C3.24999 8.61366 3.25 9.115 3.25001 9.64943L3.25 18.0458C3.24996 19.1433 3.24993 20.0553 3.35533 20.7405C3.46438 21.4495 3.71857 22.1395 4.41958 22.5139C5.04476 22.8477 5.7324 22.7798 6.31544 22.6028C6.90514 22.4238 7.50454 22.0989 8.05335 21.7521C8.60739 21.402 9.15065 21.0029 9.623 20.6538C10.0858 20.3117 10.5131 19.9958 10.7969 19.8249C11.1965 19.5843 11.4488 19.4335 11.6533 19.3371C11.842 19.2482 11.9337 19.234 12 19.234C12.0663 19.234 12.158 19.2482 12.3467 19.3371C12.5513 19.4335 12.8035 19.5843 13.2031 19.8249C13.4869 19.9958 13.9142 20.3117 14.377 20.6538C14.8494 21.0029 15.3926 21.402 15.9467 21.7521C16.4955 22.0989 17.0949 22.4238 17.6846 22.6028C18.2676 22.7798 18.9553 22.8477 19.5804 22.5139C20.2814 22.1395 20.5356 21.4495 20.6447 20.7405C20.7501 20.0553 20.75 19.1434 20.75 18.0458V9.64945C20.75 9.11501 20.75 8.61366 20.7458 8.1438Z"/></svg>`;
+  
+  // Clean circular rotating stroke spinner
+  const SPINNER_ICON = `<svg class="valut-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35 25" stroke-linecap="round" fill="none"/></svg>`;
+  const CHECK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
+  let currentVideoId = null;
+  let isCurrentVideoSaved = false;
+  let isCheckingStatus = false;
+
+  // Extract YouTube Video ID from URL (strictly 11 chars)
+  function getYouTubeVideoId(url = window.location.href) {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com')) {
+        if (urlObj.pathname.startsWith('/watch')) {
+          const v = urlObj.searchParams.get('v');
+          return v && /^[a-zA-Z0-9_-]{11}$/.test(v) ? v : null;
+        }
+        if (urlObj.pathname.startsWith('/shorts/')) {
+          const s = urlObj.pathname.split('/shorts/')[1]?.split(/[?#/]/)[0];
+          return s && /^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null;
+        }
+        if (urlObj.pathname.startsWith('/live/')) {
+          const l = urlObj.pathname.split('/live/')[1]?.split(/[?#/]/)[0];
+          return l && /^[a-zA-Z0-9_-]{11}$/.test(l) ? l : null;
+        }
+      } else if (urlObj.hostname.includes('youtu.be')) {
+        const b = urlObj.pathname.slice(1).split(/[?#/]/)[0];
+        return b && /^[a-zA-Z0-9_-]{11}$/.test(b) ? b : null;
+      }
+    } catch {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+      return match ? match[1] : null;
+    }
+    return null;
+  }
+
+  // Local storage cache for instant 0ms check
+  function getCachedSavedVideoIds() {
+    try {
+      const item = localStorage.getItem('valut_yt_saved_vids');
+      if (!item) return [];
+      const list = JSON.parse(item);
+      return Array.isArray(list) ? list.filter(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(id)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function addVideoIdToCache(vid) {
+    if (!vid || typeof vid !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(vid)) return;
+    try {
+      const list = getCachedSavedVideoIds();
+      if (!list.includes(vid)) {
+        list.push(vid);
+        localStorage.setItem('valut_yt_saved_vids', JSON.stringify(list.slice(-500)));
+      }
+    } catch {}
+  }
+
+  // Toast UI notification
   function showToast(title, desc, tags = []) {
     let container = document.querySelector('.valut-toast-container');
     if (!container) {
@@ -64,8 +122,8 @@
     }, 5500);
   }
 
+  // Send Save Request to Extension or Fallback API
   async function sendSaveRequest(saveData) {
-    // 1. Try Chrome runtime messaging if context is valid
     if (
       typeof chrome !== 'undefined' &&
       chrome.runtime &&
@@ -95,16 +153,14 @@
         if (response && response.success) {
           return response;
         }
-      } catch {
-        // Fall through to direct fetch
-      }
+      } catch {}
     }
 
-    // 2. Direct fetch fallback (works even if extension reloaded or context invalidated)
     const candidateEndpoints = [
       'https://myvalut.vercel.app/api/extension/save',
       'http://localhost:3000/api/extension/save',
       'http://127.0.0.1:3000/api/extension/save',
+      'http://localhost:3001/api/extension/save',
     ];
 
     for (const endpoint of candidateEndpoints) {
@@ -126,25 +182,121 @@
             return json;
           }
         }
-      } catch {
-        // Try next candidate
-      }
+      } catch {}
     }
 
-    throw new Error('Please refresh this YouTube page (Extension was updated)');
+    throw new Error('Please make sure your Valut app is open / running');
   }
 
-  async function handleSaveClick(button) {
-    if (button.classList.contains('valut-saving')) return;
+  // Check if current video is saved in Valut
+  async function checkVideoSaveStatus(videoId, url) {
+    if (!videoId || typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return false;
+    }
+    if (isCheckingStatus) return isCurrentVideoSaved;
+    isCheckingStatus = true;
 
-    button.classList.add('valut-saving');
-    const iconEl = button.querySelector('.valut-yt-icon') || button.querySelector('.valut-player-icon-wrapper') || button;
-    const labelEl = button.querySelector('.valut-yt-label');
+    try {
+      // 1. Local storage cache check
+      const localCache = getCachedSavedVideoIds();
+      if (localCache.includes(videoId)) {
+        isCheckingStatus = false;
+        return true;
+      }
 
-    if (iconEl) iconEl.innerHTML = SPINNER_ICON;
-    if (labelEl) labelEl.innerText = 'Saving...';
+      // 2. Check through Chrome Runtime
+      if (
+        typeof chrome !== 'undefined' &&
+        chrome.runtime &&
+        typeof chrome.runtime.sendMessage === 'function' &&
+        chrome.runtime.id
+      ) {
+        try {
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+              {
+                action: 'CHECK_BOOKMARK_SAVED',
+                url: url || window.location.href,
+                videoId: videoId,
+              },
+              (res) => {
+                if (chrome.runtime.lastError) resolve(null);
+                else resolve(res);
+              }
+            );
+          });
 
+          if (response && response.isSaved) {
+            addVideoIdToCache(videoId);
+            isCheckingStatus = false;
+            return true;
+          }
+        } catch {}
+      }
+
+      // 3. Check directly via check API endpoint
+      const candidateEndpoints = [
+        'https://myvalut.vercel.app/api/extension/check',
+        'http://localhost:3000/api/extension/check',
+        'http://127.0.0.1:3000/api/extension/check',
+      ];
+
+      for (const endpoint of candidateEndpoints) {
+        try {
+          const res = await fetch(`${endpoint}?url=${encodeURIComponent(url || window.location.href)}&videoId=${encodeURIComponent(videoId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.isSaved) {
+              addVideoIdToCache(videoId);
+              isCheckingStatus = false;
+              return true;
+            }
+          }
+        } catch {}
+      }
+    } finally {
+      isCheckingStatus = false;
+    }
+
+    return false;
+  }
+
+  // Apply visual state to video player button (Blue icon when saved, white when unsaved)
+  function renderSaveState(isSaved) {
+    isCurrentVideoSaved = isSaved;
+
+    const playerBtn = document.querySelector('.valut-yt-player-btn');
+    if (playerBtn) {
+      const playerIcon = playerBtn.querySelector('.valut-player-icon-wrapper');
+      if (isSaved) {
+        playerBtn.classList.add('valut-is-saved');
+        playerBtn.classList.add('valut-saved');
+        playerBtn.title = 'Saved in Valut (Click to view options)';
+        if (playerIcon) playerIcon.innerHTML = VALUT_ICON;
+      } else {
+        playerBtn.classList.remove('valut-is-saved', 'valut-saved');
+        playerBtn.title = 'Save to Valut (Alt+V)';
+        if (playerIcon) playerIcon.innerHTML = VALUT_ICON;
+      }
+    }
+  }
+
+  // Handle Save Click from Player Control Bar
+  async function handleSaveClick(targetBtn) {
+    if (targetBtn.classList.contains('valut-saving')) return;
+
+    const vid = getYouTubeVideoId();
     const videoUrl = window.location.href;
+
+    // If already saved, give user friendly confirmation
+    if (targetBtn.classList.contains('valut-is-saved') || targetBtn.classList.contains('valut-saved')) {
+      showToast('Already Saved in Valut!', 'This YouTube video is saved in your Valut bookmarks.');
+      return;
+    }
+
+    targetBtn.classList.add('valut-saving');
+    const iconEl = targetBtn.querySelector('.valut-player-icon-wrapper') || targetBtn;
+    if (iconEl) iconEl.innerHTML = SPINNER_ICON;
 
     try {
       const response = await sendSaveRequest({
@@ -153,138 +305,72 @@
       });
 
       if (response && response.success) {
-        if (iconEl) iconEl.innerHTML = BOOKMARK_ICON;
-        if (labelEl) labelEl.innerText = 'Saved';
-        button.classList.remove('valut-saving');
-        button.classList.add('valut-saved');
+        if (vid) addVideoIdToCache(vid);
+        targetBtn.classList.remove('valut-saving');
+        
+        // Turn icon BLUE immediately!
+        renderSaveState(true);
 
         showToast(
           'Saved to Valut!',
-          response.bookmark?.title || 'YouTube Video',
+          response.bookmark?.title || document.title || 'YouTube Video',
           response.tags || response.bookmark?.tags || []
         );
-
-        setTimeout(() => {
-          if (iconEl) iconEl.innerHTML = BOOKMARK_ICON;
-          if (labelEl) labelEl.innerText = 'Valut';
-          button.classList.remove('valut-saved');
-        }, 3500);
       } else {
         throw new Error(response?.error || 'Failed to save');
       }
     } catch (err) {
       console.error('Valut save error:', err);
-      if (iconEl) iconEl.innerHTML = BOOKMARK_ICON;
-      if (labelEl) labelEl.innerText = 'Valut';
-      button.classList.remove('valut-saving');
+      targetBtn.classList.remove('valut-saving');
+      renderSaveState(isCurrentVideoSaved);
       showErrorToast(err.message);
     }
   }
 
-  function findShareButton(container) {
-    if (!container) return null;
-    
-    // 1. Direct children scan
-    for (const child of container.children) {
-      if (child.classList.contains('valut-yt-btn')) continue;
-
-      const ariaLabel = (child.getAttribute('aria-label') || '').toLowerCase();
-      const title = (child.getAttribute('title') || '').toLowerCase();
-      const text = (child.innerText || child.textContent || '').trim().toLowerCase();
-
-      if (
-        ariaLabel.includes('share') ||
-        title.includes('share') ||
-        text === 'share' ||
-        text.startsWith('share') ||
-        child.querySelector('button[aria-label*="share" i], button[title*="share" i]') ||
-        child.querySelector('path[d*="15 5.63"], path[d*="15 18.37"], path[d*="M15 5.63"]')
-      ) {
-        return child;
-      }
-    }
-
-    // 2. Query inside
-    const shareBtnDeep = container.querySelector('button[aria-label*="Share" i], yt-button-view-model button[aria-label*="Share" i]');
-    if (shareBtnDeep) {
-      let parent = shareBtnDeep;
-      while (parent && parent.parentElement !== container && parent !== container) {
-        parent = parent.parentElement;
-      }
-      if (parent && parent !== container && parent.parentElement === container) {
-        return parent;
-      }
-    }
-
-    return null;
-  }
-
+  // Inject Video Player Control Bar Button Only
   function injectYouTubeButtons() {
     if (!window.location.pathname.startsWith('/watch') && !window.location.pathname.startsWith('/shorts')) {
       return;
     }
 
-    // 1. Actions Bar (Watch Page - Exactly after Share Button)
-    const actionsBar =
-      document.querySelector('#actions-inner #top-level-buttons-computed') ||
-      document.querySelector('ytd-watch-metadata #actions #top-level-buttons-computed') ||
-      document.querySelector('ytd-watch-metadata #top-level-buttons-computed') ||
-      document.querySelector('#actions #top-level-buttons-computed') ||
-      document.querySelector('#top-level-buttons-computed') ||
-      document.querySelector('ytd-menu-renderer[class*="watch-metadata"] #top-level-buttons-computed') ||
-      document.querySelector('yt-flexible-actions-view-model');
+    // Clean up any action bar button next to Share button if present
+    document.querySelectorAll('.valut-yt-wrapper, ytd-menu-renderer .valut-yt-btn').forEach(el => el.remove());
 
-    if (actionsBar) {
-      let btn = actionsBar.querySelector('.valut-yt-btn');
-      
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.className = 'valut-yt-btn';
-        btn.title = 'Save to Valut (AI Tagging)';
-        btn.innerHTML = `
-          <span class="valut-yt-icon">${BOOKMARK_ICON}</span>
-          <span class="valut-yt-label">Valut</span>
-        `;
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleSaveClick(btn);
-        });
+    const vid = getYouTubeVideoId();
+    if (vid) {
+      if (vid !== currentVideoId) {
+        currentVideoId = vid;
+        // Immediately reset to false (unsaved / white) on new video!
+        isCurrentVideoSaved = false;
+        renderSaveState(false);
 
-        const shareBtn = findShareButton(actionsBar);
-        if (shareBtn) {
-          shareBtn.after(btn);
+        const localCache = getCachedSavedVideoIds();
+        if (localCache.includes(vid)) {
+          isCurrentVideoSaved = true;
+          renderSaveState(true);
         } else {
-          // Fallback after Like/Dislike group
-          const likeGroup = actionsBar.querySelector('segmented-like-dislike-button-view-model, ytd-segmented-like-dislike-button-renderer') || actionsBar.firstElementChild;
-          if (likeGroup && likeGroup.nextElementSibling) {
-            likeGroup.nextElementSibling.after(btn);
-          } else if (likeGroup) {
-            likeGroup.after(btn);
-          } else {
-            actionsBar.appendChild(btn);
-          }
-        }
-      } else {
-        // Ensure position remains immediately after the Share button
-        const shareBtn = findShareButton(actionsBar);
-        if (shareBtn && shareBtn.nextElementSibling !== btn) {
-          shareBtn.after(btn);
+          checkVideoSaveStatus(vid, window.location.href).then(saved => {
+            if (vid === currentVideoId) {
+              renderSaveState(saved);
+            }
+          });
         }
       }
     }
 
-    // 2. Video Player Control Bar (Far left of right controls)
+    // Video Player Control Bar Button (Bottom Right)
     const rightControls = document.querySelector('.ytp-right-controls');
     if (rightControls) {
       let playerBtn = rightControls.querySelector('.valut-yt-player-btn');
       if (!playerBtn) {
         playerBtn = document.createElement('button');
         playerBtn.className = 'valut-yt-player-btn ytp-button';
-        playerBtn.title = 'Save to Valut (Alt+V)';
+        if (isCurrentVideoSaved) playerBtn.classList.add('valut-is-saved', 'valut-saved');
+        playerBtn.title = isCurrentVideoSaved ? 'Saved in Valut' : 'Save to Valut (Alt+V)';
+        playerBtn.setAttribute('aria-label', 'Save to Valut');
         playerBtn.innerHTML = `
           <div class="valut-player-icon-wrapper">
-            ${BOOKMARK_ICON}
+            ${VALUT_ICON}
           </div>
         `;
         playerBtn.addEventListener('click', (e) => {
@@ -293,25 +379,53 @@
           handleSaveClick(playerBtn);
         });
         rightControls.prepend(playerBtn);
-      } else if (rightControls.firstElementChild !== playerBtn) {
-        rightControls.prepend(playerBtn);
       }
     }
   }
 
-  // Run injection
-  injectYouTubeButtons();
+  // Initial Injection
+  setTimeout(injectYouTubeButtons, 200);
 
-  // Observer for dynamic YouTube SPA navigation
-  const observer = new MutationObserver(() => {
-    injectYouTubeButtons();
+  // Debounced execution
+  let debounceTimer = null;
+  function debouncedInject(delay = 300) {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(injectYouTubeButtons, delay);
+  }
+
+  // Safe Observer that ignores mutations from Valut's own elements
+  const observer = new MutationObserver((mutations) => {
+    let shouldCheck = false;
+    for (const m of mutations) {
+      if (m.target) {
+        const el = m.target;
+        if (el.nodeType === 1) {
+          if (el.classList?.contains('valut-yt-player-btn') || el.closest?.('.valut-yt-player-btn, .valut-toast-container')) {
+            continue;
+          }
+        }
+      }
+      shouldCheck = true;
+      break;
+    }
+    if (shouldCheck) {
+      debouncedInject(350);
+    }
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
 
+  // YouTube navigation event listeners
   window.addEventListener('yt-navigate-finish', () => {
-    setTimeout(injectYouTubeButtons, 200);
-    setTimeout(injectYouTubeButtons, 600);
-    setTimeout(injectYouTubeButtons, 1200);
+    debouncedInject(200);
+    debouncedInject(800);
+  });
+
+  window.addEventListener('yt-page-data-updated', () => {
+    debouncedInject(200);
+  });
+
+  window.addEventListener('popstate', () => {
+    debouncedInject(200);
   });
 })();

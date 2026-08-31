@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { soundFx } from '@/lib/sound-effects';
 
 export function AppearanceSettings() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
@@ -9,6 +10,14 @@ export function AppearanceSettings() {
     }
     return 'dark';
   });
+
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('valut_sound_muted') === 'true';
+    }
+    return false;
+  });
+
   const [gridColumns, setGridColumns] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('stashr_grid_columns');
@@ -16,6 +25,7 @@ export function AppearanceSettings() {
     }
     return 3;
   });
+
   const [mosaicColumns, setMosaicColumns] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('stashr_mosaic_columns');
@@ -25,28 +35,43 @@ export function AppearanceSettings() {
   });
 
   const handleSelectTheme = (mode: 'light' | 'dark' | 'system') => {
+    soundFx.playClickSound();
     setTheme(mode);
     localStorage.setItem('stashr_theme', mode);
     if (mode === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.backgroundColor = '#000000';
     } else if (mode === 'light') {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.backgroundColor = '#ffffff';
     } else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
         document.documentElement.classList.add('dark');
+        document.documentElement.style.backgroundColor = '#000000';
       } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.style.backgroundColor = '#ffffff';
       }
     }
   };
 
+  const handleToggleSound = () => {
+    const nextMuted = soundFx.toggleMute();
+    setIsMuted(nextMuted);
+    if (!nextMuted) {
+      soundFx.playSaveSound();
+    }
+  };
+
   const handleGridColsChange = (val: number) => {
+    soundFx.playClickSound();
     setGridColumns(val);
     localStorage.setItem('stashr_grid_columns', String(val));
   };
 
   const handleMosaicColsChange = (val: number) => {
+    soundFx.playClickSound();
     setMosaicColumns(val);
     localStorage.setItem('stashr_mosaic_columns', String(val));
   };
@@ -58,11 +83,11 @@ export function AppearanceSettings() {
         <div>
           <h2 className="text-sm font-semibold text-strong tracking-tight">Theme</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Choose how Stashr looks to you.
+            Choose how Valut looks to you.
           </p>
         </div>
 
-        {/* 3 Theme Preview Cards (Exact visual graphics from screenshot) */}
+        {/* 3 Theme Preview Cards */}
         <div className="grid grid-cols-3 gap-4 max-w-lg">
           {/* Light Theme Card */}
           <div className="space-y-2">
@@ -75,17 +100,13 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient neutral dark header */}
               <div className="h-full w-full bg-gradient-to-br from-neutral-300 via-neutral-200 to-neutral-300 p-2 flex flex-col justify-end">
-                {/* Mock UI window */}
                 <div className="h-16 w-full rounded-t-xl bg-[#F5F5F7] border-t border-x border-black/10 flex overflow-hidden shadow-sm">
-                  {/* Mock Sidebar */}
                   <div className="w-6 border-r border-black/5 bg-[#EBEBED] p-1 space-y-1">
                     <div className="size-1.5 rounded-full bg-black/20" />
                     <div className="h-1 w-full rounded bg-black/15" />
                     <div className="h-1 w-full rounded bg-black/15" />
                   </div>
-                  {/* Mock Main View */}
                   <div className="flex-1 p-1.5 space-y-1 bg-white">
                     <div className="h-1.5 w-1/2 rounded bg-black/20" />
                     <div className="h-6 w-full rounded bg-black/5" />
@@ -107,17 +128,13 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient neutral black header */}
               <div className="h-full w-full bg-gradient-to-br from-neutral-800 via-neutral-900 to-black p-2 flex flex-col justify-end">
-                {/* Mock UI window */}
                 <div className="h-16 w-full rounded-t-xl bg-[#080808] border-t border-x border-white/10 flex overflow-hidden shadow-sm">
-                  {/* Mock Sidebar */}
                   <div className="w-6 border-r border-white/5 bg-[#050505] p-1 space-y-1">
                     <div className="size-1.5 rounded-full bg-white/25" />
                     <div className="h-1 w-full rounded bg-white/15" />
                     <div className="h-1 w-full rounded bg-white/15" />
                   </div>
-                  {/* Mock Main View */}
                   <div className="flex-1 p-1.5 space-y-1 bg-[#121212]">
                     <div className="h-1.5 w-1/2 rounded bg-white/20" />
                     <div className="h-6 w-full rounded bg-white/5" />
@@ -139,17 +156,13 @@ export function AppearanceSettings() {
                   : 'border-border/80 hover:border-border'
               }`}
             >
-              {/* Top ambient neutral header */}
               <div className="h-full w-full bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 p-2 flex flex-col justify-end">
-                {/* Mock UI window split in half (Light left, Dark right) */}
                 <div className="h-16 w-full rounded-t-xl flex overflow-hidden border-t border-x border-white/10 shadow-sm">
-                  {/* Left half light */}
                   <div className="w-1/2 bg-[#F5F5F7] p-1 space-y-1">
                     <div className="size-1.5 rounded-full bg-black/20" />
                     <div className="h-1 w-3/4 rounded bg-black/15" />
                     <div className="h-4 w-full rounded bg-black/5" />
                   </div>
-                  {/* Right half dark */}
                   <div className="w-1/2 bg-[#080808] p-1 space-y-1 border-l border-white/10">
                     <div className="h-1.5 w-1/2 rounded bg-white/20" />
                     <div className="h-4 w-full rounded bg-white/10" />
@@ -217,6 +230,36 @@ export function AppearanceSettings() {
               <path d="m7 9 5-5 5 5" />
             </svg>
           </div>
+        </div>
+      </div>
+
+      {/* 4. Audio Feedback & Sound Effects Section */}
+      <div className="space-y-3 pt-4 border-t border-border/60">
+        <div>
+          <h2 className="text-sm font-semibold text-strong tracking-tight">Sound Effects & Haptics</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Play delightful tactile audio feedback when saving, filtering, deleting, or switching views.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between max-w-lg rounded-2xl border border-border/70 bg-card/50 p-4 transition-all hover:border-border">
+          <div className="space-y-0.5">
+            <span className="text-xs font-semibold text-strong">Enable Audio Feedback</span>
+            <p className="text-[11px] text-muted-foreground">Tactile micro-sounds on clicks, tag filter, and saves</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleSound}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              !isMuted ? 'bg-primary' : 'bg-muted'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                !isMuted ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
       </div>
     </div>

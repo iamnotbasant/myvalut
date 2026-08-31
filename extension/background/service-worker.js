@@ -1,6 +1,33 @@
 // Valut Extension Background Service Worker
 const DEFAULT_SERVER_URL = 'https://myvalut.vercel.app';
 
+// Helper to extract YouTube video ID from URL
+function extractYouTubeId(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes('youtube.com')) {
+      if (urlObj.pathname.startsWith('/watch')) {
+        const v = urlObj.searchParams.get('v');
+        return v && /^[a-zA-Z0-9_-]{11}$/.test(v) ? v : null;
+      }
+      if (urlObj.pathname.startsWith('/shorts/')) {
+        const s = urlObj.pathname.split('/shorts/')[1]?.split(/[?#/]/)[0];
+        return s && /^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null;
+      }
+      if (urlObj.pathname.startsWith('/live/')) {
+        const l = urlObj.pathname.split('/live/')[1]?.split(/[?#/]/)[0];
+        return l && /^[a-zA-Z0-9_-]{11}$/.test(l) ? l : null;
+      }
+    } else if (urlObj.hostname.includes('youtu.be')) {
+      const b = urlObj.pathname.slice(1).split(/[?#/]/)[0];
+      return b && /^[a-zA-Z0-9_-]{11}$/.test(b) ? b : null;
+    }
+  } catch {}
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
 // Initialize context menu
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -52,6 +79,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // async response
   }
 
+  if (request.action === 'CHECK_BOOKMARK_SAVED') {
+    checkBookmarkSaved(request.url, request.videoId).then(response => {
+      sendResponse(response);
+    });
+    return true;
+  }
+
   if (request.action === 'GET_CONFIG') {
     chrome.storage.sync.get(['serverUrl', 'apiKey', 'userId'], (data) => {
       sendResponse({
@@ -63,6 +97,73 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
+
+// Check if a bookmark is already saved
+async function checkBookmarkSaved(url, videoId) {
+  const vid = (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) ? videoId : extractYouTubeId(url);
+  
+  // 1. Check local storage cache first
+  try {
+    const stored = await chrome.storage.local.get(['valut_saved_urls', 'valut_saved_yt_ids']);
+    const savedUrls = (stored.valut_saved_urls || []).filter(u => typeof u === 'string' && u.length > 5);
+    const savedYtIds = (stored.valut_saved_yt_ids || []).filter(id => typeof id === 'string' && id.length === 11);
+
+    if (vid && savedYtIds.includes(vid)) {
+      return { isSaved: true, videoId: vid };
+    }
+    if (url && savedUrls.some(u => u === url || (vid && u.includes(vid)))) {
+      return { isSaved: true, videoId: vid };
+    }
+  } catch (err) {
+    console.warn('Local storage check error:', err);
+  }
+
+  // 2. Query backend if server is accessible
+  if (vid || (url && url.length > 5)) {
+    try {
+      const config = await chrome.storage.sync.get(['serverUrl']);
+      const primaryUrl = (config.serverUrl || DEFAULT_SERVER_URL).replace(/\/$/, '');
+      const queryUrl = `${primaryUrl}/api/extension/check?url=${encodeURIComponent(url || '')}&videoId=${encodeURIComponent(vid || '')}`;
+      
+      const res = await fetch(queryUrl);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isSaved) {
+          if (vid) await cacheSavedVideoId(vid);
+          if (url) await cacheSavedUrl(url);
+          return { isSaved: true, videoId: vid, bookmark: data.bookmark };
+        }
+      }
+    } catch {}
+  }
+
+  return { isSaved: false, videoId: vid };
+}
+
+// Helpers to update local cache
+async function cacheSavedUrl(url) {
+  if (!url || typeof url !== 'string' || url.length < 5) return;
+  try {
+    const stored = await chrome.storage.local.get(['valut_saved_urls']);
+    const list = (stored.valut_saved_urls || []).filter(u => typeof u === 'string' && u.length > 5);
+    if (!list.includes(url)) {
+      list.push(url);
+      await chrome.storage.local.set({ valut_saved_urls: list.slice(-500) });
+    }
+  } catch (e) {}
+}
+
+async function cacheSavedVideoId(vid) {
+  if (!vid || typeof vid !== 'string' || vid.length !== 11) return;
+  try {
+    const stored = await chrome.storage.local.get(['valut_saved_yt_ids']);
+    const list = (stored.valut_saved_yt_ids || []).filter(id => typeof id === 'string' && id.length === 11);
+    if (!list.includes(vid)) {
+      list.push(vid);
+      await chrome.storage.local.set({ valut_saved_yt_ids: list.slice(-500) });
+    }
+  } catch (e) {}
+}
 
 // Main save function with automatic multi-port fallback (3000, 3001, etc.)
 async function saveBookmarkToValut(data) {
@@ -100,9 +201,17 @@ async function saveBookmarkToValut(data) {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // If a fallback URL succeeded, save it as the active serverUrl
           if (baseUrl !== primaryUrl) {
             chrome.storage.sync.set({ serverUrl: baseUrl });
+          }
+
+          // Cache saved URL and YouTube video ID
+          if (data.url) {
+            await cacheSavedUrl(data.url);
+            const vid = extractYouTubeId(data.url);
+            if (vid) {
+              await cacheSavedVideoId(vid);
+            }
           }
 
           if (data.tabId) {
@@ -113,7 +222,6 @@ async function saveBookmarkToValut(data) {
             }).catch(() => {});
           }
 
-          // Visual badge feedback
           chrome.action.setBadgeText({ text: '✓' });
           chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
           setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
@@ -126,7 +234,6 @@ async function saveBookmarkToValut(data) {
     }
   }
 
-  // All connection candidates failed
   const friendlyError = 'Valut app is offline. Please run "npm run dev" in your project terminal!';
   console.error('Valut save error:', lastError);
 

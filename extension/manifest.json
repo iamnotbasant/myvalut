@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Valut - AI Bookmark & Knowledge Capture",
   "version": "1.0.0",
-  "description": "1-click smart bookmarking for YouTube, X (Twitter), Reddit, and web articles with AI categorization.",
+  "description": "1-click smart bookmarking for YouTube, X (Twitter), Reddit, Instagram, and web articles with AI categorization.",
   "permissions": [
     "activeTab",
     "storage",
@@ -59,6 +59,15 @@
     },
     {
       "matches": [
+        "https://www.instagram.com/*",
+        "https://instagram.com/*"
+      ],
+      "js": ["content/instagram.js"],
+      "css": ["content/common.css", "content/instagram.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
         "<all_urls>"
       ],
       "exclude_matches": [
@@ -67,7 +76,9 @@
         "https://twitter.com/*",
         "https://x.com/*",
         "https://www.reddit.com/*",
-        "https://reddit.com/*"
+        "https://reddit.com/*",
+        "https://www.instagram.com/*",
+        "https://instagram.com/*"
       ],
       "js": ["content/generic.js"],
       "css": ["content/common.css"],
