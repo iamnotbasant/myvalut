@@ -7,6 +7,7 @@ export type PlatformType =
   | 'pinterest'
   | 'bluesky'
   | 'threads'
+  | 'github'
   | 'web';
 
 export type TagColor =

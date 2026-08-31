@@ -400,23 +400,21 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           $('meta[name="twitter:image"]').attr('content') ||
           '';
 
-        const siteName =
+        let siteName =
           $('meta[property="og:site_name"]').attr('content') ||
           $('meta[name="application-name"]').attr('content') ||
           new URL(inputUrl).hostname.replace(/^www\./, '');
 
-        displayName = siteName;
-        username = new URL(inputUrl).hostname.replace(/^www\./, '');
-
         if (inputUrl.includes('github.com')) {
-          const userSegment = new URL(inputUrl).pathname.split('/').filter(Boolean)[0];
-          if (userSegment) {
-            username = userSegment;
-            avatarUrl = `https://github.com/${userSegment}.png`;
-          }
+          displayName = 'GitHub';
+          username = '';
+          avatarUrl = '';
+        } else {
+          displayName = siteName;
+          username = '';
         }
 
-        if (!avatarUrl) {
+        if (!avatarUrl && !inputUrl.includes('github.com')) {
           avatarUrl =
             $('link[rel="apple-touch-icon"]').attr('href') ||
             $('link[rel="icon"]').attr('href') ||

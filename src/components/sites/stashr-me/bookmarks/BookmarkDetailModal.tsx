@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
-import { TagDot, PlatformIcon, RedditIcon, ExternalLink, Sparkles } from '@/components/icons';
+import { TagDot, PlatformIcon, RedditIcon, GitHubIcon, ExternalLink, Sparkles } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
 interface BookmarkDetailModalProps {
@@ -44,6 +46,14 @@ export function BookmarkDetailModal({
     }
   };
 
+  const isGitHub =
+    bookmark.platform === 'github' ||
+    (bookmark.url && bookmark.url.toLowerCase().includes('github.com'));
+
+  const isSocialPlatform = ['youtube', 'twitter', 'reddit', 'instagram', 'tiktok', 'bluesky', 'threads'].includes(
+    bookmark.platform
+  ) && !isGitHub;
+
   const isVideo =
     bookmark.imageUrl?.includes('13_') ||
     bookmark.imageUrl?.includes('video') ||
@@ -66,13 +76,17 @@ export function BookmarkDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150"
     >
       <div
         onClick={e => e.stopPropagation()}
         onDoubleClick={handleOpenOriginalPost}
         title="Double-click to open original post in a new tab"
         className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 scrollbar-none select-none group/modal"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
       >
         {/* Top Right Action Bar: Open Original Post Button + Close Button */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
@@ -103,9 +117,13 @@ export function BookmarkDetailModal({
           </button>
         </div>
 
-        {/* Header with Avatar & Author */}
+        {/* Header with Avatar & Author / Platform Logo */}
         <div className="flex items-center gap-3 pr-32">
-          {bookmark.avatarUrl ? (
+          {isGitHub ? (
+            <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-black text-white shadow-md">
+              <GitHubIcon className="size-6 text-white" />
+            </div>
+          ) : bookmark.avatarUrl && isSocialPlatform ? (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-muted relative shadow-md">
               <Image
                 src={bookmark.avatarUrl}
@@ -121,15 +139,16 @@ export function BookmarkDetailModal({
             </div>
           ) : (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-accent text-sm font-semibold text-strong shadow-md">
-              {bookmark.displayName ? bookmark.displayName.charAt(0).toUpperCase() : <PlatformIcon platform={bookmark.platform} />}
+              {bookmark.displayName ? bookmark.displayName.charAt(0).toUpperCase() : <PlatformIcon platform={bookmark.platform} url={bookmark.url} />}
             </div>
           )}
 
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             <span className="truncate font-semibold text-white text-base leading-tight tracking-tight">
-              {bookmark.displayName}
+              {isGitHub ? 'GitHub' : bookmark.displayName || 'Web'}
             </span>
-            {bookmark.username && (
+            {/* Show username ONLY for social platforms (Twitter, Reddit, Instagram, YouTube) */}
+            {isSocialPlatform && bookmark.username && (
               <span className="truncate text-xs text-neutral-400 leading-tight mt-0.5">
                 {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
               </span>
@@ -151,21 +170,19 @@ export function BookmarkDetailModal({
           </div>
         )}
 
-        {/* Media / Video Preview */}
+        {/* Media / Video Preview (Full-Height Natural Scroll, No Cut-Off) */}
         {cleanImageUrl && (
           <div
             onDoubleClick={handleOpenOriginalPost}
             title="Double-click to open original post"
-            className={`relative overflow-hidden rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer ${
-              bookmark.platform === 'youtube' ? 'aspect-video' : ''
-            }`}
+            className="relative rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer flex flex-col items-center justify-center overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={cleanImageUrl}
               alt={bookmark.displayName}
-              className={`w-full object-cover transition-transform duration-300 group-hover/media:scale-[1.01] ${
-                bookmark.platform === 'youtube' ? 'aspect-video h-full' : 'h-auto max-h-[32rem]'
+              className={`w-full h-auto max-h-[70vh] object-contain transition-transform duration-300 group-hover/media:scale-[1.005] ${
+                bookmark.platform === 'youtube' ? 'aspect-video object-cover' : ''
               }`}
               onError={(e) => {
                 const target = e.currentTarget;
@@ -176,7 +193,7 @@ export function BookmarkDetailModal({
             />
 
             {/* Subtle Overlay Badge on Hover */}
-            <div className="pointer-events-none absolute bottom-3 right-3 opacity-0 group-hover/media:opacity-100 transition-opacity bg-black/70 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1 text-[11px] font-medium text-neutral-200 flex items-center gap-1.5 shadow-lg">
+            <div className="pointer-events-none absolute bottom-3 right-3 opacity-0 group-hover/media:opacity-100 transition-opacity bg-black/75 backdrop-blur-md border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-medium text-neutral-200 flex items-center gap-1.5 shadow-lg">
               <span>Double-click to open post</span>
               <ExternalLink className="size-3" />
             </div>
@@ -234,11 +251,11 @@ export function BookmarkDetailModal({
             )}
           </div>
 
-          {/* Date and Centered Platform Icon */}
+          {/* Date and Platform Badge */}
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
             <div className="h-3.5 w-px bg-white/10"></div>
-            <PlatformIcon platform={bookmark.platform} />
+            <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
           </div>
         </div>
       </div>

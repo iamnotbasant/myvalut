@@ -6,6 +6,7 @@ import { BookmarkItem, ViewMode } from '@/types/stashr';
 import {
   PlatformIcon,
   RedditIcon,
+  GitHubIcon,
   TagDot,
   Star,
   FileText,
@@ -42,7 +43,6 @@ import { TagColor } from '@/types/stashr';
 
 function getCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  // If it's a YouTube URL, keep it valid
   return url;
 }
 
@@ -55,199 +55,95 @@ export function getCleanCardContent(bookmark: BookmarkItem) {
     rawText.toLowerCase().includes('upload original content') ||
     rawText.toLowerCase().includes('saved from valut extension');
 
-  // Check if text is same as title or boilerplate
   const isDuplicate =
     !rawText ||
     isBoilerplate ||
+    rawText === title ||
     (title && rawText.toLowerCase() === title.toLowerCase()) ||
-    (title && rawText.toLowerCase().startsWith(title.toLowerCase()) && rawText.length <= title.length + 12);
-
-  const cleanText = isDuplicate ? '' : rawText;
+    (title && rawText.length < title.length + 15 && title.toLowerCase().includes(rawText.toLowerCase().slice(0, 30)));
 
   return {
-    displayTitle: title || rawText,
-    displayDescription: cleanText
+    hasDistinctText: !isDuplicate,
+    cleanText: isDuplicate ? '' : rawText
   };
 }
 
-// Dynamically calculates how many whole tags fit in the available container width before showing +N badge
-function DynamicCardTags({
+export function DynamicCardTags({
   tags,
   isGeneratingTags,
   onSelectTag,
   onGenerateTags
 }: {
-  tags: Array<{ name: string; color: TagColor }>;
+  tags: { name: string; color: TagColor }[];
   isGeneratingTags?: boolean;
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: () => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleIndices, setVisibleIndices] = useState<number[]>([0]);
-
-  useEffect(() => {
-    if (!containerRef.current || tags.length === 0) return;
-
-    const calculateVisibleTags = () => {
-      const container = containerRef.current;
-      if (!container) return;
-
-      const rawWidth = container.clientWidth || container.getBoundingClientRect().width;
-      if (rawWidth <= 0) return;
-
-      // 6px safety buffer ensures tags NEVER collide with or touch the date
-      const availableWidth = Math.max(0, rawWidth - 6);
-
-      // Exact canvas font metrics for pixel-perfect measurement
-      let ctx: CanvasRenderingContext2D | null = null;
-      try {
-        const canvas = document.createElement('canvas');
-        ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.font = '500 12px Inter, system-ui, -apple-system, sans-serif';
-        }
-      } catch {}
-
-      const badgeWidth = 34; // "+1", "+2", "+3" button width
-      const gap = 6;
-
-      // Accurate pixel width for each tag:
-      // tag text width + 16px padding (px-2) + 8px dot + 6px gap + 2px border = 32px
-      const tagWidths = tags.map(t => {
-        const textW = ctx ? ctx.measureText(t.name).width : t.name.length * 6.5;
-        return Math.ceil(textW + 32);
-      });
-
-      // 1. If all tags fit in 1 line without any +N badge, show all
-      const totalAll = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * gap;
-      if (totalAll <= availableWidth) {
-        setVisibleIndices(tags.map((_, i) => i));
-        return;
-      }
-
-      // 2. Adaptive Packing: Greedily fit any and all tags that fit within budget alongside +N badge
-      const maxTagBudget = availableWidth - badgeWidth - gap;
-      const chosen: number[] = [];
-      let currentW = 0;
-
-      for (let i = 0; i < tags.length; i++) {
-        const addedW = (chosen.length > 0 ? gap : 0) + tagWidths[i];
-        if (currentW + addedW <= maxTagBudget) {
-          chosen.push(i);
-          currentW += addedW;
-        }
-      }
-
-      // If nothing fit, at least show tag 0
-      if (chosen.length === 0) {
-        chosen.push(0);
-      }
-
-      setVisibleIndices(chosen);
-    };
-
-    calculateVisibleTags();
-    const rafId = requestAnimationFrame(calculateVisibleTags);
-    const timerId = setTimeout(calculateVisibleTags, 100);
-
-    const resizeObserver = new ResizeObserver(() => {
-      calculateVisibleTags();
-    });
-    resizeObserver.observe(containerRef.current);
-
-    window.addEventListener('resize', calculateVisibleTags);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      clearTimeout(timerId);
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', calculateVisibleTags);
-    };
-  }, [tags]);
+  const [isTagsExpanded, setIsTagsExpanded] = useState(false);
 
   if (isGeneratingTags) {
     return (
-      <div className="flex min-w-0 flex-1 items-center overflow-hidden">
-        <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
-          <Sparkles className="size-3 text-purple-400 animate-spin" />
-          <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide whitespace-nowrap">
-            Generating tags...
-          </span>
-        </div>
+      <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+        <Sparkles className="size-3 text-purple-400 animate-spin" />
+        <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide">
+          Generating...
+        </span>
       </div>
     );
   }
 
   if (!tags || tags.length === 0) {
-    return (
-      <div className="flex min-w-0 flex-1 items-center overflow-hidden">
-        {onGenerateTags ? (
-          <button
-            type="button"
-            onClick={e => {
-              e.stopPropagation();
-              onGenerateTags();
-            }}
-            className="group/tagbtn inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/25 px-2 py-0.5 text-[11px] text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
-          >
-            <Sparkles className="size-2.5 text-purple-400 group-hover/tagbtn:rotate-12 transition-transform" />
-            <span>Generate AI tags</span>
-          </button>
-        ) : null}
-      </div>
-    );
-  }
-
-  const visibleTags = tags.filter((_, idx) => visibleIndices.includes(idx));
-  const remainingTags = tags.filter((_, idx) => !visibleIndices.includes(idx));
-
-  return (
-    <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1.5 overflow-visible">
-      {visibleTags.map((tag, idx) => (
+    if (onGenerateTags) {
+      return (
         <button
-          key={idx}
           type="button"
           onClick={e => {
             e.stopPropagation();
+            onGenerateTags();
+          }}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-dashed border-white/20 bg-white/[0.03] hover:bg-white/[0.08] text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+        >
+          <Sparkles className="size-2.5 text-purple-400" />
+          <span>AI tag</span>
+        </button>
+      );
+    }
+    return <span className="text-[11px] text-neutral-500 italic">No tags</span>;
+  }
+
+  const visibleTags = isTagsExpanded ? tags : tags.slice(0, 2);
+  const hiddenCount = tags.length - 2;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+      {visibleTags.map((tag, idx) => (
+        <button
+          type="button"
+          key={idx}
+          onClick={e => {
+            e.stopPropagation();
+            soundFx.playTagSound();
             onSelectTag?.(tag.name);
           }}
-          className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1.5 px-2 py-0.5 transition-all cursor-pointer active:scale-95"
+          className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-md font-normal text-xs h-5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95 shadow-2xs"
         >
           <TagDot color={tag.color} />
-          <span className="whitespace-nowrap">{tag.name}</span>
+          <span className="truncate max-w-[120px] text-[11px] leading-none">{tag.name}</span>
         </button>
       ))}
 
-      {remainingTags.length > 0 && (
-        <div className="relative group/tagtooltip shrink-0">
-          <button
-            type="button"
-            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border border-white/[0.08] bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-5.5 text-neutral-300 hover:text-white gap-1 px-2 py-0.5 transition-colors cursor-pointer"
-          >
-            +{remainingTags.length}
-          </button>
-
-          {/* Floating Tag Tooltip - Anchored with left-0 so it NEVER clips against the card border */}
-          <div className="absolute bottom-full left-0 mb-2.5 hidden group-hover/tagtooltip:flex flex-col items-start z-50 pointer-events-auto animate-in fade-in-50">
-            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-neutral-700/90 bg-[#1c1c1f] p-2 text-xs text-white shadow-[0_12px_30px_rgba(0,0,0,0.9)] backdrop-blur-md max-w-[260px]">
-              {remainingTags.map((tag, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onSelectTag?.(tag.name);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-white/10 bg-white/[0.06] hover:bg-white/[0.15] text-xs text-neutral-200 hover:text-white transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  <TagDot color={tag.color} />
-                  <span>{tag.name}</span>
-                </button>
-              ))}
-            </div>
-            <div className="size-2 -mt-1 ml-3 rotate-45 border-r border-b border-neutral-700/90 bg-[#1c1c1f]" />
-          </div>
-        </div>
+      {!isTagsExpanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            setIsTagsExpanded(true);
+          }}
+          className="inline-flex items-center justify-center rounded-md border border-white/10 bg-[#171717] hover:bg-[#222222] px-1.5 py-0.5 text-[10.5px] font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
+          title={`${hiddenCount} more tags`}
+        >
+          +{hiddenCount}
+        </button>
       )}
     </div>
   );
@@ -270,66 +166,21 @@ export function BookmarkCard({
   onGenerateTags,
   onEditTags
 }: BookmarkCardProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [imgSrc, setImgSrc] = useState<string | undefined>(getCleanImageUrl(bookmark.imageUrl));
+  const [copied, setCopied] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isTextIdenticalToTitle = Boolean(
-    bookmark.title &&
-    bookmark.text &&
-    (bookmark.text.trim().toLowerCase() === bookmark.title.trim().toLowerCase() ||
-     bookmark.text.trim().replace(/\s+/g, ' ').toLowerCase() === bookmark.title.trim().replace(/\s+/g, ' ').toLowerCase() ||
-     (bookmark.text.length < bookmark.title.length + 10 && bookmark.title.toLowerCase().includes(bookmark.text.toLowerCase().slice(0, 30))))
-  );
-  const hasDistinctText = Boolean(bookmark.text && !isTextIdenticalToTitle);
+  const isGitHub =
+    bookmark.platform === 'github' ||
+    (bookmark.url && bookmark.url.toLowerCase().includes('github.com'));
 
-  useEffect(() => {
-    setImgSrc(getCleanImageUrl(bookmark.imageUrl));
-    setHasImageError(false);
-    setIsImageLoaded(false);
-  }, [bookmark.imageUrl]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleImageError = () => {
-    if (!imgSrc) {
-      setHasImageError(true);
-      return;
-    }
-
-    // YouTube multi-stage fallback ladder
-    if (imgSrc.includes('maxresdefault.jpg')) {
-      setImgSrc(imgSrc.replace('maxresdefault.jpg', 'hqdefault.jpg'));
-    } else if (imgSrc.includes('hqdefault.jpg')) {
-      setImgSrc(imgSrc.replace('hqdefault.jpg', 'mqdefault.jpg'));
-    } else if (imgSrc.includes('mqdefault.jpg')) {
-      setImgSrc(imgSrc.replace('mqdefault.jpg', '0.jpg'));
-    } else {
-      setHasImageError(true);
-    }
-  };
-
-  const handleCopyLink = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (bookmark.url) {
-      navigator.clipboard.writeText(bookmark.url);
-      soundFx.playClickSound();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  const isSocialPlatform =
+    ['youtube', 'twitter', 'reddit', 'instagram', 'tiktok', 'bluesky', 'threads'].includes(
+      bookmark.platform
+    ) && !isGitHub;
 
   const [rightClickMenu, setRightClickMenu] = useState<{
     isOpen: boolean;
@@ -339,9 +190,46 @@ export function BookmarkCard({
     position: { x: 0, y: 0 }
   });
 
+  const { hasDistinctText } = getCleanCardContent(bookmark);
+
+  const imgSrc = getCleanImageUrl(bookmark.imageUrl);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bookmark.url) {
+      navigator.clipboard.writeText(bookmark.url);
+      soundFx.playClickSound();
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      setIsMenuOpen(false);
+    }
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    if (target.src.includes('maxresdefault.jpg')) {
+      target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+    } else {
+      setHasImageError(true);
+    }
+  };
+
   const handleCardContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    soundFx.playClickSound();
     setRightClickMenu({
       isOpen: true,
       position: { x: e.clientX, y: e.clientY }
@@ -350,10 +238,31 @@ export function BookmarkCard({
 
   const bookmarkMenuItems: ContextMenuItem[] = [
     {
+      id: 'open-detail',
+      label: 'View Details',
+      icon: <ExternalLink className="size-3.5" />,
+      onClick: () => onOpenDetail?.(bookmark)
+    },
+    {
       id: 'favorite',
-      label: bookmark.isFavorite ? 'Unfavorite' : 'Favorite',
-      icon: <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-400 text-amber-400' : ''}`} />,
-      onClick: () => onToggleFavorite(bookmark.id)
+      label: bookmark.isFavorite ? 'Remove Favorite' : 'Add to Favorites',
+      icon: <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />,
+      onClick: () => {
+        soundFx.playFavoriteSound();
+        onToggleFavorite(bookmark.id);
+      }
+    },
+    {
+      id: 'ai-tag',
+      label: isGeneratingTags ? 'Generating tags...' : 'Generate AI Tags',
+      icon: <Sparkles className="size-3.5 text-purple-400" />,
+      onClick: () => onGenerateTags?.(bookmark)
+    },
+    {
+      id: 'edit-tags',
+      label: 'Edit Tags',
+      icon: <Tag className="size-3.5 text-neutral-400" />,
+      onClick: () => onEditTags?.(bookmark)
     },
     {
       id: 'note',
@@ -362,21 +271,9 @@ export function BookmarkCard({
       onClick: () => onOpenNote(bookmark)
     },
     {
-      id: 'ai-tags',
-      label: isGeneratingTags ? 'Generating tags...' : 'Generate AI Tags',
-      icon: <Sparkles className={`size-3.5 ${isGeneratingTags ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />,
-      onClick: () => onGenerateTags?.(bookmark)
-    },
-    {
-      id: 'edit-tags',
-      label: 'Edit Tags',
-      icon: <Tag className="size-3.5" />,
-      onClick: () => onEditTags?.(bookmark)
-    },
-    {
       id: 'copy',
-      label: copied ? 'Copied Link!' : 'Copy Link',
-      icon: copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />,
+      label: copied ? 'Link Copied!' : 'Copy Link',
+      icon: copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />,
       onClick: () => {
         if (bookmark.url) {
           navigator.clipboard.writeText(bookmark.url);
@@ -398,7 +295,10 @@ export function BookmarkCard({
       id: 'archive',
       label: bookmark.isArchived ? 'Unarchive' : 'Archive',
       icon: <Archive className="size-3.5" />,
-      onClick: () => onArchive(bookmark.id)
+      onClick: () => {
+        soundFx.playArchiveSound();
+        onArchive(bookmark.id);
+      }
     },
     {
       id: 'sep',
@@ -410,7 +310,10 @@ export function BookmarkCard({
       label: 'Delete',
       icon: <Trash2 className="size-3.5" />,
       danger: true,
-      onClick: () => onDelete(bookmark.id)
+      onClick: () => {
+        soundFx.playArchiveSound();
+        onDelete(bookmark.id);
+      }
     }
   ];
 
@@ -440,12 +343,15 @@ export function BookmarkCard({
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
         }`}
       >
-
-        {/* Top Header: Avatar, Name, Handle, Selection Checkbox */}
+        {/* Top Header */}
         <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20 bg-muted">
-              {bookmark.avatarUrl ? (
+            {isGitHub ? (
+              <div className="relative size-8 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-1 ring-white/20 bg-black text-white">
+                <GitHubIcon className="size-4.5 text-white" />
+              </div>
+            ) : bookmark.avatarUrl && isSocialPlatform ? (
+              <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20 bg-muted">
                 <Image
                   src={bookmark.avatarUrl}
                   alt={bookmark.displayName}
@@ -453,21 +359,24 @@ export function BookmarkCard({
                   className="object-cover"
                   unoptimized
                 />
-              ) : bookmark.platform === 'reddit' ? (
+              </div>
+            ) : bookmark.platform === 'reddit' ? (
+              <div className="size-8 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-1 ring-white/20 shadow-xs">
                 <RedditIcon className="size-full" />
-              ) : (
-                <div className="flex size-full items-center justify-center bg-accent text-xs font-semibold text-strong">
-                  {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-white/20 bg-accent text-xs font-semibold text-strong">
+                {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
+              </div>
+            )}
             <div className="flex items-baseline gap-2 min-w-0 truncate">
               <span className="font-semibold text-white text-[13.5px] truncate">
-                {bookmark.displayName}
+                {isGitHub ? 'GitHub' : (bookmark.displayName || 'Web')}
               </span>
-              {bookmark.username && (
+              {/* Show username ONLY on social platforms */}
+              {isSocialPlatform && bookmark.username && (
                 <span className="text-xs text-neutral-400 truncate">
-                  @{bookmark.username}
+                  {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
                 </span>
               )}
             </div>
@@ -478,23 +387,42 @@ export function BookmarkCard({
               <div
                 className={`flex size-4.5 items-center justify-center rounded border transition-colors ${
                   isSelected
-                    ? 'border-primary bg-primary text-black'
-                    : 'border-neutral-600 bg-transparent'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-muted-foreground/40'
                 }`}
               >
-                {isSelected && <Check className="size-3 stroke-[3]" />}
+                {isSelected && <Check className="size-3" />}
               </div>
             ) : (
-              <div className="size-4 rounded border border-neutral-700/60 opacity-0 group-hover/row:opacity-100 transition-opacity" />
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  soundFx.playFavoriteSound();
+                  onToggleFavorite(bookmark.id);
+                }}
+                className="p-1 text-neutral-400 hover:text-amber-400 rounded-md hover:bg-white/5 transition-colors"
+              >
+                <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+              </button>
             )}
           </div>
         </div>
 
-        {/* Middle Content & Optional Right Thumbnail */}
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <p className="flex-1 text-[13.5px] leading-relaxed text-neutral-200 line-clamp-3">
-            {bookmark.title || bookmark.text}
-          </p>
+        {/* Content Block */}
+        <div className="relative z-10 flex gap-4">
+          <div className="flex-1 min-w-0 space-y-1">
+            {bookmark.title && (
+              <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2">
+                {bookmark.title}
+              </h3>
+            )}
+            {hasDistinctText && (
+              <p className="text-xs leading-relaxed text-neutral-400 line-clamp-2">
+                {bookmark.text}
+              </p>
+            )}
+          </div>
 
           {imgSrc && !hasImageError && (
             <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
@@ -525,7 +453,7 @@ export function BookmarkCard({
           )}
         </div>
 
-        {/* Bottom Row: Tags + Date & Platform Badge */}
+        {/* Bottom Row */}
         <div className="relative z-10 flex items-center justify-between gap-3 pt-1">
           <DynamicCardTags
             tags={bookmark.tags || []}
@@ -537,7 +465,7 @@ export function BookmarkCard({
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
             <div className="h-3 w-px bg-neutral-700"></div>
-            <PlatformIcon platform={bookmark.platform} />
+            <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
           </div>
         </div>
 
@@ -551,7 +479,7 @@ export function BookmarkCard({
     );
   }
 
-  // 2. TIMELINE VIEW VARIANT (Expanded Feed Card - Image 2 Match)
+  // 2. TIMELINE VIEW VARIANT
   if (viewMode === 'timeline') {
     return (
       <article
@@ -569,12 +497,15 @@ export function BookmarkCard({
           isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
         }`}
       >
-
-        {/* Top Header: Avatar, Name, Handle, Menu & Actions */}
+        {/* Top Header */}
         <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
-              {bookmark.avatarUrl ? (
+            {isGitHub ? (
+              <div className="relative size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 bg-black text-white shadow-sm">
+                <GitHubIcon className="size-5.5 text-white" />
+              </div>
+            ) : bookmark.avatarUrl && isSocialPlatform ? (
+              <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
                 <Image
                   src={bookmark.avatarUrl}
                   alt={bookmark.displayName}
@@ -582,21 +513,24 @@ export function BookmarkCard({
                   className="object-cover"
                   unoptimized
                 />
-              ) : bookmark.platform === 'reddit' ? (
+              </div>
+            ) : bookmark.platform === 'reddit' ? (
+              <div className="size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 shadow-sm">
                 <RedditIcon className="size-full" />
-              ) : (
-                <div className="flex size-full items-center justify-center bg-accent text-xs font-semibold text-strong">
-                  {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-white/20 bg-accent text-xs font-semibold text-strong">
+                {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
+              </div>
+            )}
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-white text-sm truncate">
-                {bookmark.displayName}
+                {isGitHub ? 'GitHub' : (bookmark.displayName || 'Web')}
               </span>
-              {bookmark.username && (
+              {/* Show username ONLY on social platforms */}
+              {isSocialPlatform && bookmark.username && (
                 <span className="text-xs text-neutral-400 truncate">
-                  @{bookmark.username}
+                  {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
                 </span>
               )}
             </div>
@@ -607,13 +541,14 @@ export function BookmarkCard({
               type="button"
               onClick={e => {
                 e.stopPropagation();
+                soundFx.playFavoriteSound();
                 onToggleFavorite(bookmark.id);
               }}
-              className="p-1.5 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-white/5 transition-colors"
+              className="p-1.5 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
             >
               <Star className={`size-4 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
             </button>
-            <PlatformIcon platform={bookmark.platform} />
+            <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
           </div>
         </div>
 
@@ -631,7 +566,7 @@ export function BookmarkCard({
           </p>
         )}
 
-        {/* Big Media Container */}
+        {/* Media Container */}
         {imgSrc && !hasImageError && (
           <div className="relative z-10 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/media w-full">
             {!isImageLoaded && (
@@ -672,7 +607,7 @@ export function BookmarkCard({
           <div className="flex shrink-0 items-center gap-2 ml-auto self-end py-0.5">
             <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
             <div className="h-3.5 w-px bg-white/[0.15]"></div>
-            <PlatformIcon platform={bookmark.platform} />
+            <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
           </div>
         </div>
 
@@ -686,7 +621,7 @@ export function BookmarkCard({
     );
   }
 
-  // 3. GRID & MOSAIC VIEW (Default - Image 5 Match)
+  // 3. GRID & MOSAIC VIEW (Default)
   return (
     <div
       onContextMenu={handleCardContextMenu}
@@ -711,9 +646,10 @@ export function BookmarkCard({
               type="button"
               onClick={e => {
                 e.stopPropagation();
+                soundFx.playClickSound();
                 setIsMenuOpen(!isMenuOpen);
               }}
-              className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-white/10 hover:text-white size-8 text-neutral-400"
+              className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-white/10 hover:text-white size-8 text-neutral-400 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12.0045" cy="12.5" r="1" fill="currentColor"/>
@@ -730,7 +666,7 @@ export function BookmarkCard({
               >
                 <button
                   onClick={handleCopyLink}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
                   <span>{copied ? 'Copied!' : 'Copy Link'}</span>
@@ -739,9 +675,10 @@ export function BookmarkCard({
                   onClick={e => {
                     e.stopPropagation();
                     setIsMenuOpen(false);
+                    soundFx.playFavoriteSound();
                     onToggleFavorite(bookmark.id);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
                   <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
@@ -752,7 +689,7 @@ export function BookmarkCard({
                     setIsMenuOpen(false);
                     onGenerateTags?.(bookmark);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <Sparkles className="size-3.5 text-purple-400" />
                   <span>{isGeneratingTags ? 'Generating tags...' : 'Generate AI tags'}</span>
@@ -763,7 +700,7 @@ export function BookmarkCard({
                     setIsMenuOpen(false);
                     onEditTags?.(bookmark);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <Tag className="size-3.5 text-neutral-400" />
                   <span>Edit Tags</span>
@@ -774,7 +711,7 @@ export function BookmarkCard({
                     setIsMenuOpen(false);
                     onOpenNote(bookmark);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <FileText className="size-3.5" />
                   <span>{bookmark.note ? 'Edit Note' : 'Add Note'}</span>
@@ -783,9 +720,10 @@ export function BookmarkCard({
                   onClick={e => {
                     e.stopPropagation();
                     setIsMenuOpen(false);
+                    soundFx.playArchiveSound();
                     onArchive(bookmark.id);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <Archive className="size-3.5" />
                   <span>{bookmark.isArchived ? 'Unarchive' : 'Archive'}</span>
@@ -795,9 +733,10 @@ export function BookmarkCard({
                   onClick={e => {
                     e.stopPropagation();
                     setIsMenuOpen(false);
+                    soundFx.playArchiveSound();
                     onDelete(bookmark.id);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 >
                   <Trash2 className="size-3.5" />
                   <span>Delete</span>
@@ -806,19 +745,20 @@ export function BookmarkCard({
             )}
           </div>
 
-          {/* View Popout Link Button (Exact Stashr SVG) */}
+          {/* View Popout Link Button */}
           <button
             type="button"
             aria-label="View"
             onClick={e => {
               e.stopPropagation();
+              soundFx.playClickSound();
               if (onOpenDetail) {
                 onOpenDetail(bookmark);
               } else if (bookmark.url) {
                 window.open(bookmark.url, '_blank', 'noopener,noreferrer');
               }
             }}
-            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-white/10 hover:text-white size-8 text-neutral-400"
+            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-transparent font-medium text-sm outline-none transition-all hover:bg-white/10 hover:text-white size-8 text-neutral-400 cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8.19915 15.8008L15.8008 8.19915M8.19915 15.8008C7.75558 15.3573 8.19018 13.2652 8.19915 12.6335M8.19915 15.8008C8.64273 16.2444 10.7348 15.8098 11.3665 15.8008M15.8008 8.19915C15.3573 7.75558 13.2652 8.19018 12.6335 8.19916M15.8008 8.19915C16.2444 8.64273 15.8098 10.7348 15.8008 11.3665" strokeLinecap="round" strokeLinejoin="round"/>
@@ -830,7 +770,11 @@ export function BookmarkCard({
 
       {/* Header with Avatar & Author */}
       <div className="relative z-10 flex items-center gap-2.5">
-        {bookmark.avatarUrl ? (
+        {isGitHub ? (
+          <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-black text-white shadow-sm">
+            <GitHubIcon className="size-5.5 text-white" />
+          </div>
+        ) : bookmark.avatarUrl && isSocialPlatform ? (
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-muted relative shadow-sm">
             <Image
               src={bookmark.avatarUrl}
@@ -846,20 +790,22 @@ export function BookmarkCard({
           </div>
         ) : (
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-accent text-xs font-semibold text-strong shadow-sm">
-            {bookmark.displayName ? bookmark.displayName.charAt(0).toUpperCase() : <PlatformIcon platform={bookmark.platform} />}
+            {bookmark.displayName ? bookmark.displayName.charAt(0).toUpperCase() : <PlatformIcon platform={bookmark.platform} url={bookmark.url} />}
           </div>
         )}
 
         <div className="flex min-w-0 flex-1 flex-col justify-center">
           <span className="truncate font-semibold text-white text-[14.5px] leading-tight tracking-tight">
-            {bookmark.displayName}
+            {isGitHub ? 'GitHub' : (bookmark.displayName || 'Web')}
           </span>
-          {bookmark.username && (
+          {/* Show username ONLY on social platforms */}
+          {isSocialPlatform && bookmark.username && (
             <span className="truncate text-xs text-neutral-400 leading-tight">
               {bookmark.platform === 'reddit' ? `r/${bookmark.username}` : `@${bookmark.username}`}
             </span>
           )}
         </div>
+
         {isSelectionMode && (
           <div
             className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ml-auto mr-1 ${
@@ -893,7 +839,7 @@ export function BookmarkCard({
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className="text-xs text-neutral-400 hover:text-white font-medium transition-colors"
+              className="text-xs text-neutral-400 hover:text-white font-medium transition-colors cursor-pointer"
             >
               {isExpanded ? 'Show less' : 'Show more'}
             </button>
@@ -901,13 +847,14 @@ export function BookmarkCard({
         </div>
       )}
 
-      {/* Image / Video Preview (Natural Sizing with max-h-[34rem]) */}
+      {/* Image / Video Preview */}
       {imgSrc && !hasImageError && (
         <button
           type="button"
           aria-label="Open media"
           onClick={e => {
             e.stopPropagation();
+            soundFx.playClickSound();
             if (onOpenDetail) {
               onOpenDetail(bookmark);
             } else if (imgSrc) {
@@ -952,6 +899,7 @@ export function BookmarkCard({
         <div
           onClick={e => {
             e.stopPropagation();
+            soundFx.playClickSound();
             onOpenNote(bookmark);
           }}
           className="relative z-10 flex items-start gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2 text-xs italic text-neutral-300 hover:bg-white/10 cursor-pointer transition-colors"
@@ -973,7 +921,7 @@ export function BookmarkCard({
         <div className="flex shrink-0 items-center gap-2 select-none ml-2">
           <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
-          <PlatformIcon platform={bookmark.platform} />
+          <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
         </div>
       </div>
 
