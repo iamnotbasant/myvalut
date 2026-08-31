@@ -169,30 +169,24 @@ export function DynamicCardTags({
               onClick={e => e.stopPropagation()}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              className="absolute bottom-full left-0 z-50 mb-1.5 flex flex-col gap-1 rounded-xl border border-white/15 bg-[#141414]/95 p-2 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.9)] backdrop-blur-md min-w-[140px] max-w-[220px] animate-in fade-in-0 zoom-in-95 duration-150 pointer-events-auto"
+              className="absolute bottom-full left-0 z-50 mb-1.5 flex flex-wrap gap-1 rounded-xl border border-white/15 bg-[#141414]/95 p-1.5 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.9)] backdrop-blur-md min-w-[120px] max-w-[220px] max-h-48 overflow-y-auto scrollbar-none animate-in fade-in-0 zoom-in-95 duration-150 pointer-events-auto"
             >
-              <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider px-1 pb-1 border-b border-white/10 flex items-center justify-between">
-                <span>More Tags</span>
-                <span className="tabular-nums text-neutral-500">{overflowTags.length}</span>
-              </div>
-              <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto pt-1 scrollbar-none">
-                {overflowTags.map((tag, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={e => {
-                      e.stopPropagation();
-                      soundFx.playTagSound();
-                      setIsHovered(false);
-                      onSelectTag?.(tag.name);
-                    }}
-                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#1e1e1e] hover:bg-[#2a2a2a] hover:border-white/25 rounded-md font-normal text-[11px] h-5.5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95"
-                  >
-                    <TagDot color={tag.color} />
-                    <span className="truncate max-w-[130px]">{tag.name}</span>
-                  </button>
-                ))}
-              </div>
+              {overflowTags.map((tag, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    soundFx.playTagSound();
+                    setIsHovered(false);
+                    onSelectTag?.(tag.name);
+                  }}
+                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#1e1e1e] hover:bg-[#2a2a2a] hover:border-white/25 rounded-md font-normal text-[11px] h-5.5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <TagDot color={tag.color} />
+                  <span className="truncate max-w-[130px]">{tag.name}</span>
+                </button>
+              ))}
             </div>
           )}
         </div>

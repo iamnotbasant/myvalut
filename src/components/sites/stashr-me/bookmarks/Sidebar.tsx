@@ -97,9 +97,13 @@ export function Sidebar({
 
   const handleNavClick = (nav: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs') => {
     soundFx.playClickSound();
+    const targetUrl = nav === 'bookmarks' ? '/bookmarks' : `/${nav}`;
     if (pathname.startsWith('/settings')) {
-      router.push(`/${nav}`);
+      router.push(targetUrl);
     } else {
+      if (typeof window !== 'undefined' && window.location.pathname !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
+      }
       onFilterChange({ activeNav: nav, collectionId: null, tags: [] });
     }
     onCloseMobile?.();

@@ -76,6 +76,42 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
     }
   };
 
+  const [collections] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('stashr_collections_v3');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const [tags] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('stashr_tags_v3');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const [bookmarksCount] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('stashr_bookmarks_v3');
+        return saved ? JSON.parse(saved).length : 0;
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  });
+
   return (
     <div className="flex h-svh w-screen overflow-hidden bg-background md:bg-sidebar text-foreground antialiased selection:bg-primary/20">
       {/* Left Navigation Sidebar */}
@@ -88,9 +124,9 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
           collectionId: null
         }}
         onFilterChange={() => {}}
-        collections={INITIAL_COLLECTIONS}
-        tags={INITIAL_TAGS}
-        bookmarksCount={INITIAL_BOOKMARKS.length}
+        collections={collections}
+        tags={tags}
+        bookmarksCount={bookmarksCount}
         archivedCount={0}
         onOpenAddBookmark={() => {}}
         onOpenAddCollection={() => {}}

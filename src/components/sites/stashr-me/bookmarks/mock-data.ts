@@ -1,13 +1,6 @@
 import { BookmarkItem, Collection, Tag } from '@/types/stashr';
 
-export const INITIAL_COLLECTIONS: Collection[] = [
-  {
-    id: 'col-1',
-    name: 'qjahsf',
-    icon: 'heart',
-    count: 18
-  }
-];
+export const INITIAL_COLLECTIONS: Collection[] = [];
 
 export const INITIAL_TAGS: Tag[] = [
   { id: 'tag-1', name: 'graphic design', color: 'pink', count: 4 },

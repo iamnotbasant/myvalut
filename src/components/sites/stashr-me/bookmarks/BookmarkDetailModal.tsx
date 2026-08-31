@@ -172,20 +172,20 @@ export function BookmarkDetailModal({
           </div>
         )}
 
-        {/* Media / Video Preview (Full Natural Height with Smooth Scrolling, Zero Cut-off) */}
+        {/* Media / Video Preview (100% Full Uncropped Original Display with Smooth Scroll) */}
         {cleanImageUrl && (
           <div
             onDoubleClick={handleOpenOriginalPost}
             title="Double-click to open original post | Click to enlarge"
-            className="relative rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer flex flex-col items-center justify-center overflow-hidden"
+            className="relative rounded-xl border border-white/10 bg-[#080808] w-full group/media shadow-inner cursor-pointer flex flex-col items-center justify-center"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={cleanImageUrl}
               alt={bookmark.displayName}
               onClick={() => onOpenImage?.(cleanImageUrl)}
-              className={`w-full h-auto object-contain rounded-xl transition-transform duration-300 ${
-                bookmark.platform === 'youtube' ? 'aspect-video object-cover' : ''
+              className={`w-full h-auto block rounded-xl transition-transform duration-300 ${
+                bookmark.platform === 'youtube' ? 'aspect-video object-cover' : 'object-contain'
               }`}
               onError={(e) => {
                 const target = e.currentTarget;

@@ -371,6 +371,40 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (initialNav && filterState.activeNav !== initialNav) {
+      setFilterState(prev => ({
+        ...prev,
+        activeNav: initialNav,
+        collectionId: null
+      }));
+    }
+  }, [initialNav]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\//, '');
+      const validNavs: Array<'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs'> = [
+        'bookmarks', 'archived', 'creators', 'tags', 'connections', 'logs'
+      ];
+      if (validNavs.includes(path as any)) {
+        setFilterState(prev => ({
+          ...prev,
+          activeNav: path as any,
+          collectionId: null
+        }));
+      } else if (path === '' || path === 'bookmarks') {
+        setFilterState(prev => ({
+          ...prev,
+          activeNav: 'bookmarks',
+          collectionId: null
+        }));
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleToggleTheme = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
@@ -388,7 +422,18 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleFilterChange = (updates: Partial<FilterState>) => {
-    setFilterState(prev => ({ ...prev, ...updates }));
+    setFilterState(prev => {
+      const next = { ...prev, ...updates };
+      if (updates.activeNav && updates.activeNav !== prev.activeNav) {
+        if (typeof window !== 'undefined') {
+          const targetUrl = updates.activeNav === 'bookmarks' ? '/bookmarks' : `/${updates.activeNav}`;
+          if (window.location.pathname !== targetUrl) {
+            window.history.pushState(null, '', targetUrl);
+          }
+        }
+      }
+      return next;
+    });
   };
 
   // Actions
