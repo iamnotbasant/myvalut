@@ -65,7 +65,7 @@ export function AccountSettings() {
         console.warn('Direct DB wipe fallback:', dbErr);
       }
 
-      // 3. Clear ALL localStorage items
+      // 3. Clear ALL localStorage items completely
       if (typeof window !== 'undefined') {
         const allVaultKeys = [
           'stashr_bookmarks_v3',
@@ -84,6 +84,7 @@ export function AccountSettings() {
           'stashr_mosaic_columns'
         ];
         allVaultKeys.forEach(k => localStorage.removeItem(k));
+        localStorage.clear();
       }
 
       setResetSuccess(true);

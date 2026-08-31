@@ -10,19 +10,17 @@ export function TagsSettings() {
   const [instructions, setInstructions] = useState(
     "I'm interested in web development, design, and AI. Tag bookmarks by topic and format, e.g. react, tutorial, inspiration, tool, research."
   );
-  const [tags, setTags] = useState<Tag[]>([
-    { id: 't-404', name: '404 page', color: 'violet', count: 1 },
-    { id: 't-ai', name: 'ai', color: 'orange', count: 7 },
-    { id: 't-anim', name: 'animation', color: 'pink', count: 3 },
-    { id: 't-des-insp', name: 'design inspiration', color: 'red', count: 2 },
-    { id: 't-gh', name: 'github', color: 'orange', count: 3 },
-    { id: 't-gd', name: 'graphic design', color: 'blue', count: 4 },
-    { id: 't-md', name: 'motion design', color: 'violet', count: 3 },
-    { id: 't-os', name: 'open source', color: 'green', count: 5 },
-    { id: 't-pe', name: 'photo editing', color: 'violet', count: 2 },
-    { id: 't-ui', name: 'ui', color: 'green', count: 5 },
-    { id: 't-ux', name: 'ux', color: 'amber', count: 2 }
-  ]);
+  const [tags, setTags] = useState<Tag[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('stashr_tags_v3');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [tagQuery, setTagQuery] = useState('');
   const [isAddTagOpen, setIsAddTagOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');

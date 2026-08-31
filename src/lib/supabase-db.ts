@@ -389,9 +389,10 @@ export async function wipeAllVaultDataFromDb(userId?: string | null): Promise<bo
       await supabase.from('collections').delete().eq('user_id', validUserId);
       await supabase.from('tags').delete().eq('user_id', validUserId);
     }
-    // Also delete any anonymous/guest bookmarks
-    await supabase.from('bookmarks').delete().is('user_id', null);
-    await supabase.from('collections').delete().is('user_id', null);
+    // Delete all bookmarks, collections, and tags
+    await supabase.from('bookmarks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     return true;
   } catch (err) {
     console.error('Failed to wipe data from Supabase:', err);

@@ -15,9 +15,10 @@ export async function POST(req: NextRequest) {
           await supabase.from('tags').delete().eq('user_id', userId);
         }
       }
-      // Also clean any unassigned records
-      await supabase.from('bookmarks').delete().is('user_id', null);
-      await supabase.from('collections').delete().is('user_id', null);
+      // Wipe all remaining tags, collections, and bookmarks
+      await supabase.from('bookmarks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     }
 
     return NextResponse.json({ success: true, message: 'Vault data reset successfully' });

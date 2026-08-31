@@ -2,18 +2,7 @@ import { BookmarkItem, Collection, Tag } from '@/types/stashr';
 
 export const INITIAL_COLLECTIONS: Collection[] = [];
 
-export const INITIAL_TAGS: Tag[] = [
-  { id: 'tag-1', name: 'graphic design', color: 'pink', count: 4 },
-  { id: 'tag-2', name: 'photo editing', color: 'violet', count: 2 },
-  { id: 'tag-3', name: 'motion design', color: 'violet', count: 3 },
-  { id: 'tag-4', name: 'animation', color: 'violet', count: 3 },
-  { id: 'tag-5', name: 'ui', color: 'cyan', count: 5 },
-  { id: 'tag-6', name: 'ai', color: 'teal', count: 7 },
-  { id: 'tag-7', name: 'ux', color: 'cyan', count: 2 },
-  { id: 'tag-8', name: 'design inspiration', color: 'pink', count: 2 },
-  { id: 'tag-9', name: 'open source', color: 'green', count: 5 },
-  { id: 'tag-10', name: 'github', color: 'orange', count: 3 }
-];
+export const INITIAL_TAGS: Tag[] = [];
 
 export const INITIAL_BOOKMARKS: BookmarkItem[] = [
   {
