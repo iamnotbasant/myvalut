@@ -154,6 +154,43 @@
     return false;
   }
 
+  function repairFragmentedUrls(str) {
+    if (!str) return '';
+    let res = str;
+    res = res.replace(/(https?:\/\/)\s+([a-zA-Z0-9])/gi, '$1$2');
+    for (let i = 0; i < 5; i++) {
+      const prev = res;
+      res = res.replace(
+        /(https?:\/\/[^\s\n]+)\n([a-zA-Z0-9_\-.~!*'();:@&=+$,/?%#[\]]+)/gi,
+        '$1$2'
+      );
+      if (res === prev) break;
+    }
+    return res;
+  }
+
+  function extractCleanRedditText(textEl, fallbackTitle) {
+    if (!textEl) return fallbackTitle || '';
+    const clone = textEl.cloneNode(true);
+
+    const links = clone.querySelectorAll('a');
+    links.forEach(a => {
+      const href = (a.getAttribute('href') || '').trim();
+      const text = a.textContent ? a.textContent.trim() : '';
+      const resolved = (href.startsWith('http://') || href.startsWith('https://')) ? href : text;
+      a.replaceWith(document.createTextNode(resolved ? ` ${resolved} ` : text));
+    });
+
+    clone.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+    let raw = clone.textContent || '';
+    raw = repairFragmentedUrls(raw);
+    return raw
+      .split('\n')
+      .map(l => l.replace(/[ \t]+/g, ' ').trim())
+      .join('\n')
+      .trim() || fallbackTitle || '';
+  }
+
   async function handleSaveReddit(button, postUrl, postEl) {
     if (button.classList.contains('valut-saving')) return;
 
@@ -166,7 +203,7 @@
     button.innerHTML = `${SPINNER_ICON} <span>Saving...</span>`;
 
     const titleEl = postEl ? postEl.querySelector('[slot="title"], h1, h2, a[data-click-id="body"], a[slot="full-post-link"]') : null;
-    const title = titleEl ? (titleEl.innerText || titleEl.textContent || '').trim() : document.title || 'Reddit Post';
+    const title = titleEl ? repairFragmentedUrls((titleEl.innerText || titleEl.textContent || '').trim()) : document.title || 'Reddit Post';
 
     const authorEl = postEl ? postEl.querySelector('[slot="authorName"], a[href*="/user/"], [author]') : null;
     const username = authorEl ? (authorEl.innerText || authorEl.textContent || '').replace(/^u\//, '').trim() : 'reddit_user';
@@ -175,7 +212,7 @@
     const displayName = subredditEl ? (subredditEl.innerText || subredditEl.textContent || '').trim() : 'Reddit';
 
     const textEl = postEl ? postEl.querySelector('[slot="text-body"], .RichTextJSON-root, [data-click-id="text"]') : null;
-    const text = textEl ? (textEl.innerText || textEl.textContent || '').trim() : title;
+    const text = extractCleanRedditText(textEl, title);
 
     const imgEl = postEl ? postEl.querySelector('shreddit-media-lightbox img, img[alt="Post image"], img[src*="preview.redd.it"], img[src*="i.redd.it"]') : null;
     const imageUrl = imgEl ? imgEl.src : '';

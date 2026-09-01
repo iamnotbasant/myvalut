@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { BookmarkItem, Collection, Tag } from '@/types/stashr';
+import { repairFragmentedUrls } from '@/components/FormattedPostText';
 
 // Row types from Supabase
 export interface DbBookmark {
@@ -54,8 +55,8 @@ export function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
     username: row.username,
     avatarUrl: row.avatar_url || undefined,
     imageUrl: row.image_url || undefined,
-    title: row.title || undefined,
-    text: row.text,
+    title: row.title ? repairFragmentedUrls(row.title) : undefined,
+    text: repairFragmentedUrls(row.text) || row.text,
     url: row.url || undefined,
     date: row.date,
     createdAt: row.created_at_ms ? Number(row.created_at_ms) : undefined,

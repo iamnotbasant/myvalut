@@ -155,6 +155,87 @@
     return false;
   }
 
+  function repairFragmentedUrls(str) {
+    if (!str) return '';
+    let res = str;
+    // Fix dangling protocol: "https://\n  domain" or "https:// domain"
+    res = res.replace(/(https?:\/\/)\s+([a-zA-Z0-9])/gi, '$1$2');
+    // Fix multi-line URL breaks
+    for (let i = 0; i < 5; i++) {
+      const prev = res;
+      res = res.replace(
+        /(https?:\/\/[^\s\n]+)\n([a-zA-Z0-9_\-.~!*'();:@&=+$,/?%#[\]]+)/gi,
+        '$1$2'
+      );
+      if (res === prev) break;
+    }
+    return res;
+  }
+
+  function extractCleanTweetText(tweetTextEl) {
+    if (!tweetTextEl) return '';
+    const clone = tweetTextEl.cloneNode(true);
+
+    // 1. Process <a> tags inside tweet text
+    const links = clone.querySelectorAll('a');
+    links.forEach(a => {
+      // Concatenate inner span texts to get the displayed URL without layout breaks
+      const spanText = Array.from(a.querySelectorAll('span'))
+        .map(s => s.textContent || '')
+        .join('')
+        .trim();
+
+      const titleAttr = (a.getAttribute('title') || '').trim();
+      const href = (a.getAttribute('href') || '').trim();
+
+      let resolvedUrl = '';
+      if (titleAttr.startsWith('http://') || titleAttr.startsWith('https://')) {
+        resolvedUrl = titleAttr;
+      } else if (spanText && (spanText.startsWith('http://') || spanText.startsWith('https://') || spanText.includes('.'))) {
+        resolvedUrl = spanText;
+      } else if (href.startsWith('http://') || href.startsWith('https://')) {
+        resolvedUrl = href;
+      } else if (a.textContent) {
+        resolvedUrl = a.textContent.trim();
+      }
+
+      // Remove accidental internal whitespaces in the URL
+      resolvedUrl = resolvedUrl.replace(/\s+/g, '');
+
+      const textNode = document.createTextNode(resolvedUrl ? ` ${resolvedUrl} ` : (a.textContent || ''));
+      a.replaceWith(textNode);
+    });
+
+    // 2. Replace emoji images with their alt text
+    const emojis = clone.querySelectorAll('img[alt]');
+    emojis.forEach(img => {
+      const alt = img.getAttribute('alt') || '';
+      img.replaceWith(document.createTextNode(alt));
+    });
+
+    // 3. Replace <br> with newlines
+    const brs = clone.querySelectorAll('br');
+    brs.forEach(br => {
+      br.replaceWith(document.createTextNode('\n'));
+    });
+
+    // 4. Extract raw textContent (does not insert layout-based breaks between spans)
+    let rawText = clone.textContent || '';
+
+    // 5. Repair any fragmented protocol or URL breaks
+    rawText = repairFragmentedUrls(rawText);
+
+    // 6. Clean up excessive spaces while preserving intended newlines
+    rawText = rawText
+      .split('\n')
+      .map(line => line.replace(/[ \t]+/g, ' ').trim())
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return rawText;
+  }
+
   async function handleSaveTweet(button, tweetUrl) {
     if (button.classList.contains('valut-saving')) return;
 
@@ -168,7 +249,7 @@
 
     const article = button.closest('article');
     const tweetTextEl = article ? article.querySelector('[data-testid="tweetText"]') : null;
-    const text = tweetTextEl ? (tweetTextEl.innerText || tweetTextEl.textContent || '').trim() : '';
+    const text = extractCleanTweetText(tweetTextEl);
 
     const userNameEl = article ? article.querySelector('[data-testid="User-Name"]') : null;
     const displayName = userNameEl ? (userNameEl.querySelector('span')?.innerText || '').trim() : '';
@@ -181,7 +262,8 @@
     const photoImg = article ? article.querySelector('[data-testid="tweetPhoto"] img') : null;
     const imageUrl = photoImg ? photoImg.src : '';
 
-    const title = text ? (text.length > 80 ? `${text.slice(0, 80)}...` : text) : 'Tweet';
+    const firstLine = text.split('\n')[0].trim();
+    const title = text ? (firstLine.length > 0 && firstLine.length <= 80 ? firstLine : (text.length > 80 ? `${text.slice(0, 80)}...` : text)) : 'Tweet';
 
     try {
       const response = await sendSaveRequest({

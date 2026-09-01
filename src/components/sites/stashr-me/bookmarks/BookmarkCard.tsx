@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
+import { FormattedPostText, repairFragmentedUrls } from '@/components/FormattedPostText';
 
 interface BookmarkCardProps {
   bookmark: BookmarkItem;
@@ -47,8 +48,8 @@ function getCleanImageUrl(url?: string | null): string | undefined {
 }
 
 export function getCleanCardContent(bookmark: BookmarkItem) {
-  const title = bookmark.title?.trim() || '';
-  const rawText = bookmark.text?.trim() || '';
+  const title = repairFragmentedUrls(bookmark.title?.trim() || '');
+  const rawText = repairFragmentedUrls(bookmark.text?.trim() || '');
 
   const isBoilerplate =
     rawText.toLowerCase().includes('enjoy the videos and music you love') ||
@@ -460,13 +461,13 @@ export function BookmarkCard({
           <div className="flex-1 min-w-0 space-y-1">
             {bookmark.title && (
               <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2">
-                {bookmark.title}
+                {repairFragmentedUrls(bookmark.title)}
               </h3>
             )}
             {hasDistinctText && (
-              <p className="text-xs leading-relaxed text-neutral-400 line-clamp-2">
-                {bookmark.text}
-              </p>
+              <div className="text-xs leading-relaxed text-neutral-400 line-clamp-2">
+                <FormattedPostText text={bookmark.text} />
+              </div>
             )}
           </div>
 
@@ -601,15 +602,15 @@ export function BookmarkCard({
         {/* Title */}
         {bookmark.title && (
           <h3 className="relative z-10 font-semibold text-white text-[15px] leading-snug">
-            {bookmark.title}
+            {repairFragmentedUrls(bookmark.title)}
           </h3>
         )}
 
         {/* Content text */}
         {hasDistinctText && (
-          <p className="relative z-10 text-[14px] leading-relaxed text-neutral-200 whitespace-pre-line">
-            {bookmark.text}
-          </p>
+          <div className="relative z-10 text-[14px] leading-relaxed text-neutral-200">
+            <FormattedPostText text={bookmark.text} />
+          </div>
         )}
 
         {/* Media Container */}
@@ -868,16 +869,18 @@ export function BookmarkCard({
       {/* Title */}
       {bookmark.title && (
         <p className="relative z-10 font-semibold text-white text-sm leading-snug">
-          {bookmark.title}
+          {repairFragmentedUrls(bookmark.title)}
         </p>
       )}
 
       {/* Post Text & Show More */}
       {hasDistinctText && bookmark.text && (
-        <div className="relative z-10 space-y-2 whitespace-pre-line text-[13.5px] leading-relaxed text-neutral-200">
-          <p className={!isExpanded && bookmark.text.length > 220 ? "line-clamp-4" : ""}>
-            <span>{bookmark.text}</span>
-          </p>
+        <div className="relative z-10 space-y-2 text-[13.5px] leading-relaxed text-neutral-200">
+          <FormattedPostText
+            text={bookmark.text}
+            isExpanded={isExpanded}
+            maxLines={bookmark.text.length > 220 ? 4 : undefined}
+          />
           {bookmark.text.length > 220 && (
             <button
               type="button"

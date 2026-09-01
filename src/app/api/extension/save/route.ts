@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
 import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl } from '@/lib/gemini-tagger';
+import { repairFragmentedUrls } from '@/components/FormattedPostText';
 
 // Helper for CORS headers
 function corsHeaders() {
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Clean fragmented URLs from incoming text & title
+    if (text) text = repairFragmentedUrls(text);
+    if (title) title = repairFragmentedUrls(title);
+
     // 1. Auto-detect platform and scrape metadata if URL provided and fields missing
     const detectedPlatform = url ? detectPlatformFromUrl(url) : ((platform || 'web') as PlatformType);
     let finalPlatform: PlatformType = (platform as PlatformType) || detectedPlatform;
@@ -55,6 +60,9 @@ export async function POST(req: NextRequest) {
         avatarUrl = avatarUrl || scraped.avatarUrl;
         imageUrl = imageUrl || scraped.imageUrl;
         finalPlatform = scraped.platform || finalPlatform;
+
+        if (text) text = repairFragmentedUrls(text);
+        if (title) title = repairFragmentedUrls(title);
       } catch (scrapeErr) {
         console.warn('Extension save auto-scrape warning:', scrapeErr);
       }

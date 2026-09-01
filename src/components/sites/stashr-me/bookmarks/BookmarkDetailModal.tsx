@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
 import { TagDot, PlatformIcon, RedditIcon, GitHubIcon, ExternalLink, Sparkles } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
+import { FormattedPostText, repairFragmentedUrls } from '@/components/FormattedPostText';
 
 interface BookmarkDetailModalProps {
   bookmark: BookmarkItem | null;
@@ -63,14 +64,27 @@ export function BookmarkDetailModal({
     bookmark.text?.toLowerCase().includes('animation') ||
     bookmark.text?.toLowerCase().includes('video');
 
-  const isTextIdenticalToTitle = Boolean(
-    bookmark.title &&
-    bookmark.text &&
-    (bookmark.text.trim().toLowerCase() === bookmark.title.trim().toLowerCase() ||
-     bookmark.text.trim().replace(/\s+/g, ' ').toLowerCase() === bookmark.title.trim().replace(/\s+/g, ' ').toLowerCase() ||
-     (bookmark.text.length < bookmark.title.length + 10 && bookmark.title.toLowerCase().includes(bookmark.text.toLowerCase().slice(0, 30))))
+  const normalizedTitle = repairFragmentedUrls(bookmark.title || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const normalizedText = repairFragmentedUrls(bookmark.text || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const isTitleExcerptOfText = Boolean(
+    normalizedTitle &&
+    normalizedText &&
+    (normalizedText === normalizedTitle ||
+     normalizedText.startsWith(normalizedTitle.replace(/\.\.\.$/, '').trim()) ||
+     (normalizedText.length >= normalizedTitle.length && normalizedTitle.length > 20 && normalizedText.includes(normalizedTitle.slice(0, 30))))
   );
-  const hasDistinctText = Boolean(bookmark.text && !isTextIdenticalToTitle);
+
+  const isTextIdenticalToTitle = Boolean(
+    normalizedTitle &&
+    normalizedText &&
+    (normalizedText === normalizedTitle ||
+     normalizedTitle.startsWith(normalizedText.replace(/\.\.\.$/, '').trim()))
+  );
+
+  const showTitle = Boolean(bookmark.title && !isTitleExcerptOfText);
+  const showText = Boolean(bookmark.text && (!isTextIdenticalToTitle || isTitleExcerptOfText));
+  const fallbackOnlyTitle = !showTitle && !showText && Boolean(bookmark.title);
 
   const cleanImageUrl = bookmark.imageUrl?.includes('hqdefault.jpg')
     ? bookmark.imageUrl.replace('hqdefault.jpg', 'maxresdefault.jpg')
@@ -159,16 +173,16 @@ export function BookmarkDetailModal({
         </div>
 
         {/* Title */}
-        {bookmark.title && (
+        {(showTitle || fallbackOnlyTitle) && bookmark.title && (
           <h2 className="font-semibold text-white text-base leading-snug">
-            {bookmark.title}
+            <FormattedPostText text={bookmark.title} />
           </h2>
         )}
 
         {/* Post Text */}
-        {hasDistinctText && bookmark.text && (
-          <div className="space-y-3 whitespace-pre-line text-[14.5px] leading-relaxed text-neutral-100 font-normal">
-            <p>{bookmark.text}</p>
+        {showText && bookmark.text && (
+          <div className="space-y-3 text-[14.5px] leading-relaxed text-neutral-100 font-normal">
+            <FormattedPostText text={bookmark.text} />
           </div>
         )}
 
