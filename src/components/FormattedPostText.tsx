@@ -174,3 +174,79 @@ export function FormattedPostText({
     </div>
   );
 }
+
+export interface DisplayContentResult {
+  showTitle: boolean;
+  title: string;
+  showText: boolean;
+  text: string;
+}
+
+/**
+ * Determines whether a bookmark should show a separate title header or just the post text.
+ * For social media (Twitter/X, Threads, Bluesky, etc.) where posts don't have titles,
+ * or whenever the title is just a duplicated snippet of the post text, this eliminates
+ * the redundant bold title header and renders clean post text directly 1:1 with the original platform.
+ */
+export function resolveBookmarkDisplayContent(bookmark: {
+  title?: string | null;
+  text?: string | null;
+  platform?: string | null;
+}): DisplayContentResult {
+  const cleanTitle = repairFragmentedUrls(bookmark.title?.trim() || '');
+  const cleanText = repairFragmentedUrls(bookmark.text?.trim() || '');
+
+  // Strip trailing ellipsis and collapse spaces for comparison
+  const normTitle = cleanTitle.replace(/\.\.\.$/, '').replace(/[…\s]+/g, ' ').trim().toLowerCase();
+  const normText = cleanText.replace(/[…\s]+/g, ' ').trim().toLowerCase();
+
+  const isBoilerplate =
+    normText.includes('enjoy the videos and music you love') ||
+    normText.includes('upload original content') ||
+    normText.includes('saved from valut extension');
+
+  const validText = isBoilerplate ? '' : cleanText;
+  const validNormText = isBoilerplate ? '' : normText;
+
+  // Check if title is an excerpt of text (e.g. first line or first 80 chars of tweet)
+  const isTitleExcerptOfText = Boolean(
+    normTitle &&
+    validNormText &&
+    (validNormText === normTitle ||
+     validNormText.startsWith(normTitle) ||
+     (normTitle.length >= 15 && validNormText.includes(normTitle.slice(0, 30))))
+  );
+
+  // Social platforms without separate title (Twitter/X, Threads, Bluesky, Mastodon, Instagram)
+  const isSocialPost = ['twitter', 'threads', 'bluesky', 'instagram', 'tiktok'].includes(bookmark.platform || '');
+
+  // If text exists and it's a social post or title was just auto-extracted from text:
+  // ONLY show the text without any redundant fake title heading!
+  if (validText && (isTitleExcerptOfText || isSocialPost)) {
+    return {
+      showTitle: false,
+      title: '',
+      showText: true,
+      text: validText,
+    };
+  }
+
+  // If there's no body text, show title
+  if (!validText) {
+    return {
+      showTitle: true,
+      title: cleanTitle,
+      showText: false,
+      text: '',
+    };
+  }
+
+  // Both distinct title and text (e.g. YouTube video title + description, or Article)
+  const isTitleDuplicateOfText = normTitle === validNormText;
+  return {
+    showTitle: Boolean(cleanTitle && !isTitleDuplicateOfText),
+    title: cleanTitle,
+    showText: Boolean(validText),
+    text: validText,
+  };
+}

@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
     if (url && (!title || !imageUrl || !avatarUrl || !text)) {
       try {
         const scraped = await scrapeUrlMetadata(url);
-        title = title || scraped.title;
+        if (finalPlatform !== 'twitter' && finalPlatform !== 'threads' && finalPlatform !== 'bluesky') {
+          title = title || scraped.title;
+        }
         text = text || scraped.text;
         displayName = displayName || scraped.displayName;
         username = username || scraped.username;

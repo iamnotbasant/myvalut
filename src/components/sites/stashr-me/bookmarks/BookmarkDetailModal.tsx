@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
 import { TagDot, PlatformIcon, RedditIcon, GitHubIcon, ExternalLink, Sparkles } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
-import { FormattedPostText, repairFragmentedUrls } from '@/components/FormattedPostText';
+import { FormattedPostText, repairFragmentedUrls, resolveBookmarkDisplayContent } from '@/components/FormattedPostText';
 
 interface BookmarkDetailModalProps {
   bookmark: BookmarkItem | null;
@@ -64,27 +64,7 @@ export function BookmarkDetailModal({
     bookmark.text?.toLowerCase().includes('animation') ||
     bookmark.text?.toLowerCase().includes('video');
 
-  const normalizedTitle = repairFragmentedUrls(bookmark.title || '').trim().replace(/\s+/g, ' ').toLowerCase();
-  const normalizedText = repairFragmentedUrls(bookmark.text || '').trim().replace(/\s+/g, ' ').toLowerCase();
-
-  const isTitleExcerptOfText = Boolean(
-    normalizedTitle &&
-    normalizedText &&
-    (normalizedText === normalizedTitle ||
-     normalizedText.startsWith(normalizedTitle.replace(/\.\.\.$/, '').trim()) ||
-     (normalizedText.length >= normalizedTitle.length && normalizedTitle.length > 20 && normalizedText.includes(normalizedTitle.slice(0, 30))))
-  );
-
-  const isTextIdenticalToTitle = Boolean(
-    normalizedTitle &&
-    normalizedText &&
-    (normalizedText === normalizedTitle ||
-     normalizedTitle.startsWith(normalizedText.replace(/\.\.\.$/, '').trim()))
-  );
-
-  const showTitle = Boolean(bookmark.title && !isTitleExcerptOfText);
-  const showText = Boolean(bookmark.text && (!isTextIdenticalToTitle || isTitleExcerptOfText));
-  const fallbackOnlyTitle = !showTitle && !showText && Boolean(bookmark.title);
+  const { showTitle, title: displayTitle, showText, text: displayText } = resolveBookmarkDisplayContent(bookmark);
 
   const cleanImageUrl = bookmark.imageUrl?.includes('hqdefault.jpg')
     ? bookmark.imageUrl.replace('hqdefault.jpg', 'maxresdefault.jpg')
@@ -172,17 +152,17 @@ export function BookmarkDetailModal({
           </div>
         </div>
 
-        {/* Title */}
-        {(showTitle || fallbackOnlyTitle) && bookmark.title && (
+        {/* Title (Only if distinct video/article title) */}
+        {showTitle && displayTitle && (
           <h2 className="font-semibold text-white text-base leading-snug">
-            <FormattedPostText text={bookmark.title} />
+            <FormattedPostText text={displayTitle} />
           </h2>
         )}
 
         {/* Post Text */}
-        {showText && bookmark.text && (
+        {showText && displayText && (
           <div className="space-y-3 text-[14.5px] leading-relaxed text-neutral-100 font-normal">
-            <FormattedPostText text={bookmark.text} />
+            <FormattedPostText text={displayText} />
           </div>
         )}
 

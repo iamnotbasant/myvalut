@@ -262,14 +262,11 @@
     const photoImg = article ? article.querySelector('[data-testid="tweetPhoto"] img') : null;
     const imageUrl = photoImg ? photoImg.src : '';
 
-    const firstLine = text.split('\n')[0].trim();
-    const title = text ? (firstLine.length > 0 && firstLine.length <= 80 ? firstLine : (text.length > 80 ? `${text.slice(0, 80)}...` : text)) : 'Tweet';
-
     try {
       const response = await sendSaveRequest({
         url: tweetUrl,
         platform: 'twitter',
-        title,
+        title: '',
         text,
         displayName,
         username,

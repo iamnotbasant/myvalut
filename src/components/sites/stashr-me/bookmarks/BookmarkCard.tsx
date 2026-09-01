@@ -20,7 +20,7 @@ import {
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
-import { FormattedPostText, repairFragmentedUrls } from '@/components/FormattedPostText';
+import { FormattedPostText, repairFragmentedUrls, resolveBookmarkDisplayContent } from '@/components/FormattedPostText';
 
 interface BookmarkCardProps {
   bookmark: BookmarkItem;
@@ -237,7 +237,7 @@ export function BookmarkCard({
     position: { x: 0, y: 0 }
   });
 
-  const { hasDistinctText } = getCleanCardContent(bookmark);
+  const { showTitle, title: displayTitle, showText, text: displayText } = resolveBookmarkDisplayContent(bookmark);
 
   const imgSrc = getCleanImageUrl(bookmark.imageUrl);
 
@@ -459,14 +459,14 @@ export function BookmarkCard({
         {/* Content Block */}
         <div className="relative z-10 flex gap-4">
           <div className="flex-1 min-w-0 space-y-1">
-            {bookmark.title && (
+            {showTitle && displayTitle && (
               <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2">
-                {repairFragmentedUrls(bookmark.title)}
+                {displayTitle}
               </h3>
             )}
-            {hasDistinctText && (
+            {showText && displayText && (
               <div className="text-xs leading-relaxed text-neutral-400 line-clamp-2">
-                <FormattedPostText text={bookmark.text} />
+                <FormattedPostText text={displayText} />
               </div>
             )}
           </div>
@@ -599,17 +599,17 @@ export function BookmarkCard({
           </div>
         </div>
 
-        {/* Title */}
-        {bookmark.title && (
+        {/* Title (Only if distinct video/article title) */}
+        {showTitle && displayTitle && (
           <h3 className="relative z-10 font-semibold text-white text-[15px] leading-snug">
-            {repairFragmentedUrls(bookmark.title)}
+            {displayTitle}
           </h3>
         )}
 
         {/* Content text */}
-        {hasDistinctText && (
+        {showText && displayText && (
           <div className="relative z-10 text-[14px] leading-relaxed text-neutral-200">
-            <FormattedPostText text={bookmark.text} />
+            <FormattedPostText text={displayText} />
           </div>
         )}
 
@@ -866,22 +866,22 @@ export function BookmarkCard({
         )}
       </div>
 
-      {/* Title */}
-      {bookmark.title && (
+      {/* Title (Only if distinct video/article title) */}
+      {showTitle && displayTitle && (
         <p className="relative z-10 font-semibold text-white text-sm leading-snug">
-          {repairFragmentedUrls(bookmark.title)}
+          {displayTitle}
         </p>
       )}
 
       {/* Post Text & Show More */}
-      {hasDistinctText && bookmark.text && (
+      {showText && displayText && (
         <div className="relative z-10 space-y-2 text-[13.5px] leading-relaxed text-neutral-200">
           <FormattedPostText
-            text={bookmark.text}
+            text={displayText}
             isExpanded={isExpanded}
-            maxLines={bookmark.text.length > 220 ? 4 : undefined}
+            maxLines={displayText.length > 220 ? 4 : undefined}
           />
-          {bookmark.text.length > 220 && (
+          {displayText.length > 220 && (
             <button
               type="button"
               onClick={(e) => {
