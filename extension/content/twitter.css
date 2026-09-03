@@ -43,10 +43,22 @@
   color: rgb(113, 118, 123) !important;
 }
 
-/* Saved State - Signature Twitter Blue Color (No Glow) */
+/* Saved State - Signature Twitter Blue Color with Pop Animation */
 .valut-x-btn.valut-is-saved,
 .valut-x-btn.valut-saved {
   color: #1d9bf0 !important;
+}
+
+.valut-x-btn.valut-is-saved svg,
+.valut-x-btn.valut-saved svg {
+  animation: valutButtonBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+@keyframes valutButtonBounce {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.3); }
+  75% { transform: scale(0.95); }
+  100% { transform: scale(1); }
 }
 
 .valut-x-btn svg {
