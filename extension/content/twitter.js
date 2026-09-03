@@ -58,6 +58,32 @@
     }, 4000);
   }
 
+  function showErrorToast(errMessage) {
+    let container = document.querySelector('.valut-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'valut-toast-container';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'valut-toast valut-toast-error';
+    toast.innerHTML = `
+      <div class="valut-toast-icon">!</div>
+      <div class="valut-toast-body">
+        <div class="valut-toast-title">Save Failed</div>
+        <div class="valut-toast-desc">${errMessage || 'Could not connect to Valut'}</div>
+      </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('valut-toast-hide');
+      setTimeout(() => toast.remove(), 250);
+    }, 5500);
+  }
+
   async function sendSaveRequest(saveData) {
     if (
       typeof chrome !== 'undefined' &&
@@ -87,16 +113,24 @@
         });
         if (response && response.success) {
           return response;
+        } else if (response && response.error) {
+          throw new Error(response.error);
         }
-      } catch {}
+      } catch (e) {
+        if (e && e.message && !e.message.toLowerCase().includes('offline')) {
+          throw e;
+        }
+      }
     }
 
     const candidateEndpoints = [
       'https://myvalut.vercel.app/api/extension/save',
       'http://localhost:3000/api/extension/save',
       'http://127.0.0.1:3000/api/extension/save',
+      'http://localhost:3001/api/extension/save',
     ];
 
+    let lastFetchErr = null;
     for (const endpoint of candidateEndpoints) {
       try {
         const res = await fetch(endpoint, {
@@ -120,12 +154,23 @@
           const json = await res.json();
           if (json.success) {
             return json;
+          } else {
+            lastFetchErr = new Error(json.error || 'Failed to save');
+          }
+        } else {
+          try {
+            const errJson = await res.json();
+            lastFetchErr = new Error(errJson.error || `Server responded with ${res.status}`);
+          } catch {
+            lastFetchErr = new Error(`Server responded with ${res.status}`);
           }
         }
-      } catch {}
+      } catch (err) {
+        lastFetchErr = err;
+      }
     }
 
-    throw new Error('Please make sure Valut is running');
+    throw lastFetchErr || new Error('Please make sure Valut is running');
   }
 
   async function checkTweetSaved(tweetUrl) {
@@ -293,6 +338,7 @@
       console.error('Valut save error:', err);
       button.innerHTML = VALUT_ICON;
       button.classList.remove('valut-saving');
+      showErrorToast(err.message || 'Failed to save post');
     }
   }
 
@@ -304,7 +350,8 @@
 
       const article = group.closest('article');
       const timeLink = article?.querySelector('time')?.closest('a');
-      const tweetUrl = timeLink ? timeLink.href : window.location.href;
+      const rawUrl = timeLink ? timeLink.href : window.location.href;
+      const tweetUrl = rawUrl ? rawUrl.split('?')[0] : window.location.href;
 
       const btnWrapper = document.createElement('div');
       btnWrapper.style.display = 'flex';

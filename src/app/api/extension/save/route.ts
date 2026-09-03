@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
 import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl } from '@/lib/gemini-tagger';
-import { repairFragmentedUrls } from '@/components/FormattedPostText';
+import { repairFragmentedUrls } from '@/lib/url-utils';
 
 // Helper for CORS headers
 function corsHeaders() {
@@ -20,19 +20,21 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    let {
+    const {
       url,
       platform,
+      userId,
+      customTags = [],
+      note,
+      apiKey,
+    } = body;
+    let {
       title,
       text = '',
       displayName,
       username,
       avatarUrl,
       imageUrl,
-      userId,
-      customTags = [],
-      note,
-      apiKey,
     } = body;
 
     if (!url && !text) {
@@ -181,10 +183,11 @@ export async function POST(req: NextRequest) {
       },
       { headers: corsHeaders() }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : 'Internal server error';
     console.error('Extension save API error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMsg },
       { status: 500, headers: corsHeaders() }
     );
   }

@@ -28,14 +28,18 @@ export async function GET(req: NextRequest) {
     }
 
     const isValidVideoId = Boolean(videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId));
+    const twitterStatusMatch = targetUrl ? targetUrl.match(/(?:twitter\.com|x\.com)\/[^/]+\/status\/(\d+)/i) : null;
+    const twitterStatusId = twitterStatusMatch ? twitterStatusMatch[1] : null;
 
     let query = supabase.from('bookmarks').select('*').limit(1);
 
     if (isValidVideoId) {
       query = query.ilike('url', `%${videoId}%`);
+    } else if (twitterStatusId) {
+      query = query.ilike('url', `%status/${twitterStatusId}%`);
     } else if (targetUrl && targetUrl.length > 5) {
-      const cleanUrl = targetUrl.split('&ab_channel=')[0].split('&feature=')[0];
-      query = query.eq('url', cleanUrl);
+      const cleanUrl = targetUrl.split('?')[0].split('&ab_channel=')[0].split('&feature=')[0];
+      query = query.or(`url.eq.${cleanUrl},url.eq.${targetUrl}`);
     } else {
       return NextResponse.json({ isSaved: false }, { headers: corsHeaders() });
     }

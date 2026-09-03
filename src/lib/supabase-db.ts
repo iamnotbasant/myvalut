@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { BookmarkItem, Collection, Tag } from '@/types/stashr';
-import { repairFragmentedUrls } from '@/components/FormattedPostText';
+import { repairFragmentedUrls } from '@/lib/url-utils';
 
 // Row types from Supabase
 export interface DbBookmark {

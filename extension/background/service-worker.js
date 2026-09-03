@@ -193,6 +193,10 @@ async function saveBookmarkToValut(data) {
           title: data.title || undefined,
           text: data.text || undefined,
           platform: data.platform || undefined,
+          displayName: data.displayName || undefined,
+          username: data.username || undefined,
+          avatarUrl: data.avatarUrl || undefined,
+          imageUrl: data.imageUrl || undefined,
           userId: config.userId || undefined,
           apiKey: config.apiKey || undefined
         })
@@ -227,6 +231,15 @@ async function saveBookmarkToValut(data) {
           setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2500);
 
           return { success: true, bookmark: result.bookmark, tags: result.tags };
+        } else {
+          lastError = new Error(result.error || 'Failed to save');
+        }
+      } else {
+        try {
+          const errJson = await response.json();
+          lastError = new Error(errJson.error || `Server responded with ${response.status}`);
+        } catch {
+          lastError = new Error(`Server responded with ${response.status}`);
         }
       }
     } catch (err) {
@@ -234,7 +247,9 @@ async function saveBookmarkToValut(data) {
     }
   }
 
-  const friendlyError = 'Valut app is offline. Please run "npm run dev" in your project terminal!';
+  const friendlyError = lastError?.message && !lastError.message.toLowerCase().includes('failed to fetch')
+    ? lastError.message
+    : 'Valut app is offline. Please run "npm run dev" in your project terminal!';
   console.error('Valut save error:', lastError);
 
   if (data.tabId) {
