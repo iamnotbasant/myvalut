@@ -90,13 +90,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 5. Save Current Page Button Click
+  // 5. Save Current Page Button Click (1-Click Instant Save)
   saveBtn.addEventListener('click', async () => {
     if (!currentTab || !currentTab.url) return;
+    if (saveBtn.classList.contains('saving') || saveBtn.classList.contains('saved')) return;
 
     saveBtn.classList.add('saving');
     saveIcon.innerHTML = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>`;
-    saveLabel.innerText = 'AI Categorizing...';
+    saveLabel.innerText = 'Saving...';
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -111,14 +112,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveBtn.classList.remove('saving');
         saveBtn.classList.add('saved');
         saveIcon.innerHTML = `✓`;
-        saveLabel.innerText = 'Saved to Valut';
+        saveLabel.innerText = 'Saved to Valut ✓';
 
-        // Render AI tags
-        const tags = response.tags || response.bookmark?.tags || [];
-        if (tags.length > 0) {
-          generatedTags.innerHTML = tags.map(t => `<span class="tag-badge">● ${t.name}</span>`).join('');
+        if (resultBox) {
           resultBox.classList.remove('hidden');
         }
+
+        // Auto close popup smoothly after confirmation
+        setTimeout(() => {
+          window.close();
+        }, 1400);
       } else {
         throw new Error(response?.error || 'Failed to save');
       }

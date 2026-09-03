@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
 import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl } from '@/lib/gemini-tagger';
@@ -48,49 +48,11 @@ export async function POST(req: NextRequest) {
     if (text) text = repairFragmentedUrls(text);
     if (title) title = repairFragmentedUrls(title);
 
-    // 1. Auto-detect platform and scrape metadata if URL provided and fields missing
+    // 1. Auto-detect platform
     const detectedPlatform = url ? detectPlatformFromUrl(url) : ((platform || 'web') as PlatformType);
-    let finalPlatform: PlatformType = (platform as PlatformType) || detectedPlatform;
+    const finalPlatform: PlatformType = (platform as PlatformType) || detectedPlatform;
 
-    if (url && (!title || !imageUrl || !avatarUrl || !text)) {
-      try {
-        const scraped = await scrapeUrlMetadata(url);
-        if (finalPlatform !== 'twitter' && finalPlatform !== 'threads' && finalPlatform !== 'bluesky') {
-          title = title || scraped.title;
-        }
-        text = text || scraped.text;
-        displayName = displayName || scraped.displayName;
-        username = username || scraped.username;
-        avatarUrl = avatarUrl || scraped.avatarUrl;
-        imageUrl = imageUrl || scraped.imageUrl;
-        finalPlatform = scraped.platform || finalPlatform;
-
-        if (text) text = repairFragmentedUrls(text);
-        if (title) title = repairFragmentedUrls(title);
-      } catch (scrapeErr) {
-        console.warn('Extension save auto-scrape warning:', scrapeErr);
-      }
-    }
-
-    // 2. Generate Gemini AI Tags if no custom tags supplied
-    let tags = Array.isArray(customTags) ? customTags : [];
-    if (tags.length === 0) {
-      try {
-        const tagResult = await generateGeminiTags({
-          platform: finalPlatform,
-          title: title || '',
-          text: text || title || url || '',
-          displayName,
-          username,
-          apiKey,
-        });
-        tags = tagResult.tags;
-      } catch (tagErr) {
-        console.warn('Extension save AI tag generation warning:', tagErr);
-      }
-    }
-
-    // 3. Format Date
+    // 2. Format Date and generate Unique Bookmark ID
     const now = new Date();
     const formattedDate = now.toLocaleDateString('en-US', {
       month: 'short',
@@ -99,12 +61,24 @@ export async function POST(req: NextRequest) {
     });
 
     const bookmarkId = `bm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const initialTags = Array.isArray(customTags) ? customTags : [];
+
+    // 3. Construct initial bookmark item
+    const fallbackDisplayName = finalPlatform === 'youtube'
+      ? 'YouTube'
+      : finalPlatform === 'twitter'
+      ? 'X / Twitter'
+      : finalPlatform === 'reddit'
+      ? 'Reddit'
+      : finalPlatform === 'instagram'
+      ? 'Instagram'
+      : 'Web';
 
     const bookmarkItem: BookmarkItem = {
       id: bookmarkId,
       platform: finalPlatform,
-      displayName: displayName || 'Creator',
-      username: username ? (username.startsWith('@') ? username.slice(1) : username) : 'creator',
+      displayName: displayName || fallbackDisplayName,
+      username: username ? (username.startsWith('@') ? username.slice(1) : username) : finalPlatform,
       avatarUrl: avatarUrl || undefined,
       imageUrl: imageUrl || undefined,
       title: title || undefined,
@@ -112,20 +86,19 @@ export async function POST(req: NextRequest) {
       url: url || undefined,
       date: formattedDate,
       createdAt: Date.now(),
-      tags,
+      tags: initialTags,
       isFavorite: false,
       isArchived: false,
       note: note || undefined,
     };
 
-    // 3. Save to Supabase if configured
+    // 4. Save to Supabase immediately (1-click Instant Save)
     let savedToDatabase = false;
-    if (isSupabaseConfigured && supabase) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const validUserId = (userId && typeof userId === 'string' && uuidRegex.test(userId)) ? userId : null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validUserId = (userId && typeof userId === 'string' && uuidRegex.test(userId)) ? userId : null;
 
+    if (isSupabaseConfigured && supabase) {
       try {
-        // Insert into bookmarks table
         const { error: bmError } = await supabase.from('bookmarks').insert({
           id: bookmarkItem.id,
           platform: bookmarkItem.platform,
@@ -146,12 +119,12 @@ export async function POST(req: NextRequest) {
         });
 
         if (bmError) {
-          console.error('Supabase bookmark insert error:', bmError);
+          console.error('[Instant Save] Supabase initial bookmark insert error:', bmError);
         } else {
           savedToDatabase = true;
 
-          // Upsert tags into tags table
-          for (const t of tags) {
+          // Upsert custom tags if provided
+          for (const t of initialTags) {
             try {
               const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
               await supabase.from('tags').upsert(
@@ -164,22 +137,126 @@ export async function POST(req: NextRequest) {
                 { onConflict: 'id' }
               );
             } catch (tagErr) {
-              console.warn('Tag upsert warning:', tagErr);
+              console.warn('Initial tag upsert warning:', tagErr);
             }
           }
         }
       } catch (dbErr) {
-        console.error('Supabase execution error:', dbErr);
+        console.error('[Instant Save] Supabase execution error:', dbErr);
       }
     }
 
+    // 5. Asynchronous Background Worker: Scrapes metadata + Calls Gemini AI + Updates DB
+    // User does NOT need to open website; tags will be updated directly in Supabase in background!
+    if (initialTags.length === 0) {
+      const runBackgroundAutoTagging = async () => {
+        try {
+          let bgTitle = title;
+          let bgText = text;
+          let bgDisplayName = displayName;
+          let bgUsername = username;
+          let bgAvatarUrl = avatarUrl;
+          let bgImageUrl = imageUrl;
+          let bgPlatform = finalPlatform;
+
+          // Scrape detailed metadata if sparse and URL exists
+          if (url && (!bgTitle || !bgImageUrl || !bgAvatarUrl || !bgText || bgText.length < 30)) {
+            try {
+              const scraped = await scrapeUrlMetadata(url);
+              if (bgPlatform !== 'twitter' && bgPlatform !== 'threads' && bgPlatform !== 'bluesky') {
+                bgTitle = bgTitle || scraped.title;
+              }
+              bgText = bgText || scraped.text;
+              bgDisplayName = bgDisplayName || scraped.displayName;
+              bgUsername = bgUsername || scraped.username;
+              bgAvatarUrl = bgAvatarUrl || scraped.avatarUrl;
+              bgImageUrl = bgImageUrl || scraped.imageUrl;
+              bgPlatform = scraped.platform || bgPlatform;
+
+              if (bgText) bgText = repairFragmentedUrls(bgText);
+              if (bgTitle) bgTitle = repairFragmentedUrls(bgTitle);
+            } catch (scrapeErr) {
+              console.warn(`[Background Worker] Auto-scrape warning for ${url}:`, scrapeErr);
+            }
+          }
+
+          // Generate tags via Gemini AI
+          const tagResult = await generateGeminiTags({
+            platform: bgPlatform,
+            title: bgTitle || '',
+            text: bgText || bgTitle || url || '',
+            displayName: bgDisplayName,
+            username: bgUsername,
+            apiKey,
+          });
+
+          const generatedTags = tagResult.tags || [];
+          if (generatedTags.length > 0 && isSupabaseConfigured && supabase) {
+            const updates: Record<string, any> = {
+              tags: generatedTags,
+            };
+            if (bgTitle && !title) updates.title = bgTitle;
+            if (bgText && !text) updates.text = bgText;
+            if (bgImageUrl && !imageUrl) updates.image_url = bgImageUrl;
+            if (bgAvatarUrl && !avatarUrl) updates.avatar_url = bgAvatarUrl;
+            if (bgDisplayName && !displayName) updates.display_name = bgDisplayName;
+            if (bgUsername && !username) {
+              updates.username = bgUsername.startsWith('@') ? bgUsername.slice(1) : bgUsername;
+            }
+
+            const { error: updateErr } = await supabase
+              .from('bookmarks')
+              .update(updates)
+              .eq('id', bookmarkId);
+
+            if (updateErr) {
+              console.error(`[Background Worker] DB update error for ${bookmarkId}:`, updateErr);
+            } else {
+              console.log(`[Background Worker] Successfully saved ${generatedTags.length} AI tags for ${bookmarkId}`);
+            }
+
+            // Upsert generated tags to tags catalog
+            for (const t of generatedTags) {
+              try {
+                const tagId = `tag_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+                await supabase.from('tags').upsert(
+                  {
+                    id: tagId,
+                    name: t.name,
+                    color: t.color,
+                    user_id: validUserId,
+                  },
+                  { onConflict: 'id' }
+                );
+              } catch (tagErr) {
+                console.warn('[Background Worker] Tag upsert warning:', tagErr);
+              }
+            }
+          }
+        } catch (bgErr) {
+          console.error(`[Background Worker] Error processing bookmark ${bookmarkId}:`, bgErr);
+        }
+      };
+
+      try {
+        after(runBackgroundAutoTagging);
+      } catch {
+        // Fallback execution if called outside standard after() context
+        runBackgroundAutoTagging().catch((err) => {
+          console.error('[Background Worker] Detached execution error:', err);
+        });
+      }
+    }
+
+    // 6. Return response immediately (<150ms) to Extension!
     return NextResponse.json(
       {
         success: true,
-        message: 'Bookmark saved successfully with AI tags',
+        message: 'Bookmark saved to Valut! AI tags are being generated in the background.',
         bookmark: bookmarkItem,
-        tags,
+        tags: initialTags,
         savedToDatabase,
+        backgroundTagging: initialTags.length === 0,
       },
       { headers: corsHeaders() }
     );
