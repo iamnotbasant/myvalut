@@ -1,6 +1,37 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { BookmarkItem, Collection, Tag } from '@/types/stashr';
 import { repairFragmentedUrls } from '@/lib/url-utils';
+import { SYNONYM_MAP } from '@/lib/gemini-tagger';
+
+// Normalizer helper for tag collections
+export function normalizeTagCollection(tags: any[]): Tag[] {
+  if (!Array.isArray(tags)) return [];
+  const normalized: Tag[] = [];
+  const seen = new Set<string>();
+
+  for (const t of tags) {
+    if (!t) continue;
+    const rawName = typeof t === 'string' ? t : t.name;
+    if (!rawName || typeof rawName !== 'string') continue;
+
+    const clean = rawName.toLowerCase().trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+    const mapped =
+      SYNONYM_MAP[clean] ||
+      (clean.endsWith('s') && SYNONYM_MAP[clean.slice(0, -1)]) ||
+      clean;
+
+    if (!seen.has(mapped)) {
+      seen.add(mapped);
+      normalized.push({
+        id: (typeof t === 'object' && t.id) ? t.id : `tag_${mapped.replace(/[^a-z0-9]/g, '_')}`,
+        name: mapped,
+        color: (typeof t === 'object' && t.color) ? t.color : 'blue',
+      });
+    }
+  }
+
+  return normalized;
+}
 
 // Row types from Supabase
 export interface DbBookmark {
@@ -60,7 +91,7 @@ export function mapDbBookmarkToApp(row: DbBookmark): BookmarkItem {
     url: row.url || undefined,
     date: row.date,
     createdAt: row.created_at_ms ? Number(row.created_at_ms) : undefined,
-    tags: Array.isArray(row.tags) ? (row.tags as Tag[]) : [],
+    tags: normalizeTagCollection(row.tags),
     isFavorite: Boolean(row.is_favorite),
     isArchived: Boolean(row.is_archived),
     note: row.note || undefined,
@@ -107,7 +138,22 @@ export async function fetchBookmarksFromDb(userId?: string | null): Promise<Book
       console.error('Error fetching bookmarks from Supabase:', error);
       return null;
     }
-    return (data as DbBookmark[]).map(mapDbBookmarkToApp);
+
+    return (data as DbBookmark[]).map((row) => {
+      const appBookmark = mapDbBookmarkToApp(row);
+      const originalNames = (row.tags || []).map((t) => t?.name).filter(Boolean).join(',');
+      const normalizedNames = appBookmark.tags.map((t) => t.name).join(',');
+      // Auto-migrate legacy long tags (e.g. 'large language models' -> 'llm') in database
+      if (originalNames && originalNames !== normalizedNames && supabase) {
+        Promise.resolve(
+          supabase
+            .from('bookmarks')
+            .update({ tags: appBookmark.tags })
+            .eq('id', row.id)
+        ).catch(() => {});
+      }
+      return appBookmark;
+    });
   } catch (err) {
     console.error('Failed to fetch from Supabase:', err);
     return null;
@@ -157,11 +203,14 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
       console.error('Error fetching tags from Supabase:', error);
       return null;
     }
-    return (data as DbTag[]).map(t => ({
+
+    const rawTags = (data as DbTag[]).map(t => ({
       id: t.id,
       name: t.name,
       color: t.color as Tag['color'],
     }));
+
+    return normalizeTagCollection(rawTags) as Tag[];
   } catch (err) {
     console.error('Failed to fetch tags from Supabase:', err);
     return null;

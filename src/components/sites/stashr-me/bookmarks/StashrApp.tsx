@@ -47,6 +47,7 @@ import {
   updateTagInDb,
   deleteTagFromDb,
   mapDbBookmarkToApp,
+  normalizeTagCollection,
   DbBookmark
 } from '@/lib/supabase-db';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -74,15 +75,20 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const { user } = useAuth();
 
   // 1. Data States with 0ms Instant Hydration
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() =>
-    getInitialLocalStorageData<BookmarkItem[]>('stashr_bookmarks_v3', [])
-  );
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() => {
+    const raw = getInitialLocalStorageData<BookmarkItem[]>('stashr_bookmarks_v3', []);
+    return raw.map(b => ({
+      ...b,
+      tags: normalizeTagCollection(b.tags || [])
+    }));
+  });
   const [collections, setCollections] = useState<Collection[]>(() =>
     getInitialLocalStorageData<Collection[]>('stashr_collections_v3', [])
   );
-  const [tags, setTags] = useState<Tag[]>(() =>
-    getInitialLocalStorageData<Tag[]>('stashr_tags_v3', [])
-  );
+  const [tags, setTags] = useState<Tag[]>(() => {
+    const raw = getInitialLocalStorageData<Tag[]>('stashr_tags_v3', []);
+    return normalizeTagCollection(raw) as Tag[];
+  });
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 2. View and Filter States

@@ -15,11 +15,111 @@ export const TAG_COLORS: TagColor[] = [
   'red'
 ];
 
-// 2. Known mappings for standard industry tools and variations
+// 2. Known mappings for standard industry tools, popular acronyms, and variations
 export const SYNONYM_MAP: Record<string, string> = {
+  // AI, Machine Learning, Data Science popular short forms
+  'large language models': 'llm',
+  'large language model': 'llm',
+  'retrieval augmented generation': 'rag',
+  'natural language processing': 'nlp',
+  'natural language understanding': 'nlu',
+  'generative ai': 'genai',
+  'generative artificial intelligence': 'genai',
   'artificial intelligence': 'ai',
   'machine learning': 'ml',
   'deep learning': 'dl',
+  'neural network': 'nn',
+  'neural networks': 'nn',
+  'convolutional neural network': 'cnn',
+  'recurrent neural network': 'rnn',
+  'reinforcement learning': 'rl',
+  'reinforcement learning from human feedback': 'rlhf',
+  'optical character recognition': 'ocr',
+  'automatic speech recognition': 'asr',
+  'text to speech': 'tts',
+  'speech to text': 'stt',
+  'vision language model': 'vlm',
+  'vision language models': 'vlm',
+
+  // Dev, Software & Web Architecture
+  'application programming interface': 'api',
+  'application programming interfaces': 'api',
+  'software development kit': 'sdk',
+  'software development kits': 'sdk',
+  'command line interface': 'cli',
+  'graphical user interface': 'gui',
+  'user interface': 'ui',
+  'user experience': 'ux',
+  'ui ux': 'ui ux',
+  'user interface user experience': 'ui ux',
+  'user interface and user experience': 'ui ux',
+  'single page application': 'spa',
+  'progressive web app': 'pwa',
+  'server side rendering': 'ssr',
+  'static site generation': 'ssg',
+  'client side rendering': 'csr',
+  'continuous integration': 'ci',
+  'continuous deployment': 'cd',
+  'continuous integration continuous deployment': 'ci cd',
+  'object oriented programming': 'oop',
+  'functional programming': 'fp',
+  'content delivery network': 'cdn',
+  'domain name system': 'dns',
+  'virtual private network': 'vpn',
+  'structured query language': 'sql',
+  'relational database management system': 'rdbms',
+  'relational database': 'rdbms',
+  'cross origin resource sharing': 'cors',
+  'cross site scripting': 'xss',
+  'distributed denial of service': 'ddos',
+  'denial of service': 'dos',
+  'software as a service': 'saas',
+  'platform as a service': 'paas',
+  'infrastructure as a service': 'iaas',
+  'operating system': 'os',
+  'operating systems': 'os',
+  'internet of things': 'iot',
+
+  // Hardware & Performance
+  'central processing unit': 'cpu',
+  'graphics processing unit': 'gpu',
+  'tensor processing unit': 'tpu',
+  'neural processing unit': 'npu',
+  'random access memory': 'ram',
+  'solid state drive': 'ssd',
+  'frames per second': 'fps',
+  'high definition': 'hd',
+  'ultra high definition': 'uhd',
+
+  // Media, Audio & Video
+  'visual effects': 'vfx',
+  'sound effects': 'sfx',
+  'special effects': 'sfx',
+  'virtual reality': 'vr',
+  'augmented reality': 'ar',
+  'mixed reality': 'mr',
+
+  // Marketing, Business & Web3
+  'search engine optimization': 'seo',
+  'search engine marketing': 'sem',
+  'key performance indicator': 'kpi',
+  'key performance indicators': 'kpi',
+  'return on investment': 'roi',
+  'call to action': 'cta',
+  'customer relationship management': 'crm',
+  'business to business': 'b2b',
+  'business to consumer': 'b2c',
+  'cost per click': 'cpc',
+  'click through rate': 'ctr',
+  'decentralized finance': 'defi',
+  'non fungible token': 'nft',
+  'non fungible tokens': 'nft',
+  'proof of work': 'pow',
+  'proof of stake': 'pos',
+  'decentralized autonomous organization': 'dao',
+  'decentralized application': 'dapp',
+
+  // Creative Tools & Aliases
   'videoediting': 'video editing',
   'premier pro': 'premiere pro',
   'adobe premiere': 'premiere pro',
@@ -58,10 +158,7 @@ export const SYNONYM_MAP: Record<string, string> = {
   'counter strike 2': 'cs2',
   'counter strike': 'cs',
   'red dead redemption 2': 'rdr2',
-  'red dead redemption': 'rdr',
-  'search engine optimization': 'seo',
-  'user interface': 'ui ux',
-  'user experience': 'ui ux'
+  'red dead redemption': 'rdr'
 };
 
 // 3. Hard Blacklist for Clickbait verbs, fillers, and Platform noise
@@ -89,7 +186,16 @@ export function normalizeVaultTags(rawTags: string[]): string[] {
         .replace(/\s+/g, ' ')              // Extra spacing removed
         .trim()
     )
-    .map(tag => SYNONYM_MAP[tag] || tag)
+    .map(tag => {
+      // 1. Direct synonym match
+      if (SYNONYM_MAP[tag]) return SYNONYM_MAP[tag];
+      // 2. Singular match if ending with 's' (e.g. "large language models" -> "large language model")
+      if (tag.endsWith('s')) {
+        const singular = tag.slice(0, -1);
+        if (SYNONYM_MAP[singular]) return SYNONYM_MAP[singular];
+      }
+      return tag;
+    })
     .filter(tag => tag.length >= 2 && !HARD_BLACKLIST.has(tag));
 
   return Array.from(new Set(cleaned)).slice(0, 6);
@@ -462,26 +568,52 @@ You are the core metadata extraction and search-indexing engine for a knowledge 
 Your job is to generate 2 to 6 high-utility search tags from the provided content metadata.
 
 CRITICAL EXTRACTION RULES:
-1. COMPOUND NOUN PHRASES ONLY:
+1. PREFER POPULAR SHORT FORMS / ACRONYMS FOR WELL-KNOWN CONCEPTS:
+   - When a technical term, concept, or domain has a universally recognized popular short form or acronym, ALWAYS output that standard short form instead of spelling out the entire long multi-word phrase!
+   - What to SHORTEN (Always use short forms for these):
+     * Output "llm" (NEVER "large language models" or "large language model")
+     * Output "ai" (NEVER "artificial intelligence")
+     * Output "ml" (NEVER "machine learning")
+     * Output "dl" (NEVER "deep learning")
+     * Output "nlp" (NEVER "natural language processing")
+     * Output "rag" (NEVER "retrieval augmented generation")
+     * Output "genai" (NEVER "generative artificial intelligence")
+     * Output "api" (NEVER "application programming interface")
+     * Output "sdk" (NEVER "software development kit")
+     * Output "cli" (NEVER "command line interface")
+     * Output "gui" (NEVER "graphical user interface")
+     * Output "ui ux" (NEVER "user interface user experience")
+     * Output "seo" (NEVER "search engine optimization")
+     * Output "saas" (NEVER "software as a service")
+     * Output "os" (NEVER "operating system")
+     * Output "vr" / "ar" (NEVER "virtual reality" / "augmented reality")
+     * Output "vpn" (NEVER "virtual private network")
+     * Output "cdn" (NEVER "content delivery network")
+     * Output "fps" (NEVER "frames per second")
+     * Output "vfx" / "sfx" (NEVER "visual effects" / "sound effects")
+   - What to KEEP NATURAL (Do NOT invent fake short forms):
+     * Multi-word product names, model versions, frameworks, and specific creative disciplines that do NOT have a widely known acronym MUST be preserved naturally (e.g., "gpt 6 astra", "claude 3.7", "premiere pro", "davinci resolve", "sound design", "video editing", "color grading", "motion graphics", "state management", "cyber security").
+
+2. COMPOUND NOUN PHRASES ONLY:
    - Output domain/tool concepts (e.g. "sound design", "video editing", "color grading", "web dev", "machine learning").
    - NEVER split multi-word concepts into separate words.
    - NEVER output single generic verbs or common English noise words ("just", "won", "make", "this", "look", "good").
 
-2. STRICT FORBIDDEN WORDS (NEVER TAG THESE):
+3. STRICT FORBIDDEN WORDS (NEVER TAG THESE):
    - NO Clickbait Fillers: "tells", "know", "learn", "using", "secret", "secrets", "insane", "best", "tips", "tricks", "watch", "things", "stop", "make".
    - NO Platform Names or Generic Media Types: DO NOT output "youtube", "twitter", "x", "reddit", "video", "videos", "music", "content" unless it is specifically a technical guide about that exact system.
 
-3. BOILERPLATE CONTAMINATION HANDLING:
+4. BOILERPLATE CONTAMINATION HANDLING:
    - If description contains platform fallback text (e.g., "Enjoy the videos and music you love..."), IGNORE IT COMPLETELY. 
    - Rely strictly on the Title, Channel/Author name, and infer the core technical discipline.
 
-4. TAGGING PRIORITY & DENSITY (2 TO 6 TAGS):
-   - Primary Discipline (e.g., "sound design", "video editing", "ui ux", "coding")
-   - Specific Tools / Frameworks / Entities (e.g., "nextjs", "premiere pro", "davinci resolve", "figma", "tailwind")
-   - Technique / Sub-topic (e.g., "audio mixing", "typography", "state management", "cinematography")
+5. TAGGING PRIORITY & DENSITY (2 TO 6 TAGS):
+   - Primary Discipline (e.g., "sound design", "video editing", "ui ux", "coding", "ai")
+   - Specific Tools / Frameworks / Entities (e.g., "nextjs", "premiere pro", "davinci resolve", "figma", "tailwind", "llm", "openai")
+   - Technique / Sub-topic (e.g., "audio mixing", "typography", "state management", "cinematography", "rag")
    - Format / Intent (e.g., "tutorial", "breakdown", "workflow")
 
-5. FORMAT REQUIREMENTS:
+6. FORMAT REQUIREMENTS:
    - Strictly lowercase words with normal spaces.
    - Absolutely NO hyphens (-), NO hashtags (#), NO underscores (_).
    - Return valid JSON array only.
