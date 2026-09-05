@@ -18,6 +18,7 @@ import {
   Plus,
   Sparkles
 } from '@/components/icons';
+import { Download } from 'lucide-react';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ interface CommandPaletteProps {
   onToggleTheme: () => void;
   isDark: boolean;
   onOpenAddBookmark?: () => void;
+  onOpenImportExport?: () => void;
 }
 
 export function CommandPalette({
@@ -42,7 +44,8 @@ export function CommandPalette({
   tags,
   onToggleTheme,
   isDark,
-  onOpenAddBookmark
+  onOpenAddBookmark,
+  onOpenImportExport
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
 
@@ -145,6 +148,18 @@ export function CommandPalette({
                   <Plus className="size-3.5" />
                   <span>Add new bookmark (Auto AI Tags)</span>
                   <span className="ml-auto text-[10px] text-muted-foreground">⌘N / +</span>
+                </button>
+              )}
+              {onOpenImportExport && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenImportExport();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-foreground hover:bg-accent text-left transition-colors font-normal cursor-pointer"
+                >
+                  <Download className="size-3.5 text-blue-400" />
+                  <span>Backup & Restore (JSON / Markdown)</span>
                 </button>
               )}
             </div>

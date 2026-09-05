@@ -31,6 +31,8 @@ import {
   EditTagModal
 } from './Modals';
 import { BookmarkDetailModal } from './BookmarkDetailModal';
+import { ImportExportModal } from './ImportExportModal';
+import { safeLocalStorageSet, flushOfflineQueue, queueOfflineMutation } from '@/lib/offline-sync';
 import {
   fetchBookmarksFromDb,
   fetchCollectionsFromDb,
@@ -152,6 +154,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
 
   // Save manual/edited tags for a bookmark
   const handleSaveBookmarkTags = useCallback(async (bookmarkId: string, updatedTags: Array<{ name: string; color: any }>) => {
@@ -224,6 +227,14 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
     const handleOnline = () => {
       setIsOnline(true);
+      // Automatically flush queued offline mutations upon reconnection
+      flushOfflineQueue({
+        insertBookmark: insertBookmarkToDb,
+        updateBookmark: updateBookmarkInDb,
+        deleteBookmark: deleteBookmarkFromDb,
+        userId: user?.id
+      }).catch(console.error);
+
       if (isSupabaseConfigured) {
         Promise.all([
           fetchBookmarksFromDb(user?.id),
@@ -238,6 +249,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           .catch(() => {});
       }
     };
+
+    // Initial flush if online
+    if (navigator.onLine && isSupabaseConfigured) {
+      flushOfflineQueue({
+        insertBookmark: insertBookmarkToDb,
+        updateBookmark: updateBookmarkInDb,
+        deleteBookmark: deleteBookmarkFromDb,
+        userId: user?.id
+      }).catch(() => {});
+    }
 
     const handleOffline = () => {
       setIsOnline(false);
@@ -342,11 +363,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     saveTimeoutRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem('stashr_bookmarks_v3', JSON.stringify(bookmarks));
-        localStorage.setItem('stashr_collections_v3', JSON.stringify(collections));
-        localStorage.setItem('stashr_tags_v3', JSON.stringify(tags));
-      } catch {}
+      safeLocalStorageSet('stashr_bookmarks_v3', bookmarks);
+      safeLocalStorageSet('stashr_collections_v3', collections);
+      safeLocalStorageSet('stashr_tags_v3', tags);
     }, 500);
 
     return () => {
@@ -454,7 +473,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setBookmarks(prev =>
       prev.map(b => (b.id === id ? { ...b, isFavorite: nextVal } : b))
     );
-    updateBookmarkInDb(id, { isFavorite: nextVal });
+    if (isSupabaseConfigured && isOnline) {
+      updateBookmarkInDb(id, { isFavorite: nextVal }).catch(() => {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isFavorite: nextVal } });
+      });
+    } else {
+      queueOfflineMutation({ id, type: 'update_bookmark', payload: { isFavorite: nextVal } });
+    }
   };
 
   const handleArchive = (id: string) => {
@@ -464,7 +489,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setBookmarks(prev =>
       prev.map(b => (b.id === id ? { ...b, isArchived: nextVal } : b))
     );
-    updateBookmarkInDb(id, { isArchived: nextVal });
+    if (isSupabaseConfigured && isOnline) {
+      updateBookmarkInDb(id, { isArchived: nextVal }).catch(() => {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: nextVal } });
+      });
+    } else {
+      queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: nextVal } });
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -475,7 +506,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       next.delete(id);
       return next;
     });
-    deleteBookmarkFromDb(id);
+    if (isSupabaseConfigured && isOnline) {
+      deleteBookmarkFromDb(id).catch(() => {
+        queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+      });
+    } else {
+      queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+    }
   };
 
   const handleSaveNote = (id: string, note: string) => {
@@ -484,7 +521,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setBookmarks(prev =>
       prev.map(b => (b.id === id ? { ...b, note: trimmed } : b))
     );
-    updateBookmarkInDb(id, { note: trimmed });
+    if (isSupabaseConfigured && isOnline) {
+      updateBookmarkInDb(id, { note: trimmed }).catch(() => {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { note: trimmed } });
+      });
+    } else {
+      queueOfflineMutation({ id, type: 'update_bookmark', payload: { note: trimmed } });
+    }
   };
 
   const handleSelectTag = (tagName: string) => {
@@ -578,7 +621,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       createdAt: Date.now()
     };
     setBookmarks(prev => [created, ...prev]);
-    insertBookmarkToDb(created, user?.id);
+    if (isSupabaseConfigured && isOnline) {
+      insertBookmarkToDb(created, user?.id).catch(() => {
+        queueOfflineMutation({ id: created.id, type: 'insert_bookmark', payload: created });
+      });
+    } else {
+      queueOfflineMutation({ id: created.id, type: 'insert_bookmark', payload: created });
+    }
 
     // Update tags list if new tags were introduced
     setTags(prev => {
@@ -925,6 +974,100 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     return set.size;
   }, [bookmarks]);
 
+  // Data Import Handler (JSON / Markdown / Chrome Bookmarks)
+  const handleImportData = useCallback(async (data: {
+    bookmarks: BookmarkItem[];
+    collections: Collection[];
+    tags: Tag[];
+  }) => {
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    // 1. Collections merge
+    if (data.collections && data.collections.length > 0) {
+      setCollections(prev => {
+        const existingIds = new Set(prev.map(c => c.id));
+        const existingNames = new Set(prev.map(c => c.name.toLowerCase()));
+        const toAdd: Collection[] = [];
+        for (const col of data.collections) {
+          if (!existingIds.has(col.id) && !existingNames.has(col.name.toLowerCase())) {
+            toAdd.push(col);
+            if (isSupabaseConfigured) {
+              insertCollectionToDb(col, user?.id).catch(() => {});
+            }
+          }
+        }
+        return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+      });
+    }
+
+    // 2. Tags merge
+    if (data.tags && data.tags.length > 0) {
+      setTags(prev => {
+        const existingNames = new Set(prev.map(t => t.name.toLowerCase()));
+        const toAdd: Tag[] = [];
+        for (const tg of data.tags) {
+          if (!existingNames.has(tg.name.toLowerCase())) {
+            toAdd.push(tg);
+            if (isSupabaseConfigured) {
+              insertTagToDb(tg, user?.id).catch(() => {});
+            }
+          }
+        }
+        return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+      });
+    }
+
+    // 3. Bookmarks merge (deduplicate against existing IDs and URLs)
+    const existingIds = new Set(bookmarks.map(b => b.id));
+    const existingUrls = new Set(bookmarks.map(b => (b.url || '').toLowerCase().trim()).filter(Boolean));
+    const newBookmarks: BookmarkItem[] = [];
+
+    for (const b of (data.bookmarks || [])) {
+      const cleanUrl = (b.url || '').toLowerCase().trim();
+      if (existingIds.has(b.id) || (cleanUrl && existingUrls.has(cleanUrl))) {
+        skippedCount++;
+        continue;
+      }
+
+      const normalizedBookmark: BookmarkItem = {
+        ...b,
+        id: b.id || `b_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        date: b.date || 'Imported',
+        createdAt: b.createdAt || Date.now(),
+        tags: normalizeTagCollection(b.tags || []),
+      };
+
+      newBookmarks.push(normalizedBookmark);
+      existingIds.add(normalizedBookmark.id);
+      if (cleanUrl) existingUrls.add(cleanUrl);
+      addedCount++;
+
+      // Sync to Supabase or queue for offline sync
+      if (isSupabaseConfigured && isOnline) {
+        insertBookmarkToDb(normalizedBookmark, user?.id).catch(() => {
+          queueOfflineMutation({
+            id: normalizedBookmark.id,
+            type: 'insert_bookmark',
+            payload: normalizedBookmark,
+          });
+        });
+      } else {
+        queueOfflineMutation({
+          id: normalizedBookmark.id,
+          type: 'insert_bookmark',
+          payload: normalizedBookmark,
+        });
+      }
+    }
+
+    if (newBookmarks.length > 0) {
+      setBookmarks(prev => [...newBookmarks, ...prev]);
+    }
+
+    return { addedCount, skippedCount };
+  }, [bookmarks, user?.id, isOnline]);
+
   return (
     <div className="flex h-svh overflow-hidden bg-background md:bg-sidebar text-foreground antialiased selection:bg-primary/20">
       {/* 1. Left Navigation Sidebar (w-56) */}
@@ -947,6 +1090,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onDeleteTag={handleDeleteTag}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenImportExport={() => setIsImportExportOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         isMobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
@@ -975,6 +1119,8 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           onToggleTheme={handleToggleTheme}
           onOpenMobileMenu={() => setIsMobileNavOpen(true)}
           onOpenFeedback={() => setIsFeedbackOpen(true)}
+          isOnline={isOnline}
+          onOpenImportExport={() => setIsImportExportOpen(true)}
         />
 
         {/* Active Filter Pills Bar */}
@@ -1144,6 +1290,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onToggleTheme={handleToggleTheme}
         isDark={isDark}
         onOpenAddBookmark={() => setIsAddBookmarkOpen(true)}
+        onOpenImportExport={() => setIsImportExportOpen(true)}
+      />
+
+      <ImportExportModal
+        isOpen={isImportExportOpen}
+        onClose={() => setIsImportExportOpen(false)}
+        bookmarks={bookmarks}
+        collections={collections}
+        tags={allAvailableTags}
+        onImport={handleImportData}
       />
 
       <AddBookmarkModal

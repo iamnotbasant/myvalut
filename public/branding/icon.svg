@@ -1,34 +1,53 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_447_218)">
-<rect width="64" height="64" rx="15.375" fill="#333333"/>
-<path d="M33.876 38.1875C26.438 35.3688 18.5635 32.6875 17.6885 31.6875C14.9533 28.3852 18.4469 26.8387 30.876 24.25C38.5688 27.0295 44.6261 28.875 45.876 30.4375C48.7565 33.3954 44.8601 35.1038 33.876 38.1875Z" fill="white"/>
-<mask id="mask0_447_218" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="16" y="24" width="31" height="15">
-<path d="M33.876 38.1875C26.438 35.3688 18.5635 32.6875 17.6885 31.6875C14.9533 28.3852 18.4469 26.8387 30.876 24.25C38.5688 27.0295 44.6261 28.875 45.876 30.4375C48.7565 33.3954 44.8601 35.1038 33.876 38.1875Z" fill="white"/>
-</mask>
-<g mask="url(#mask0_447_218)">
-<g filter="url(#filter0_f_447_218)">
-<path d="M16.1253 53.375C16.1253 54.3125 16.1877 54.4375 17.7503 54C19.0002 53.6875 39.5002 47.3889 42.0002 46.625C44.5002 45.8611 47.0002 43.875 47.0002 39L47.0003 33.4375C47.0003 32.1875 46.6568 31.218 45.6252 30.1875C47.1027 32.0627 45.6252 33.8341 42.2502 35C38.8752 36.1659 24.5003 40.875 21.0628 42.125C18.1252 43.1875 16.1253 46 16.1253 48.5C16.1253 51 16.1159 52.022 16.1253 53.375Z" fill="black" fill-opacity="0.9" style="mix-blend-mode:multiply"/>
-</g>
-<g filter="url(#filter1_f_447_218)">
-<path d="M47.8125 10.3753C47.8125 9.81271 47.3125 9.62528 46.875 9.68775C46.4375 9.75021 25.25 14.9869 22.5 15.6253C19.75 16.2636 16.6875 19.2503 16.6875 22.2503C16.6875 22.2503 16.6886 27.283 16.6875 28.6878C16.6875 30.8752 17.8125 31.8752 17.9375 31.9377C18.0625 32.0002 14.9374 29.1878 21.4375 27.1253C21.4375 27.1253 41.5625 21.8753 43.625 21.3128C46.3125 20.4378 47.8125 17.8128 47.8125 15.3753V10.3753Z" fill="black" fill-opacity="0.9" style="mix-blend-mode:multiply"/>
-</g>
-</g>
-<path d="M16.3753 53.625C16.3753 54.5625 16.4377 54.6875 18.0003 54.25C19.2502 53.9375 39.7502 47.6389 42.2502 46.875C44.7502 46.1111 47.2502 44.125 47.2502 39.25L47.2503 33.6875C47.2503 32.4375 46.9068 31.468 45.8752 30.4375C47.3527 32.3127 45.8752 34.0841 42.5002 35.25C39.1252 36.4159 24.7503 41.125 21.3128 42.375C18.3752 43.4375 16.3753 46.25 16.3753 48.75C16.3753 51.25 16.3659 52.272 16.3753 53.625Z" fill="white"/>
-<path d="M47.5625 10.1253C47.5625 9.56271 47.0625 9.37528 46.625 9.43775C46.1875 9.50021 25 14.7369 22.25 15.3753C19.5 16.0136 16.4375 19.0003 16.4375 22.0003C16.4375 22.0003 16.4386 27.033 16.4375 28.4378C16.4375 30.5627 17.5625 31.6252 17.6875 31.6877C17.8125 31.7502 14.6874 28.9378 21.1875 26.8753C21.1875 26.8753 41.3125 21.6253 43.375 21.0628C46.0625 20.1878 47.5625 17.5628 47.5625 15.1253V10.1253Z" fill="white"/>
-</g>
-<defs>
-<filter id="filter0_f_447_218" x="8.62109" y="22.6875" width="45.8789" height="39.0547" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feGaussianBlur stdDeviation="3.75" result="effect1_foregroundBlur_447_218"/>
-</filter>
-<filter id="filter1_f_447_218" x="9.1875" y="2.17627" width="46.125" height="37.2627" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feGaussianBlur stdDeviation="3.75" result="effect1_foregroundBlur_447_218"/>
-</filter>
-<clipPath id="clip0_447_218">
-<rect width="64" height="64" fill="white"/>
-</clipPath>
-</defs>
+<svg width="64" height="64" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="valut_bg" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#1E1E24" />
+      <stop offset="50%" stopColor="#121216" />
+      <stop offset="100%" stopColor="#0A0A0D" />
+    </linearGradient>
+    <linearGradient id="valut_accent" x1="12" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#38BDF8" />
+      <stop offset="50%" stopColor="#6366F1" />
+      <stop offset="100%" stopColor="#A855F7" />
+    </linearGradient>
+    <linearGradient id="valut_bevel" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
+      <stop offset="100%" stopColor="#000000" stopOpacity="0.6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hexagonal Vault Outer Shell -->
+  <path
+    d="M24 3.5L41.5 13.5V33.5L24 43.5L6.5 33.5V13.5L24 3.5Z"
+    fill="url(#valut_bg)"
+    stroke="url(#valut_bevel)"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+
+  <!-- Inner Chamber -->
+  <path
+    d="M24 6.5L39 15.5V31.5L24 40.5L9 31.5V15.5L24 6.5Z"
+    fill="#0E0E12"
+    stroke="rgba(255,255,255,0.08)"
+    stroke-width="1"
+  />
+
+  <!-- Interlocking Dimensional 'V' -->
+  <path
+    d="M16 16L24 32L32 16H27.5L24 23.5L20.5 16H16Z"
+    fill="url(#valut_accent)"
+  />
+
+  <!-- Core Key Aperture -->
+  <polygon
+    points="24,25.5 27,31.5 21,31.5"
+    fill="#FFFFFF"
+    fill-opacity="0.95"
+  />
+
+  <!-- Security Nodes -->
+  <circle cx="24" cy="10" r="1.25" fill="#38BDF8" />
+  <circle cx="35" cy="18" r="1.25" fill="#6366F1" />
+  <circle cx="13" cy="18" r="1.25" fill="#38BDF8" />
 </svg>

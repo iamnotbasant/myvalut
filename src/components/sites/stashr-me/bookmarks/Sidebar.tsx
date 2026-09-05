@@ -25,9 +25,10 @@ import {
   Tag as TagIcon
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
-import { LogIn } from 'lucide-react';
+import { LogIn, Download } from 'lucide-react';
 import { ContextMenu } from './ContextMenu';
 import { soundFx } from '@/lib/sound-effects';
+import { ValutLogo } from '@/components/ValutLogo';
 
 interface SidebarProps {
   filterState: FilterState;
@@ -48,6 +49,7 @@ interface SidebarProps {
   onDeleteTag?: (id: string) => void;
   onOpenFeedback: () => void;
   onOpenCommandPalette: () => void;
+  onOpenImportExport?: () => void;
   onOpenAuth?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -68,6 +70,7 @@ export function Sidebar({
   onTogglePinCollection,
   onOpenFeedback,
   onOpenCommandPalette,
+  onOpenImportExport,
   onOpenAuth,
   isMobileOpen = false,
   onCloseMobile
@@ -128,12 +131,10 @@ export function Sidebar({
           <Link
             href="/"
             onClick={() => soundFx.playClickSound()}
-            className="flex items-center gap-2.5 px-1 font-semibold text-sm tracking-tight text-foreground"
+            className="flex items-center gap-2.5 px-1 font-semibold text-sm tracking-tight text-foreground group"
           >
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-xs">
-              V
-            </div>
-            <span className="font-semibold text-base tracking-tight">Valut</span>
+            <ValutLogo size="sm" glow={true} />
+            <span className="font-bold text-base tracking-tight text-foreground">Valut</span>
           </Link>
           {onCloseMobile && (
             <button
@@ -394,6 +395,21 @@ export function Sidebar({
               Settings
             </span>
           </Link>
+
+          {/* Backup & Restore */}
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playClickSound();
+              onOpenImportExport?.();
+            }}
+            className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
+          >
+            <Download className="size-4 shrink-0 text-blue-400" />
+            <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
+              Backup & Restore
+            </span>
+          </button>
 
           {/* Feedback */}
           <button

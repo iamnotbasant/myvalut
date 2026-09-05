@@ -33,6 +33,8 @@ interface HeaderProps {
   onToggleTheme: () => void;
   onOpenMobileMenu?: () => void;
   onOpenFeedback: () => void;
+  isOnline?: boolean;
+  onOpenImportExport?: () => void;
 }
 
 export function Header({
@@ -51,7 +53,9 @@ export function Header({
   isDark,
   onToggleTheme,
   onOpenMobileMenu,
-  onOpenFeedback
+  onOpenFeedback,
+  isOnline = true,
+  onOpenImportExport
 }: HeaderProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(() => soundFx.getIsMuted());
@@ -146,6 +150,17 @@ export function Header({
           <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-[#080808] bg-emerald-500" />
         </a>
 
+        {/* Offline Indicator Badge */}
+        {!isOnline && (
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-medium"
+            title="Offline - Changes are saved locally and will auto-sync when online"
+          >
+            <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span>Offline</span>
+          </div>
+        )}
+
         {/* User Profile Avatar Dropdown */}
         <div className="relative" ref={userMenuRef}>
           <button
@@ -184,6 +199,17 @@ export function Header({
                 >
                   Account & Profile Settings
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClickSound();
+                    setIsUserMenuOpen(false);
+                    onOpenImportExport?.();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  Backup & Restore (JSON / MD)
+                </button>
                 <button
                   type="button"
                   onClick={() => {
