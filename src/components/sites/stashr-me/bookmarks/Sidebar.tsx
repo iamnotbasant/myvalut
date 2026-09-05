@@ -25,7 +25,7 @@ import {
   Tag as TagIcon
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
-import { LogIn, Download } from 'lucide-react';
+import { LogIn, Download, Keyboard, Puzzle } from 'lucide-react';
 import { ContextMenu } from './ContextMenu';
 import { soundFx } from '@/lib/sound-effects';
 import { ValutLogo } from '@/components/ValutLogo';
@@ -50,6 +50,8 @@ interface SidebarProps {
   onOpenFeedback: () => void;
   onOpenCommandPalette: () => void;
   onOpenImportExport?: () => void;
+  onOpenExtensionGuide?: () => void;
+  onOpenShortcuts?: () => void;
   onOpenAuth?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -71,6 +73,8 @@ export function Sidebar({
   onOpenFeedback,
   onOpenCommandPalette,
   onOpenImportExport,
+  onOpenExtensionGuide,
+  onOpenShortcuts,
   onOpenAuth,
   isMobileOpen = false,
   onCloseMobile
@@ -395,6 +399,41 @@ export function Sidebar({
               Settings
             </span>
           </Link>
+
+          {/* Chrome Extension */}
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playClickSound();
+              onOpenExtensionGuide?.();
+            }}
+            className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
+          >
+            <Puzzle className="size-4 shrink-0 text-emerald-400" />
+            <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
+              Chrome Extension
+            </span>
+          </button>
+
+          {/* Keyboard Shortcuts */}
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playClickSound();
+              onOpenShortcuts?.();
+            }}
+            className="inline-flex h-8 w-full items-center justify-between rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
+          >
+            <div className="flex items-center gap-3 min-w-0 truncate">
+              <Keyboard className="size-4 shrink-0 text-purple-400" />
+              <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
+                Shortcuts
+              </span>
+            </div>
+            <kbd className="font-mono text-[10px] text-neutral-400 bg-white/5 px-1 py-0.5 rounded group-data-[state=collapsed]/sidebar:hidden">
+              ?
+            </kbd>
+          </button>
 
           {/* Backup & Restore */}
           <button

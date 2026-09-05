@@ -778,7 +778,7 @@ export function FeedbackModal({
               value={feedback}
               onChange={e => setFeedback(e.target.value)}
               rows={4}
-              placeholder="What do you think of Stashr? Any features you want to see?"
+              placeholder="What do you think of Valut? Any features you want to see?"
               className="w-full rounded-lg border border-input bg-background p-3 text-xs text-foreground outline-none focus:border-ring"
             />
             <div className="flex items-center justify-end gap-2 border-t border-border pt-3">

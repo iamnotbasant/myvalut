@@ -626,9 +626,10 @@ export function CreatorsView({
 
 interface ConnectionsViewProps {
   bookmarks?: BookmarkItem[];
+  onOpenExtensionGuide?: () => void;
 }
 
-export function ConnectionsView({ bookmarks = [] }: ConnectionsViewProps) {
+export function ConnectionsView({ bookmarks = [], onOpenExtensionGuide }: ConnectionsViewProps) {
   const [connections, setConnections] = useState([
     {
       id: 'x',
@@ -763,6 +764,7 @@ export function ConnectionsView({ bookmarks = [] }: ConnectionsViewProps) {
 
         <button
           type="button"
+          onClick={onOpenExtensionGuide}
           className="inline-flex h-8.5 shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
         >
           Install extension
@@ -832,6 +834,7 @@ export function ConnectionsView({ bookmarks = [] }: ConnectionsViewProps) {
                 {conn.action && (
                   <button
                     type="button"
+                    onClick={onOpenExtensionGuide}
                     className="text-xs font-medium text-foreground hover:underline cursor-pointer"
                   >
                     {conn.action}

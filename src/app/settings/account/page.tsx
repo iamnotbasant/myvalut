@@ -3,7 +3,7 @@ import { SettingsLayout } from '@/components/sites/stashr-me/settings/SettingsLa
 import { AccountSettings } from '@/components/sites/stashr-me/settings/AccountSettings';
 
 export const metadata: Metadata = {
-  title: 'Account Settings | Stashr',
+  title: 'Account Settings | Valut',
   description: 'Manage your profile and account preferences.'
 };
 

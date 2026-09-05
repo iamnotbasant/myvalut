@@ -3,8 +3,8 @@ import { SettingsLayout } from '@/components/sites/stashr-me/settings/SettingsLa
 import { AppearanceSettings } from '@/components/sites/stashr-me/settings/AppearanceSettings';
 
 export const metadata: Metadata = {
-  title: 'Appearance | Stashr',
-  description: 'Customize theme and display density.'
+  title: 'Appearance | Valut',
+  description: 'Customize theme and display density in Valut.'
 };
 
 export default function AppearanceSettingsPage() {

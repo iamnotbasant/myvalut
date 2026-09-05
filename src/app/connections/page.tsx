@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import { StashrApp } from '@/components/sites/stashr-me/bookmarks/StashrApp';
 
 export const metadata: Metadata = {
-  title: 'Connections | Stashr',
-  description: 'Manage integrations and import connections.'
+  title: 'Connections | Valut',
+  description: 'Manage integrations and import connections in Valut.'
 };
 
 export default function ConnectionsPage() {

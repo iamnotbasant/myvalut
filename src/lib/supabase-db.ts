@@ -313,6 +313,21 @@ export async function archiveMultipleBookmarksInDb(ids: string[]): Promise<boole
   }
 }
 
+export async function restoreMultipleBookmarksInDb(ids: string[]): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase || ids.length === 0) return false;
+  try {
+    const { error } = await supabase.from('bookmarks').update({ is_archived: false }).in('id', ids);
+    if (error) {
+      console.error('Error batch restoring bookmarks in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to batch restore bookmarks in Supabase:', err);
+    return false;
+  }
+}
+
 export async function insertCollectionToDb(item: Collection, userId?: string | null): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {

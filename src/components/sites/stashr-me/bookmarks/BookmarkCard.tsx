@@ -268,6 +268,16 @@ export function BookmarkCard({
     const target = e.currentTarget;
     if (target.src.includes('maxresdefault.jpg')) {
       target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+    } else if (bookmark.url) {
+      try {
+        const domain = new URL(bookmark.url).hostname;
+        const fallbackFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        if (target.src !== fallbackFavicon) {
+          target.src = fallbackFavicon;
+          return;
+        }
+      } catch {}
+      setHasImageError(true);
     } else {
       setHasImageError(true);
     }
@@ -340,7 +350,7 @@ export function BookmarkCard({
     }] : []),
     {
       id: 'archive',
-      label: bookmark.isArchived ? 'Unarchive' : 'Archive',
+      label: bookmark.isArchived ? 'Restore to Vault' : 'Move to Archive',
       icon: <Archive className="size-3.5" />,
       onClick: () => {
         soundFx.playArchiveSound();
@@ -354,7 +364,7 @@ export function BookmarkCard({
     },
     {
       id: 'delete',
-      label: 'Delete',
+      label: bookmark.isArchived ? 'Delete Permanently' : 'Delete (Move to Archive)',
       icon: <Trash2 className="size-3.5" />,
       danger: true,
       onClick: () => {

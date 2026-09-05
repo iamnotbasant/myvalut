@@ -62,6 +62,8 @@ export interface BookmarkItem {
   collectionId?: string;
 }
 
+export type SortOption = 'newest' | 'oldest' | 'az' | 'za';
+
 export interface FilterState {
   query: string;
   platforms: PlatformType[];
@@ -69,4 +71,5 @@ export interface FilterState {
   onlyFavorites?: boolean;
   collectionId: string | null;
   activeNav: 'bookmarks' | 'archived' | 'creators' | 'tags' | 'connections' | 'logs';
+  sortBy?: SortOption;
 }

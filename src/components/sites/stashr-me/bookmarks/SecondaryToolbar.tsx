@@ -18,6 +18,7 @@ import {
   Shuffle,
   Plus
 } from '@/components/icons';
+import { ArrowUpDown } from 'lucide-react';
 import { soundFx } from '@/lib/sound-effects';
 
 interface SecondaryToolbarProps {
@@ -46,8 +47,10 @@ export function SecondaryToolbar({
   platforms
 }: SecondaryToolbarProps) {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [isSortOpen, setIsSortOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<'platform' | 'tag' | 'media' | null>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -57,6 +60,12 @@ export function SecondaryToolbar({
       ) {
         setIsFilterDropdownOpen(false);
         setActiveSubMenu(null);
+      }
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSortOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -90,21 +99,21 @@ export function SecondaryToolbar({
     (filterState.onlyFavorites ? 1 : 0);
 
   return (
-    <div className="flex h-[52px] shrink-0 items-stretch justify-between gap-4 border-b border-white/[0.08] bg-[#080808] pr-3 pl-2 select-none">
+    <div className="flex h-[52px] shrink-0 items-stretch justify-between gap-2 md:gap-4 border-b border-white/[0.08] bg-[#080808] pr-2 md:pr-3 pl-1.5 md:pl-2 select-none overflow-x-auto no-scrollbar">
       {/* Left: View Tabs (Grid, Row, Timeline, Mosaic) */}
-      <div className="relative flex items-end gap-1 h-full pb-0">
+      <div className="relative flex items-end gap-0.5 sm:gap-1 h-full pb-0">
         {/* Grid Tab */}
         <button
           type="button"
           aria-label="Grid"
           onClick={() => handleModeChange('grid')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'grid'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          <ViewGrid className="size-4.5" />
+          <ViewGrid className="size-4 sm:size-4.5" />
           <span className="inline">Grid</span>
           {viewMode === 'grid' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
@@ -116,13 +125,13 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Row"
           onClick={() => handleModeChange('row')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'row'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          <ViewRow className="size-4.5" />
+          <ViewRow className="size-4 sm:size-4.5" />
           <span className="inline">Row</span>
           {viewMode === 'row' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
@@ -134,13 +143,13 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Timeline"
           onClick={() => handleModeChange('timeline')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'timeline'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          <ViewTimeline className="size-4.5" />
+          <ViewTimeline className="size-4 sm:size-4.5" />
           <span className="inline">Timeline</span>
           {viewMode === 'timeline' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
@@ -152,13 +161,13 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Mosaic"
           onClick={() => handleModeChange('mosaic')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-2 px-3.5 text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'mosaic'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          <ViewMosaic className="size-4.5" />
+          <ViewMosaic className="size-4 sm:size-4.5" />
           <span className="inline">Mosaic</span>
           {viewMode === 'mosaic' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
@@ -167,7 +176,7 @@ export function SecondaryToolbar({
       </div>
 
       {/* Right: Search, Shuffle, Add Filters, Select/Cancel, + Collection */}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-2.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5">
         {/* Search Input Box */}
         <div className="hidden w-full max-w-64 min-[936px]:block">
           <div className="relative w-full">
@@ -190,14 +199,76 @@ export function SecondaryToolbar({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Sort Dropdown */}
+          <div className="relative" ref={sortDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSortOpen(!isSortOpen);
+                setIsFilterDropdownOpen(false);
+              }}
+              title="Sort bookmarks"
+              aria-label="Sort bookmarks"
+              className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-2.5 sm:px-3 text-xs font-medium transition-colors cursor-pointer ${
+                filterState.sortBy && filterState.sortBy !== 'newest' ? 'border-white text-white' : ''
+              }`}
+            >
+              <ArrowUpDown className="size-3.5 text-neutral-400 group-hover/button:text-white" />
+              <span className="hidden sm:inline">
+                {filterState.sortBy === 'oldest'
+                  ? 'Oldest'
+                  : filterState.sortBy === 'az'
+                  ? 'A → Z'
+                  : filterState.sortBy === 'za'
+                  ? 'Z → A'
+                  : 'Sort'}
+              </span>
+            </button>
+
+            {isSortOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1.5 w-44 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                  Sort Order
+                </div>
+                {[
+                  { key: 'newest', label: 'Newest first' },
+                  { key: 'oldest', label: 'Oldest first' },
+                  { key: 'az', label: 'Alphabetical (A - Z)' },
+                  { key: 'za', label: 'Alphabetical (Z - A)' },
+                ].map(opt => {
+                  const isSelected = (filterState.sortBy || 'newest') === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => {
+                        soundFx.playClickSound();
+                        onFilterChange({ sortBy: opt.key as any });
+                        setIsSortOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-neutral-800 text-white font-medium'
+                          : 'text-neutral-300 hover:bg-neutral-800/60 hover:text-white'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {isSelected && <Check className="size-3 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Shuffle Button */}
           <button
             type="button"
             onClick={onShuffle}
             title="Shuffle"
             aria-label="Shuffle"
-            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-400 hover:text-white size-8.5 transition-colors"
+            className="group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-400 hover:text-white size-8.5 transition-colors cursor-pointer"
           >
             <Shuffle className="size-4" />
           </button>
@@ -209,13 +280,14 @@ export function SecondaryToolbar({
               onClick={() => {
                 setIsFilterDropdownOpen(!isFilterDropdownOpen);
                 setActiveSubMenu(null);
+                setIsSortOpen(false);
               }}
-              className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
+              className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-2.5 sm:px-3 text-xs font-medium transition-colors cursor-pointer ${
                 totalActiveFilters > 0 ? 'border-white text-white' : ''
               }`}
             >
               <FilterSlidersIcon className="size-3.5" />
-              <span>Add Filters</span>
+              <span>Filters</span>
               {totalActiveFilters > 0 && (
                 <span className="flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-black">
                   {totalActiveFilters}

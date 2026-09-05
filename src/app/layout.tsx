@@ -18,6 +18,13 @@ export const metadata: Metadata = {
   title: 'Valut - AI Bookmark Vault',
   description:
     'Valut is your private AI bookmark manager that captures every save from Twitter/X, Reddit, Instagram, YouTube, and the Web — auto-tagged and cloud synced.',
+  manifest: '/site.webmanifest',
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Valut'
+  },
   icons: {
     icon: [
       { url: '/branding/icon.svg', type: 'image/svg+xml' },

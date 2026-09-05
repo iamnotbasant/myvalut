@@ -3,8 +3,8 @@ import { SettingsLayout } from '@/components/sites/stashr-me/settings/SettingsLa
 import { TagsSettings } from '@/components/sites/stashr-me/settings/TagsSettings';
 
 export const metadata: Metadata = {
-  title: 'Tag Settings | Stashr',
-  description: 'Manage and clean up your tags.'
+  title: 'Tag Settings | Valut',
+  description: 'Manage and clean up your tags in Valut.'
 };
 
 export default function TagsSettingsPage() {

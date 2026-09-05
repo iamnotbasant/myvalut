@@ -291,13 +291,13 @@ export function CommandPalette({
           <div className="flex items-center gap-2">
             <Image
               src="/branding/icon.svg"
-              alt="Stashr"
+              alt="Valut"
               width={16}
               height={16}
               className="size-4 opacity-70"
               unoptimized
             />
-            <span className="font-medium">Stashr</span>
+            <span className="font-medium">Valut</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span>Select</span>

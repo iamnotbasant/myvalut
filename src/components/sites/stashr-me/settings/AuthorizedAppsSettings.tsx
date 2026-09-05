@@ -7,7 +7,7 @@ export function AuthorizedAppsSettings() {
   const [apps, setApps] = useState([
     {
       id: 'app-chrome',
-      name: 'Stashr Chrome Extension',
+      name: 'Valut Chrome Extension',
       description: 'Official browser extension for instant 1-click bookmark capturing.',
       authorizedDate: 'Aug 10, 2026',
       permissions: ['Read & write bookmarks', 'Sync tags']
@@ -23,7 +23,7 @@ export function AuthorizedAppsSettings() {
       <div>
         <h2 className="text-sm font-semibold text-strong tracking-tight">Authorized apps</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Manage third-party applications and browser extensions connected to your Stashr account.
+          Manage third-party applications and browser extensions connected to your Valut account.
         </p>
       </div>
 

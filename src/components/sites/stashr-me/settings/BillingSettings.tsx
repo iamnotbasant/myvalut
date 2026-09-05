@@ -25,7 +25,7 @@ export function BillingSettings() {
                 Active
               </span>
             </div>
-            <h3 className="mt-1 text-xl font-bold text-strong">Stashr Pro (Early Supporter)</h3>
+            <h3 className="mt-1 text-xl font-bold text-strong">Valut Pro (Early Supporter)</h3>
           </div>
           <span className="font-mono text-2xl font-bold text-strong">$5<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
         </div>

@@ -32,6 +32,9 @@ import {
 } from './Modals';
 import { BookmarkDetailModal } from './BookmarkDetailModal';
 import { ImportExportModal } from './ImportExportModal';
+import { ExtensionGuideModal } from './ExtensionGuideModal';
+import { ShortcutsModal } from './ShortcutsModal';
+import { RotateCcw, X } from 'lucide-react';
 import { safeLocalStorageSet, flushOfflineQueue, queueOfflineMutation } from '@/lib/offline-sync';
 import {
   fetchBookmarksFromDb,
@@ -42,6 +45,7 @@ import {
   deleteBookmarkFromDb,
   deleteMultipleBookmarksFromDb,
   archiveMultipleBookmarksInDb,
+  restoreMultipleBookmarksInDb,
   insertCollectionToDb,
   updateCollectionInDb,
   deleteCollectionFromDb,
@@ -155,6 +159,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const [isExtensionGuideOpen, setIsExtensionGuideOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [undoToast, setUndoToast] = useState<{
+    message: string;
+    onUndo: () => void;
+  } | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Save manual/edited tags for a bookmark
   const handleSaveBookmarkTags = useCallback(async (bookmarkId: string, updatedTags: Array<{ name: string; color: any }>) => {
@@ -385,6 +396,13 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         return;
       }
 
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        soundFx.playClickSound();
+        setIsShortcutsOpen(prev => !prev);
+        return;
+      }
+
       if (e.key === '+' || e.key === '=' || (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
         soundFx.playClickSound();
@@ -483,36 +501,132 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   };
 
   const handleArchive = (id: string) => {
-    soundFx.playArchiveSound();
     const target = bookmarks.find(b => b.id === id);
-    const nextVal = target ? !target.isArchived : true;
-    setBookmarks(prev =>
-      prev.map(b => (b.id === id ? { ...b, isArchived: nextVal } : b))
-    );
-    if (isSupabaseConfigured && isOnline) {
-      updateBookmarkInDb(id, { isArchived: nextVal }).catch(() => {
-        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: nextVal } });
+    if (!target) return;
+    const nextVal = !target.isArchived;
+
+    if (nextVal) {
+      soundFx.playArchiveSound();
+      setBookmarks(prev =>
+        prev.map(b => (b.id === id ? { ...b, isArchived: true } : b))
+      );
+      if (isSupabaseConfigured && isOnline) {
+        updateBookmarkInDb(id, { isArchived: true }).catch(() => {
+          queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: true } });
+        });
+      } else {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: true } });
+      }
+
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      setUndoToast({
+        message: 'Bookmark moved to Archive',
+        onUndo: () => {
+          soundFx.playSaveSound();
+          setBookmarks(prev =>
+            prev.map(b => (b.id === id ? { ...b, isArchived: false } : b))
+          );
+          if (isSupabaseConfigured && isOnline) {
+            updateBookmarkInDb(id, { isArchived: false }).catch(() => {
+              queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+            });
+          } else {
+            queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+          }
+        }
       });
+      undoTimeoutRef.current = setTimeout(() => {
+        setUndoToast(null);
+      }, 5000);
     } else {
-      queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: nextVal } });
+      soundFx.playSaveSound();
+      setBookmarks(prev =>
+        prev.map(b => (b.id === id ? { ...b, isArchived: false } : b))
+      );
+      if (isSupabaseConfigured && isOnline) {
+        updateBookmarkInDb(id, { isArchived: false }).catch(() => {
+          queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+        });
+      } else {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+      }
     }
   };
 
   const handleDelete = (id: string) => {
+    const target = bookmarks.find(b => b.id === id);
+    if (!target) return;
+
+    // In archived view or if already archived: prompt permanent deletion
+    if (filterState.activeNav === 'archived' || target.isArchived) {
+      const displayName = target.title || (target.text ? target.text.slice(0, 35) : 'this bookmark');
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Delete Permanently',
+        description: `Are you sure you want to permanently delete "${displayName}..."? This action cannot be undone.`,
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel',
+        isDestructive: true,
+        onConfirm: () => {
+          soundFx.playArchiveSound();
+          setBookmarks(prev => prev.filter(b => b.id !== id));
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          if (isSupabaseConfigured && isOnline) {
+            deleteBookmarkFromDb(id).catch(() => {
+              queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+            });
+          } else {
+            queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+          }
+        }
+      });
+      return;
+    }
+
+    // In active view: soft delete -> move to archive with 5-second Undo Toast
     soundFx.playArchiveSound();
-    setBookmarks(prev => prev.filter(b => b.id !== id));
+    setBookmarks(prev =>
+      prev.map(b => (b.id === id ? { ...b, isArchived: true } : b))
+    );
     setSelectedIds(prev => {
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
+
     if (isSupabaseConfigured && isOnline) {
-      deleteBookmarkFromDb(id).catch(() => {
-        queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+      updateBookmarkInDb(id, { isArchived: true }).catch(() => {
+        queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: true } });
       });
     } else {
-      queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
+      queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: true } });
     }
+
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    setUndoToast({
+      message: 'Bookmark moved to Archive',
+      onUndo: () => {
+        soundFx.playSaveSound();
+        setBookmarks(prev =>
+          prev.map(b => (b.id === id ? { ...b, isArchived: false } : b))
+        );
+        if (isSupabaseConfigured && isOnline) {
+          updateBookmarkInDb(id, { isArchived: false }).catch(() => {
+            queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+          });
+        } else {
+          queueOfflineMutation({ id, type: 'update_bookmark', payload: { isArchived: false } });
+        }
+      }
+    });
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setUndoToast(null);
+    }, 5000);
   };
 
   const handleSaveNote = (id: string, note: string) => {
@@ -856,25 +970,100 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
   const handleArchiveSelected = () => {
     const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    soundFx.playArchiveSound();
     setBookmarks(prev =>
       prev.map(b => (selectedIds.has(b.id) ? { ...b, isArchived: true } : b))
     );
     archiveMultipleBookmarksInDb(ids);
     setSelectedIds(new Set());
     setIsSelectionMode(false);
+
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    setUndoToast({
+      message: `${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'} moved to Archive`,
+      onUndo: () => {
+        soundFx.playSaveSound();
+        const idSet = new Set(ids);
+        setBookmarks(prev =>
+          prev.map(b => (idSet.has(b.id) ? { ...b, isArchived: false } : b))
+        );
+        restoreMultipleBookmarksInDb(ids);
+      }
+    });
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setUndoToast(null);
+    }, 5000);
   };
 
-  const handleDeleteSelected = () => {
+  const handleRestoreSelected = () => {
     const ids = Array.from(selectedIds);
-    setBookmarks(prev => prev.filter(b => !selectedIds.has(b.id)));
-    deleteMultipleBookmarksFromDb(ids);
+    if (ids.length === 0) return;
+    soundFx.playSaveSound();
+    const idSet = new Set(ids);
+    setBookmarks(prev =>
+      prev.map(b => (idSet.has(b.id) ? { ...b, isArchived: false } : b))
+    );
+    restoreMultipleBookmarksInDb(ids);
     setSelectedIds(new Set());
     setIsSelectionMode(false);
   };
 
+  const handleDeleteSelected = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    if (filterState.activeNav === 'archived') {
+      setConfirmDialog({
+        isOpen: true,
+        title: `Permanently delete ${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'}?`,
+        description: 'These bookmarks will be permanently deleted from your vault. This action cannot be undone.',
+        confirmText: `Permanently Delete ${ids.length}`,
+        cancelText: 'Cancel',
+        isDestructive: true,
+        onConfirm: () => {
+          soundFx.playArchiveSound();
+          const idSet = new Set(ids);
+          setBookmarks(prev => prev.filter(b => !idSet.has(b.id)));
+          deleteMultipleBookmarksFromDb(ids);
+          setSelectedIds(new Set());
+          setIsSelectionMode(false);
+        }
+      });
+      return;
+    }
+
+    // In active view: soft delete selected -> move to archive with Undo Toast
+    soundFx.playArchiveSound();
+    setBookmarks(prev =>
+      prev.map(b => (selectedIds.has(b.id) ? { ...b, isArchived: true } : b))
+    );
+    archiveMultipleBookmarksInDb(ids);
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    setUndoToast({
+      message: `${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'} moved to Archive`,
+      onUndo: () => {
+        soundFx.playSaveSound();
+        const idSet = new Set(ids);
+        setBookmarks(prev =>
+          prev.map(b => (idSet.has(b.id) ? { ...b, isArchived: false } : b))
+        );
+        restoreMultipleBookmarksInDb(ids);
+      }
+    });
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setUndoToast(null);
+    }, 5000);
+  };
+
   // Filtered bookmarks computation
   const filteredBookmarks = useMemo(() => {
-    return bookmarks.filter(b => {
+    const list = bookmarks.filter(b => {
       // 1. Navigation tab filtering
       if (filterState.activeNav === 'archived') {
         if (!b.isArchived) return false;
@@ -912,6 +1101,30 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       }
 
       return true;
+    });
+
+    // 6. Sorting
+    const sortBy = filterState.sortBy || 'newest';
+    return list.sort((a, b) => {
+      if (sortBy === 'oldest') {
+        const timeA = a.createdAt || (a.date ? new Date(a.date).getTime() : 0) || 0;
+        const timeB = b.createdAt || (b.date ? new Date(b.date).getTime() : 0) || 0;
+        return timeA - timeB;
+      }
+      if (sortBy === 'az') {
+        const titleA = (a.title || a.text || '').toLowerCase();
+        const titleB = (b.title || b.text || '').toLowerCase();
+        return titleA.localeCompare(titleB);
+      }
+      if (sortBy === 'za') {
+        const titleA = (a.title || a.text || '').toLowerCase();
+        const titleB = (b.title || b.text || '').toLowerCase();
+        return titleB.localeCompare(titleA);
+      }
+      // default: newest
+      const timeA = a.createdAt || (a.date ? new Date(a.date).getTime() : 0) || 0;
+      const timeB = b.createdAt || (b.date ? new Date(b.date).getTime() : 0) || 0;
+      return timeB - timeA;
     });
   }, [bookmarks, filterState]);
 
@@ -1091,6 +1304,8 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenImportExport={() => setIsImportExportOpen(true)}
+        onOpenExtensionGuide={() => setIsExtensionGuideOpen(true)}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         isMobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
@@ -1121,6 +1336,8 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           onOpenFeedback={() => setIsFeedbackOpen(true)}
           isOnline={isOnline}
           onOpenImportExport={() => setIsImportExportOpen(true)}
+          onOpenExtensionGuide={() => setIsExtensionGuideOpen(true)}
+          onOpenShortcuts={() => setIsShortcutsOpen(true)}
         />
 
         {/* Active Filter Pills Bar */}
@@ -1162,7 +1379,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
         {filterState.activeNav === 'connections' && (
           <div key="view-connections" className="animate-view-fade-in flex-1 overflow-y-auto flex flex-col">
-            <ConnectionsView bookmarks={bookmarks} />
+            <ConnectionsView bookmarks={bookmarks} onOpenExtensionGuide={() => setIsExtensionGuideOpen(true)} />
           </div>
         )}
 
@@ -1233,6 +1450,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 columns={columns}
                 selectedIds={selectedIds}
                 isSelectionMode={isSelectionMode}
+                isArchivedView={filterState.activeNav === 'archived'}
                 onToggleSelect={handleToggleSelect}
                 onSelectAll={handleSelectAll}
                 onClearSelection={handleClearSelection}
@@ -1242,6 +1460,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onDelete={handleDelete}
                 onArchiveSelected={handleArchiveSelected}
                 onDeleteSelected={handleDeleteSelected}
+                onRestoreSelected={handleRestoreSelected}
                 onResetFilters={() => {
                   soundFx.playClickSound();
                   setFilterState({
@@ -1381,7 +1600,47 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onClose={() => setIsAuthOpen(false)}
       />
 
-      {/* 4. Subtle Offline Status Indicator */}
+      {/* 4. Chrome Extension Setup Guide Modal */}
+      <ExtensionGuideModal
+        isOpen={isExtensionGuideOpen}
+        onClose={() => setIsExtensionGuideOpen(false)}
+      />
+
+      {/* 5. Keyboard Shortcuts Cheatsheet Modal */}
+      <ShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* 6. Undo Toast Notification */}
+      {undoToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-white/15 bg-neutral-900/95 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 text-white">
+          <span className="text-xs font-medium">{undoToast.message}</span>
+          <div className="h-4 w-px bg-white/20" />
+          <button
+            onClick={() => {
+              undoToast.onUndo();
+              if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+              setUndoToast(null);
+            }}
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer active:scale-95 shadow-xs"
+          >
+            <RotateCcw className="size-3" />
+            <span>Undo</span>
+          </button>
+          <button
+            onClick={() => {
+              if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+              setUndoToast(null);
+            }}
+            className="text-neutral-400 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 7. Subtle Offline Status Indicator */}
       {!isOnline && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-amber-500/30 bg-neutral-900/90 px-4 py-2 text-xs text-amber-300 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
           <span className="size-2 rounded-full bg-amber-400 animate-ping" />

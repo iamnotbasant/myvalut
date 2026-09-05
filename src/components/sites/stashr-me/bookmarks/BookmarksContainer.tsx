@@ -4,6 +4,7 @@ import React from 'react';
 import { BookmarkItem, ViewMode } from '@/types/stashr';
 import { BookmarkCard } from './BookmarkCard';
 import { Sparkles, Plus, Bookmark, Archive, Trash2, Check } from '@/components/icons';
+import { RotateCcw } from 'lucide-react';
 
 interface BookmarksContainerProps {
   bookmarks: BookmarkItem[];
@@ -22,6 +23,8 @@ interface BookmarksContainerProps {
   onDelete: (id: string) => void;
   onArchiveSelected: () => void;
   onDeleteSelected: () => void;
+  onRestoreSelected?: () => void;
+  isArchivedView?: boolean;
   onResetFilters: () => void;
   onOpenAddBookmark: () => void;
   onOpenImage: (url: string) => void;
@@ -48,6 +51,8 @@ export function BookmarksContainer({
   onDelete,
   onArchiveSelected,
   onDeleteSelected,
+  onRestoreSelected,
+  isArchivedView = false,
   onResetFilters,
   onOpenAddBookmark,
   onOpenImage,
@@ -56,6 +61,26 @@ export function BookmarksContainer({
   onGenerateTags,
   onEditTags
 }: BookmarksContainerProps) {
+  // Adaptive responsive column calculation: 1 col on mobile, 2 on tablet, N on desktop
+  const [effectiveColumns, setEffectiveColumns] = React.useState(columns);
+
+  React.useEffect(() => {
+    function updateColumns() {
+      if (typeof window === 'undefined') return;
+      const w = window.innerWidth;
+      if (w < 640) {
+        setEffectiveColumns(1);
+      } else if (w < 1024) {
+        setEffectiveColumns(Math.min(2, columns));
+      } else {
+        setEffectiveColumns(columns);
+      }
+    }
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, [columns]);
+
   // Empty State
   if (bookmarks.length === 0) {
     const isArchivedView = allBookmarksCount === 0 && bookmarks.length === 0;
@@ -69,14 +94,16 @@ export function BookmarksContainer({
         </h3>
         <p className="mt-1.5 max-w-sm text-xs text-muted-foreground leading-relaxed">
           {allBookmarksCount === 0
-            ? 'Save tweets, reddit threads, youtube videos and inspiration directly into your personal vault.'
-            : 'Try adjusting your search keywords or removing filters to see more bookmarks.'}
+            ? isArchivedView
+              ? 'Your archived vault is empty.'
+              : 'Start your collection by adding your first bookmark or using our Chrome extension.'
+            : 'Try adjusting your search query, clearing your tag filters, or selecting a different platform.'}
         </p>
-        <div className="mt-5 flex items-center gap-2.5">
+        <div className="mt-6 flex items-center gap-3">
           {allBookmarksCount === 0 ? (
             <button
               onClick={onOpenAddBookmark}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+              className="inline-flex h-8.5 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>Add Bookmark</span>
@@ -94,23 +121,8 @@ export function BookmarksContainer({
     );
   }
 
-  // Column style map for Grid
-  const getGridColsClass = () => {
-    switch (columns) {
-      case 2:
-        return 'grid-cols-1 sm:grid-cols-2';
-      case 4:
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
-      case 5:
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
-      case 3:
-      default:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-    }
-  };
-
   return (
-    <div className={`flex-1 overflow-y-auto ${viewMode === 'mosaic' ? 'p-2.5 pt-2' : 'p-4'}`}>
+    <div className={`flex-1 overflow-y-auto ${viewMode === 'mosaic' ? 'p-2.5 pt-2' : 'p-3 sm:p-4'}`}>
       <div className="relative flex min-h-full flex-col">
       {/* 1. ROW VIEW (Vertical list) */}
       {viewMode === 'row' && (
@@ -176,95 +188,50 @@ export function BookmarksContainer({
           );
         }
 
-        const col1Bookmarks = mediaBookmarks.filter((_, idx) => idx % 3 === 0);
-        const col2Bookmarks = mediaBookmarks.filter((_, idx) => idx % 3 === 1);
-        const col3Bookmarks = mediaBookmarks.filter((_, idx) => idx % 3 === 2);
+        const mosaicCols = Math.max(1, Math.min(3, effectiveColumns));
+        const columnBuckets = Array.from({ length: mosaicCols }, () => [] as typeof mediaBookmarks);
+        mediaBookmarks.forEach((bm, idx) => {
+          columnBuckets[idx % mosaicCols].push(bm);
+        });
 
         return (
           <div className="flex gap-2.5 items-start w-full">
-            {/* Column 1 */}
-            <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-              {col1Bookmarks.map(bm => (
-                <BookmarkCard
-                  key={bm.id}
-                  bookmark={bm}
-                  viewMode="mosaic"
-                  isSelected={selectedIds.has(bm.id)}
-                  isSelectionMode={isSelectionMode}
-                  isGeneratingTags={generatingTagIds?.has(bm.id)}
-                  onToggleSelect={() => onToggleSelect(bm.id)}
-                  onToggleFavorite={onToggleFavorite}
-                  onOpenNote={onOpenNote}
-                  onArchive={onArchive}
-                  onDelete={onDelete}
-                  onOpenImage={onOpenImage}
-                  onOpenDetail={onOpenDetail}
-                  onSelectTag={onSelectTag}
-                  onGenerateTags={onGenerateTags}
-                  onEditTags={onEditTags}
-                />
-              ))}
-            </div>
-
-            {/* Column 2 */}
-            <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-              {col2Bookmarks.map(bm => (
-                <BookmarkCard
-                  key={bm.id}
-                  bookmark={bm}
-                  viewMode="mosaic"
-                  isSelected={selectedIds.has(bm.id)}
-                  isSelectionMode={isSelectionMode}
-                  isGeneratingTags={generatingTagIds?.has(bm.id)}
-                  onToggleSelect={() => onToggleSelect(bm.id)}
-                  onToggleFavorite={onToggleFavorite}
-                  onOpenNote={onOpenNote}
-                  onArchive={onArchive}
-                  onDelete={onDelete}
-                  onOpenImage={onOpenImage}
-                  onOpenDetail={onOpenDetail}
-                  onSelectTag={onSelectTag}
-                  onGenerateTags={onGenerateTags}
-                  onEditTags={onEditTags}
-                />
-              ))}
-            </div>
-
-            {/* Column 3 */}
-            <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-              {col3Bookmarks.map(bm => (
-                <BookmarkCard
-                  key={bm.id}
-                  bookmark={bm}
-                  viewMode="mosaic"
-                  isSelected={selectedIds.has(bm.id)}
-                  isSelectionMode={isSelectionMode}
-                  isGeneratingTags={generatingTagIds?.has(bm.id)}
-                  onToggleSelect={() => onToggleSelect(bm.id)}
-                  onToggleFavorite={onToggleFavorite}
-                  onOpenNote={onOpenNote}
-                  onArchive={onArchive}
-                  onDelete={onDelete}
-                  onOpenImage={onOpenImage}
-                  onOpenDetail={onOpenDetail}
-                  onSelectTag={onSelectTag}
-                  onGenerateTags={onGenerateTags}
-                  onEditTags={onEditTags}
-                />
-              ))}
-            </div>
+            {columnBuckets.map((colBms, colIdx) => (
+              <div key={colIdx} className="flex-1 flex flex-col gap-2.5 min-w-0">
+                {colBms.map(bm => (
+                  <BookmarkCard
+                    key={bm.id}
+                    bookmark={bm}
+                    viewMode="mosaic"
+                    isSelected={selectedIds.has(bm.id)}
+                    isSelectionMode={isSelectionMode}
+                    isGeneratingTags={generatingTagIds?.has(bm.id)}
+                    onToggleSelect={() => onToggleSelect(bm.id)}
+                    onToggleFavorite={onToggleFavorite}
+                    onOpenNote={onOpenNote}
+                    onArchive={onArchive}
+                    onDelete={onDelete}
+                    onOpenImage={onOpenImage}
+                    onOpenDetail={onOpenDetail}
+                    onSelectTag={onSelectTag}
+                    onGenerateTags={onGenerateTags}
+                    onEditTags={onEditTags}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         );
       })()}
 
       {/* 4. GRID VIEW (Dynamic Height Masonry Columns) */}
       {viewMode === 'grid' && (
-        <div className="flex gap-4 items-start w-full">
-          {Array.from({ length: columns }).map((_, colIndex) => {
-            const columnBookmarks = bookmarks.filter((_, idx) => idx % columns === colIndex);
+        <div className="flex gap-3 sm:gap-4 items-start w-full">
+          {Array.from({ length: effectiveColumns }).map((_, colIndex) => {
+            const columnBookmarks = bookmarks.filter((_, idx) => idx % effectiveColumns === colIndex);
             if (columnBookmarks.length === 0) return null;
             return (
-              <div key={colIndex} className="flex-1 flex flex-col gap-4 min-w-0">
+              <div key={colIndex} className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
                 {columnBookmarks.map(bm => (
                   <BookmarkCard
                     key={bm.id}
@@ -311,20 +278,41 @@ export function BookmarksContainer({
             Clear
           </button>
           <div className="h-4 w-px bg-border" />
-          <button
-            onClick={onArchiveSelected}
-            className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:bg-accent transition-colors shadow-xs cursor-pointer"
-          >
-            <Archive className="size-3.5" />
-            <span>Archive</span>
-          </button>
-          <button
-            onClick={onDeleteSelected}
-            className="inline-flex items-center gap-1 rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs text-destructive hover:bg-destructive/20 transition-colors shadow-xs cursor-pointer"
-          >
-            <Trash2 className="size-3.5" />
-            <span>Delete</span>
-          </button>
+          {isArchivedView ? (
+            <>
+              <button
+                onClick={onRestoreSelected}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors shadow-xs cursor-pointer"
+              >
+                <RotateCcw className="size-3.5" />
+                <span>Restore</span>
+              </button>
+              <button
+                onClick={onDeleteSelected}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors shadow-xs cursor-pointer"
+              >
+                <Trash2 className="size-3.5" />
+                <span>Delete Permanently</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onArchiveSelected}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:bg-accent transition-colors shadow-xs cursor-pointer"
+              >
+                <Archive className="size-3.5" />
+                <span>Archive</span>
+              </button>
+              <button
+                onClick={onDeleteSelected}
+                className="inline-flex items-center gap-1 rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs text-destructive hover:bg-destructive/20 transition-colors shadow-xs cursor-pointer"
+              >
+                <Trash2 className="size-3.5" />
+                <span>Delete</span>
+              </button>
+            </>
+          )}
         </div>
       )}
       </div>

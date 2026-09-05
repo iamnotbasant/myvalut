@@ -35,6 +35,8 @@ interface HeaderProps {
   onOpenFeedback: () => void;
   isOnline?: boolean;
   onOpenImportExport?: () => void;
+  onOpenExtensionGuide?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export function Header({
@@ -55,7 +57,9 @@ export function Header({
   onOpenMobileMenu,
   onOpenFeedback,
   isOnline = true,
-  onOpenImportExport
+  onOpenImportExport,
+  onOpenExtensionGuide,
+  onOpenShortcuts
 }: HeaderProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(() => soundFx.getIsMuted());
@@ -138,17 +142,17 @@ export function Header({
           {isMuted ? <VolumeX className="size-4 text-neutral-500" /> : <Volume2 className="size-4 text-white" />}
         </button>
 
-        {/* Extension status with green active dot */}
-        <a
-          href="https://chromewebstore.google.com/detail/stashr-ai-bookmark-saver/mampphpkeibkmmdhdfenjdedpioklfmf"
-          target="_blank"
-          rel="noreferrer noopener"
-          aria-label="Stashr extension installed"
+        {/* Extension guide modal trigger with active dot */}
+        <button
+          type="button"
+          onClick={onOpenExtensionGuide}
+          title="Valut Chrome Extension (1-Click Save & Setup Guide)"
+          aria-label="Valut Chrome Extension Setup"
           className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <ExtensionPuzzleIcon className="size-4" />
           <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-[#080808] bg-emerald-500" />
-        </a>
+        </button>
 
         {/* Offline Indicator Badge */}
         {!isOnline && (
@@ -161,37 +165,34 @@ export function Header({
           </div>
         )}
 
-        {/* User Profile Avatar Dropdown */}
+        {/* Action Button: Add Bookmark */}
+        <button
+          type="button"
+          onClick={onOpenAddBookmark}
+          className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+        >
+          <Plus className="size-3.5" />
+          <span>Add</span>
+        </button>
+
+        {/* User Profile Avatar with Dropdown */}
         <div className="relative" ref={userMenuRef}>
           <button
             type="button"
-            onClick={() => {
-              soundFx.playClickSound();
-              setIsUserMenuOpen(!isUserMenuOpen);
-            }}
-            className="cursor-pointer rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring block"
-            aria-expanded={isUserMenuOpen}
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="flex size-8 items-center justify-center rounded-full bg-linear-to-tr from-amber-500/20 via-primary/20 to-teal-500/20 ring-1 ring-white/15 hover:ring-white/30 transition-all cursor-pointer"
           >
-            <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20 bg-muted">
-              <Image
-                src="/stashr_files/unnamed.jpg"
-                alt="BASANT KUMAR"
-                fill
-                className="object-cover aspect-square"
-                unoptimized
-              />
-            </div>
+            <span className="font-mono text-xs font-semibold text-white">B</span>
           </button>
 
-          {/* User Menu Dropdown */}
           {isUserMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95">
-              <div className="px-3 py-2 border-b border-white/10">
-                <p className="font-semibold text-xs text-white leading-tight">BASANT KUMAR</p>
-                <p className="text-[11px] text-neutral-400 truncate mt-0.5">iamnotbasant@gmail.com</p>
+            <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+              <div className="border-b border-white/10 px-3 py-2">
+                <p className="text-xs font-medium text-white">Basant</p>
+                <p className="font-mono text-[11px] text-neutral-400">Personal Vault</p>
               </div>
 
-              <div className="py-1">
+              <div className="py-1 space-y-0.5">
                 <Link
                   href="/settings/account"
                   onClick={() => setIsUserMenuOpen(false)}
@@ -199,6 +200,29 @@ export function Header({
                 >
                   Account & Profile Settings
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClickSound();
+                    setIsUserMenuOpen(false);
+                    onOpenExtensionGuide?.();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  Install Chrome Extension
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClickSound();
+                    setIsUserMenuOpen(false);
+                    onOpenShortcuts?.();
+                  }}
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span>Keyboard Shortcuts</span>
+                  <kbd className="font-mono text-[10px] text-neutral-400 bg-white/5 px-1 py-0.5 rounded">?</kbd>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
