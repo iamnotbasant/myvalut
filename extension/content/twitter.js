@@ -365,12 +365,22 @@
         resolvedUrl = href;
       }
 
-      // Reject dangling "https://" or "http://" without host
-      if (resolvedUrl && /^https?:\/\/?$/i.test(resolvedUrl.trim())) {
-        resolvedUrl = '';
+      // If resolvedUrl is still just a bare protocol with no host (e.g. "https://")
+      if (!resolvedUrl || /^https?:\/\/?$/i.test(resolvedUrl.trim())) {
+        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+          resolvedUrl = href;
+        } else {
+          resolvedUrl = '';
+        }
       }
 
-      const textNode = document.createTextNode(resolvedUrl ? ` ${resolvedUrl} ` : (rawText ? ` ${rawText} ` : ''));
+      // Never output a bare dangling "https://" as fallback text
+      let finalText = resolvedUrl;
+      if (!finalText && rawText && !/^https?:\/\/?$/i.test(rawText.trim())) {
+        finalText = rawText;
+      }
+
+      const textNode = document.createTextNode(finalText ? ` ${finalText} ` : '');
       a.replaceWith(textNode);
     });
 

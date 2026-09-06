@@ -52,6 +52,42 @@ export async function POST(req: NextRequest) {
     const detectedPlatform = url ? detectPlatformFromUrl(url) : ((platform || 'web') as PlatformType);
     const finalPlatform: PlatformType = (platform as PlatformType) || detectedPlatform;
 
+    // Fast Twitter enrichment: if incoming text has truncated or dangling "https://"
+    if (finalPlatform === 'twitter' && url) {
+      const hasDangling = !text || /https?:\/\/(?:\s+|$|[\r\n]|[\uD800-\uDBFF\uDC00-\uDFFF])/i.test(text) || text.includes('https://\n') || text.endsWith('https://') || text.includes('https:// ');
+      if (hasDangling) {
+        const match = url.match(/status\/(\d+)/);
+        if (match) {
+          try {
+            const fxRes = await fetch(`https://api.fxtwitter.com/status/${match[1]}`, {
+              headers: { 'User-Agent': 'Mozilla/5.0' },
+              signal: AbortSignal.timeout(3500)
+            });
+            if (fxRes.ok) {
+              const fxData = await fxRes.json();
+              if (fxData.tweet && fxData.tweet.text) {
+                text = fxData.tweet.text.trim();
+                if (!imageUrl && fxData.tweet.media?.photos?.[0]?.url) {
+                  imageUrl = fxData.tweet.media.photos[0].url;
+                }
+                if (!avatarUrl && fxData.tweet.author?.avatar_url) {
+                  avatarUrl = fxData.tweet.author.avatar_url;
+                }
+                if (!displayName && fxData.tweet.author?.name) {
+                  displayName = fxData.tweet.author.name;
+                }
+                if (!username && fxData.tweet.author?.screen_name) {
+                  username = fxData.tweet.author.screen_name;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Fast Twitter text enrichment fallback:', e);
+          }
+        }
+      }
+    }
+
     // 2. Format Date and generate Unique Bookmark ID
     const now = new Date();
     const formattedDate = now.toLocaleDateString('en-US', {
