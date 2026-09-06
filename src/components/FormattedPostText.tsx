@@ -30,8 +30,8 @@ export function FormattedPostText({
 
   const repairedText = repairFragmentedUrls(text);
 
-  // Regex to match URLs (http://, https://, www.), @mentions, and #hashtags
-  const tokenRegex = /(https?:\/\/[^\s<>"'{}|\\^`]+|www\.[^\s<>"'{}|\\^`]+|@[a-zA-Z0-9_]{1,50}|#[a-zA-Z0-9_\u0080-\uFFFF]+)/g;
+  // Regex to match URLs (http://, https://, www., domain shortlinks like t.ly/..., bit.ly/...), @mentions, and #hashtags
+  const tokenRegex = /(https?:\/\/[^\s<>"'{}|\\^`]+|www\.[^\s<>"'{}|\\^`]+|\b(?:[a-zA-Z0-9-]+\.)+(?:com|org|net|io|co|me|ly|ai|app|dev|sh|is|to|in|so|gg|tv|cc|xyz|store|tech|link|site)\b(?:\/[^\s<>"'{}|\\^`]*)?|@[a-zA-Z0-9_]{1,50}|#[a-zA-Z0-9_\u0080-\uFFFF]+)/g;
 
   // Split into lines to preserve structure
   const lines = repairedText.split('\n');
@@ -62,11 +62,10 @@ export function FormattedPostText({
           }
 
           // Format token
-          if (
-            matchedStr.startsWith('http://') ||
-            matchedStr.startsWith('https://') ||
-            matchedStr.startsWith('www.')
-          ) {
+          const isMention = matchedStr.startsWith('@');
+          const isHashtag = matchedStr.startsWith('#');
+
+          if (!isMention && !isHashtag) {
             // Trim any trailing punctuation from URL (e.g. '.', ',', ')', ':', ';', '!')
             let cleanUrl = matchedStr;
             let trailingPunctuation = '';
@@ -76,7 +75,21 @@ export function FormattedPostText({
               cleanUrl = cleanUrl.slice(0, -trailingPunctuation.length);
             }
 
-            const href = cleanUrl.startsWith('www.') ? `https://${cleanUrl}` : cleanUrl;
+            // Check if this is just an empty protocol string like "https://" or "http://" without a host
+            const domainPart = cleanUrl.replace(/^https?:\/\//i, '').replace(/^www\./i, '').trim();
+            if (!domainPart || !domainPart.includes('.')) {
+              // Not a valid URL, output as plain text
+              parts.push(matchedStr);
+              lastIdx = match.index + matchedStr.length;
+              continue;
+            }
+
+            const href = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')
+              ? cleanUrl
+              : `https://${cleanUrl}`;
+
+            // Clean display label (can show shortened display if wanted, or clean full domain)
+            const displayLabel = cleanUrl.replace(/^https?:\/\/(www\.)?/i, '');
 
             parts.push(
               <React.Fragment key={`url-${lineIdx}-${matchStart}`}>

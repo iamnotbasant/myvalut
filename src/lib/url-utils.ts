@@ -11,10 +11,13 @@ export function repairFragmentedUrls(text?: string | null): string {
 
   let res = text;
 
-  // 1. Fix protocol followed by spaces/newlines: "https://\n  github.com" or "https:// github.com"
+  // 1. Fix protocol followed by spaces/newlines: "https://\n  github.com", "https:// t.ly/B9X2Q"
   res = res.replace(/(https?:\/\/)\s+([a-zA-Z0-9])/gi, '$1$2');
 
-  // 2. Fix multi-line URL breaks where path or domain continued on next line without spaces
+  // 2. Fix protocol followed by newline then domain
+  res = res.replace(/(https?:\/\/)\s*[\r\n]+\s*([a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/gi, '$1$2');
+
+  // 3. Fix multi-line URL breaks where path or domain continued on next line without spaces
   for (let i = 0; i < 6; i++) {
     const prev = res;
     res = res.replace(
@@ -24,11 +27,11 @@ export function repairFragmentedUrls(text?: string | null): string {
     if (res === prev) break;
   }
 
-  // 3. Fix standalone domain breaks without http (e.g. "github.com/buka-studio/ww\nw-marijanapav")
+  // 4. Fix standalone domain breaks without http (e.g. "github.com/buka-studio/ww\nw-marijanapav", "t.ly/\nB9X2Q")
   for (let i = 0; i < 4; i++) {
     const prev = res;
     res = res.replace(
-      /([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s\n]+)?)\n([a-zA-Z0-9_\-.~!*'();:@&=+$,/?%#[\]]+)/gi,
+      /([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s\n]*)?)\n([a-zA-Z0-9_\-.~!*'();:@&=+$,/?%#[\]]+)/gi,
       '$1$2'
     );
     if (res === prev) break;

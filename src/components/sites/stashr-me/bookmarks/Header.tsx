@@ -10,8 +10,7 @@ import {
   Sun,
   Moon,
   Laptop,
-  HelpCircle,
-  Plus
+  HelpCircle
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 import { Volume2, VolumeX } from 'lucide-react';
@@ -165,15 +164,6 @@ export function Header({
           </div>
         )}
 
-        {/* Action Button: Add Bookmark */}
-        <button
-          type="button"
-          onClick={onOpenAddBookmark}
-          className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
-        >
-          <Plus className="size-3.5" />
-          <span>Add</span>
-        </button>
 
         {/* User Profile Avatar with Dropdown */}
         <div className="relative" ref={userMenuRef}>

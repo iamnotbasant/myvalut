@@ -310,30 +310,67 @@
     // 1. Process <a> tags inside tweet text
     const links = clone.querySelectorAll('a');
     links.forEach(a => {
-      // Concatenate inner span texts to get the displayed URL without layout breaks
-      const spanText = Array.from(a.querySelectorAll('span'))
-        .map(s => s.textContent || '')
-        .join('')
-        .trim();
-
-      const titleAttr = (a.getAttribute('title') || '').trim();
+      const rawText = (a.textContent || '').trim();
+      const titleAttr = (a.getAttribute('title') || a.querySelector('[title]')?.getAttribute('title') || '').trim();
       const href = (a.getAttribute('href') || '').trim();
 
-      let resolvedUrl = '';
-      if (titleAttr.startsWith('http://') || titleAttr.startsWith('https://')) {
-        resolvedUrl = titleAttr;
-      } else if (spanText && (spanText.startsWith('http://') || spanText.startsWith('https://') || spanText.includes('.'))) {
-        resolvedUrl = spanText;
-      } else if (href.startsWith('http://') || href.startsWith('https://')) {
-        resolvedUrl = href;
-      } else if (a.textContent) {
-        resolvedUrl = a.textContent.trim();
+      // Check if this is a hashtag
+      if (rawText.startsWith('#') || href.includes('/hashtag/')) {
+        const tag = rawText.startsWith('#') ? rawText : `#${rawText.replace(/^\/+/, '')}`;
+        a.replaceWith(document.createTextNode(` ${tag} `));
+        return;
       }
 
-      // Remove accidental internal whitespaces in the URL
-      resolvedUrl = resolvedUrl.replace(/\s+/g, '');
+      // Check if this is a user mention
+      if (rawText.startsWith('@') || (href.startsWith('/') && !href.includes('http') && !href.includes('t.co') && !href.includes('/status/'))) {
+        const cleanUser = rawText.startsWith('@') ? rawText : `@${rawText.replace(/^@/, '')}`;
+        a.replaceWith(document.createTextNode(` ${cleanUser} `));
+        return;
+      }
 
-      const textNode = document.createTextNode(resolvedUrl ? ` ${resolvedUrl} ` : (a.textContent || ''));
+      // External link or shortened URL
+      let resolvedUrl = '';
+
+      // 1. Check title attribute (Twitter often puts full expanded URL in title)
+      if (titleAttr && (titleAttr.startsWith('http://') || titleAttr.startsWith('https://'))) {
+        resolvedUrl = titleAttr;
+      } else if (titleAttr && titleAttr.includes('.') && !titleAttr.includes(' ') && titleAttr.length >= 4) {
+        resolvedUrl = `https://${titleAttr.replace(/^https?:\/\//i, '')}`;
+      }
+
+      // 2. Check full textContent of the anchor
+      if (!resolvedUrl && rawText) {
+        const cleanText = rawText.replace(/[…\s]+$/, '').replace(/\s+/g, '');
+        const stripped = cleanText.replace(/^https?:\/\//i, '');
+        if (stripped && stripped.includes('.') && stripped.length >= 3) {
+          resolvedUrl = cleanText.startsWith('http') ? cleanText : `https://${stripped}`;
+        }
+      }
+
+      // 3. Check combined spans if anchor text was fragmented
+      if (!resolvedUrl) {
+        const spanText = Array.from(a.querySelectorAll('span'))
+          .map(s => s.textContent || '')
+          .join('')
+          .replace(/[…\s]+$/, '')
+          .replace(/\s+/g, '');
+        const strippedSpan = spanText.replace(/^https?:\/\//i, '');
+        if (strippedSpan && strippedSpan.includes('.') && strippedSpan.length >= 3) {
+          resolvedUrl = spanText.startsWith('http') ? spanText : `https://${strippedSpan}`;
+        }
+      }
+
+      // 4. Fallback to href if external
+      if (!resolvedUrl && (href.startsWith('http://') || href.startsWith('https://'))) {
+        resolvedUrl = href;
+      }
+
+      // Reject dangling "https://" or "http://" without host
+      if (resolvedUrl && /^https?:\/\/?$/i.test(resolvedUrl.trim())) {
+        resolvedUrl = '';
+      }
+
+      const textNode = document.createTextNode(resolvedUrl ? ` ${resolvedUrl} ` : (rawText ? ` ${rawText} ` : ''));
       a.replaceWith(textNode);
     });
 

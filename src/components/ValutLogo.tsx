@@ -39,64 +39,138 @@ export function ValutLogo({
           viewBox="0 0 48 48"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="relative shrink-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:scale-105"
+          className="relative shrink-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] transition-transform duration-300 group-hover:scale-105"
         >
           <defs>
-            {/* Dark Titanium Frame Gradient */}
-            <linearGradient id="valut_frame" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#2A2A32" />
-              <stop offset="50%" stopColor="#18181D" />
-              <stop offset="100%" stopColor="#0E0E12" />
+            {/* Heavy Steel Vault Rim Gradient */}
+            <linearGradient id="vault_outer_steel" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#3A3A46" />
+              <stop offset="35%" stopColor="#22222B" />
+              <stop offset="70%" stopColor="#15151C" />
+              <stop offset="100%" stopColor="#0B0B0F" />
             </linearGradient>
 
-            {/* Glowing Accent Gradient */}
-            <linearGradient id="valut_accent" x1="12" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            {/* Inner Vault Door Chamber Gradient */}
+            <radialGradient id="vault_chamber" cx="24" cy="24" r="18" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#1B1C24" />
+              <stop offset="75%" stopColor="#101015" />
+              <stop offset="100%" stopColor="#08080B" />
+            </radialGradient>
+
+            {/* Metallic Wheel Handle Gradient */}
+            <linearGradient id="vault_wheel_grad" x1="12" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#38BDF8" />
-              <stop offset="60%" stopColor="#6366F1" />
-              <stop offset="100%" stopColor="#A855F7" />
+              <stop offset="45%" stopColor="#6366F1" />
+              <stop offset="100%" stopColor="#818CF8" />
             </linearGradient>
 
-            {/* Inset Bevel Shadow */}
-            <linearGradient id="valut_bevel" x1="24" y1="6" x2="24" y2="42" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#000000" stopOpacity="0.45" />
+            {/* Bolt Rivet Metallic Gradient */}
+            <radialGradient id="vault_bolt_grad" cx="0.35" cy="0.35" r="0.65">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.8" />
+              <stop offset="40%" stopColor="#94A3B8" />
+              <stop offset="100%" stopColor="#334155" />
+            </radialGradient>
+
+            {/* Inset Chamfer Bevel */}
+            <linearGradient id="vault_bevel" x1="24" y1="3" x2="24" y2="45" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.05" />
+              <stop offset="100%" stopColor="#000000" stopOpacity="0.7" />
             </linearGradient>
+
+            {/* Glowing Core Dial */}
+            <radialGradient id="vault_core_glow" cx="24" cy="24" r="5" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#38BDF8" />
+              <stop offset="70%" stopColor="#0284C7" />
+              <stop offset="100%" stopColor="#0F172A" />
+            </radialGradient>
           </defs>
 
-          {/* Hexagonal Vault Shell */}
-          <path
-            d="M24 3.5L41.5 13.5V33.5L24 43.5L6.5 33.5V13.5L24 3.5Z"
-            fill="url(#valut_frame)"
-            stroke="url(#valut_bevel)"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
+          {/* 1. Heavy Vault Outer Door Ring */}
+          <circle
+            cx="24"
+            cy="24"
+            r="21"
+            fill="url(#vault_outer_steel)"
+            stroke="url(#vault_bevel)"
+            strokeWidth="1.75"
           />
 
-          {/* Inner Geometric Shield Facets */}
-          <path
-            d="M24 6L39 15V32L24 41L9 32V15L24 6Z"
-            fill="#121217"
-            stroke="rgba(255,255,255,0.06)"
+          {/* 2. Concentric Steel Perimeter Ridge */}
+          <circle
+            cx="24"
+            cy="24"
+            r="16.5"
+            fill="url(#vault_chamber)"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="1.2"
+          />
+
+          {/* 3. Perimeter Locking Bolts (8 Heavy Steel Vault Rivets) */}
+          <circle cx="24" cy="5.75" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="36.9" cy="11.1" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="42.25" cy="24" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="36.9" cy="36.9" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="24" cy="42.25" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="11.1" cy="36.9" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="5.75" cy="24" r="1.4" fill="url(#vault_bolt_grad)" />
+          <circle cx="11.1" cy="11.1" r="1.4" fill="url(#vault_bolt_grad)" />
+
+          {/* 4. Combination Dial Calibrations / Tick Marks */}
+          <circle
+            cx="24"
+            cy="24"
+            r="13"
+            stroke="#38BDF8"
+            strokeOpacity="0.35"
+            strokeWidth="1"
+            strokeDasharray="1.5 2.5"
+          />
+
+          {/* 5. Safe Wheel Spoke Handles (Horizontal & Vertical Cylinders) */}
+          <line
+            x1="24"
+            y1="12"
+            x2="24"
+            y2="36"
+            stroke="url(#vault_wheel_grad)"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+          />
+          <line
+            x1="12"
+            y1="24"
+            x2="36"
+            y2="24"
+            stroke="url(#vault_wheel_grad)"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+          />
+
+          {/* 6. Rotating Safe Wheel Rim */}
+          <circle
+            cx="24"
+            cy="24"
+            r="8.5"
+            fill="none"
+            stroke="url(#vault_wheel_grad)"
+            strokeWidth="2.25"
+          />
+
+          {/* 7. Center Combination Dial Hub */}
+          <circle
+            cx="24"
+            cy="24"
+            r="4.75"
+            fill="url(#vault_core_glow)"
+            stroke="#FFFFFF"
+            strokeOpacity="0.4"
             strokeWidth="1"
           />
 
-          {/* Interlocking Dimensional "V" Emblem */}
-          <path
-            d="M16 16L24 32L32 16H27.5L24 23.5L20.5 16H16Z"
-            fill="url(#valut_accent)"
-          />
-
-          {/* Core Vault Aperture Key */}
-          <polygon
-            points="24,25.5 27,31.5 21,31.5"
-            fill="#FFFFFF"
-            fillOpacity="0.9"
-          />
-
-          {/* Subtle Security Node Dots */}
-          <circle cx="24" cy="10" r="1.25" fill="#38BDF8" />
-          <circle cx="35" cy="18" r="1.25" fill="#6366F1" />
-          <circle cx="13" cy="18" r="1.25" fill="#38BDF8" />
+          {/* 8. Keyway / Center Locking Aperture */}
+          <circle cx="24" cy="23" r="1.2" fill="#FFFFFF" fillOpacity="0.95" />
+          <polygon points="23.3,23 24.7,23 24.4,26.2 23.6,26.2" fill="#FFFFFF" fillOpacity="0.95" />
         </svg>
       </div>
 

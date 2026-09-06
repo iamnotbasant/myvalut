@@ -17,9 +17,11 @@ import {
 } from '@/components/icons';
 import { soundFx } from '@/lib/sound-effects';
 
+import { Keyboard } from 'lucide-react';
+
 interface SettingsLayoutProps {
   children: React.ReactNode;
-  activeTab: 'account' | 'appearance' | 'tags' | 'authorized-apps' | 'api-keys';
+  activeTab: 'account' | 'appearance' | 'tags' | 'authorized-apps' | 'api-keys' | 'shortcuts';
 }
 
 export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
@@ -46,6 +48,12 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
       icon: TagIcon
     },
     {
+      id: 'shortcuts',
+      label: 'Keyboard Shortcuts',
+      href: '/settings/shortcuts',
+      icon: Keyboard
+    },
+    {
       id: 'authorized-apps',
       label: 'Authorized apps',
       href: '/settings/authorized-apps',
@@ -67,6 +75,8 @@ export function SettingsLayout({ children, activeTab }: SettingsLayoutProps) {
         return 'Appearance';
       case 'tags':
         return 'Tags';
+      case 'shortcuts':
+        return 'Keyboard Shortcuts';
       case 'authorized-apps':
         return 'Authorized apps';
       case 'api-keys':

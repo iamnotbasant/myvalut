@@ -25,7 +25,7 @@ import {
   Tag as TagIcon
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
-import { LogIn, Download, Keyboard, Puzzle } from 'lucide-react';
+import { LogIn, Download } from 'lucide-react';
 import { ContextMenu } from './ContextMenu';
 import { soundFx } from '@/lib/sound-effects';
 import { ValutLogo } from '@/components/ValutLogo';
@@ -182,14 +182,14 @@ export function Sidebar({
           </a>
           <a
             role="button"
-            data-active={isNavActive('archived') ? "true" : undefined}
-            onClick={(e) => { e.preventDefault(); handleNavClick('archived'); }}
-            className={navItemClass + (isNavActive('archived') ? " active" : "")}
-            href="/archived"
+            data-active={isNavActive('tags') ? "true" : undefined}
+            onClick={(e) => { e.preventDefault(); handleNavClick('tags'); }}
+            className={navItemClass + (isNavActive('tags') ? " active" : "")}
+            href="/tags"
           >
-            <Archive className="size-4" />
-            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Archived</span>
-            <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{archivedCount}</span>
+            <TagIcon className="size-4 text-teal-400" />
+            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Tags</span>
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{tags.length}</span>
           </a>
           <a
             role="button"
@@ -206,14 +206,14 @@ export function Sidebar({
           </a>
           <a
             role="button"
-            data-active={isNavActive('tags') ? "true" : undefined}
-            onClick={(e) => { e.preventDefault(); handleNavClick('tags'); }}
-            className={navItemClass + (isNavActive('tags') ? " active" : "")}
-            href="/tags"
+            data-active={isNavActive('archived') ? "true" : undefined}
+            onClick={(e) => { e.preventDefault(); handleNavClick('archived'); }}
+            className={navItemClass + (isNavActive('archived') ? " active" : "")}
+            href="/archived"
           >
-            <TagIcon className="size-4 text-teal-400" />
-            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Tags</span>
-            <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{tags.length}</span>
+            <Archive className="size-4" />
+            <span className="min-w-0 truncate text-foreground group-data-[state=collapsed]/sidebar:hidden">Archived</span>
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums group-data-[state=collapsed]/sidebar:hidden">{archivedCount}</span>
           </a>
           <a
             role="button"
@@ -382,7 +382,7 @@ export function Sidebar({
           }
         />
 
-        {/* Footer: Settings & Feedback */}
+        {/* Footer: Settings & Backup */}
         <div className="mt-auto flex flex-col gap-1 px-3 py-3 group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0 border-t border-sidebar-border/40">
           {/* Settings */}
           <Link
@@ -400,41 +400,6 @@ export function Sidebar({
             </span>
           </Link>
 
-          {/* Chrome Extension */}
-          <button
-            type="button"
-            onClick={() => {
-              soundFx.playClickSound();
-              onOpenExtensionGuide?.();
-            }}
-            className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
-          >
-            <Puzzle className="size-4 shrink-0 text-emerald-400" />
-            <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
-              Chrome Extension
-            </span>
-          </button>
-
-          {/* Keyboard Shortcuts */}
-          <button
-            type="button"
-            onClick={() => {
-              soundFx.playClickSound();
-              onOpenShortcuts?.();
-            }}
-            className="inline-flex h-8 w-full items-center justify-between rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0 truncate">
-              <Keyboard className="size-4 shrink-0 text-purple-400" />
-              <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
-                Shortcuts
-              </span>
-            </div>
-            <kbd className="font-mono text-[10px] text-neutral-400 bg-white/5 px-1 py-0.5 rounded group-data-[state=collapsed]/sidebar:hidden">
-              ?
-            </kbd>
-          </button>
-
           {/* Backup & Restore */}
           <button
             type="button"
@@ -447,21 +412,6 @@ export function Sidebar({
             <Download className="size-4 shrink-0 text-blue-400" />
             <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
               Backup & Restore
-            </span>
-          </button>
-
-          {/* Feedback */}
-          <button
-            type="button"
-            onClick={() => {
-              soundFx.playClickSound();
-              onOpenFeedback();
-            }}
-            className="inline-flex h-8 w-full items-center gap-3 rounded-lg px-2 text-sm font-normal text-sidebar-foreground hover:bg-sidebar-accent/60 cursor-pointer"
-          >
-            <HelpCircle className="size-4 shrink-0" />
-            <span className="min-w-0 truncate group-data-[state=collapsed]/sidebar:hidden">
-              Feedback
             </span>
           </button>
         </div>

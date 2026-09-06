@@ -678,7 +678,203 @@ export function BookmarkCard({
     );
   }
 
-  // 3. GRID & MOSAIC VIEW (Default)
+  // 3. MOSAIC VIEW VARIANT (Media-Only: No Profile, No Text, Pure Images)
+  if (viewMode === 'mosaic') {
+    return (
+      <article
+        onContextMenu={handleCardContextMenu}
+        onClick={() => {
+          if (isSelectionMode) {
+            onToggleSelect?.();
+          } else if (onOpenDetail) {
+            onOpenDetail(bookmark);
+          } else if (imgSrc && !hasImageError) {
+            onOpenImage?.(imgSrc);
+          }
+        }}
+        className={`group/mosaic relative block overflow-hidden rounded-2xl bg-[#0e0e11] border border-white/[0.08] shadow-[0_8px_25px_-8px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_36px_-10px_rgba(0,0,0,0.95)] hover:border-white/20 transition-all duration-300 cursor-pointer ${
+          isSelected ? 'ring-primary ring-2 border-primary' : ''
+        }`}
+      >
+        {/* Floating Top Action Bar (Revealed on Hover) */}
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover/mosaic:opacity-100 transition-opacity duration-200">
+          {/* Favorite Quick Button */}
+          <button
+            type="button"
+            aria-label="Favorite"
+            onClick={(e) => {
+              e.stopPropagation();
+              soundFx.playFavoriteSound();
+              onToggleFavorite(bookmark.id);
+            }}
+            className="flex size-7 items-center justify-center rounded-lg bg-black/60 backdrop-blur-md text-white/80 hover:text-amber-400 hover:bg-black/80 ring-1 ring-white/15 transition-all cursor-pointer shadow-md"
+          >
+            <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+          </button>
+
+          {/* View Details Popout Button */}
+          <button
+            type="button"
+            aria-label="Open Detail"
+            onClick={(e) => {
+              e.stopPropagation();
+              soundFx.playClickSound();
+              if (onOpenDetail) onOpenDetail(bookmark);
+              else if (bookmark.url) window.open(bookmark.url, '_blank', 'noopener,noreferrer');
+            }}
+            className="flex size-7 items-center justify-center rounded-lg bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/80 ring-1 ring-white/15 transition-all cursor-pointer shadow-md"
+          >
+            <ExternalLink className="size-3.5" />
+          </button>
+
+          {/* 3-dots Menu Button */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="More options"
+              onClick={(e) => {
+                e.stopPropagation();
+                soundFx.playClickSound();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className="flex size-7 items-center justify-center rounded-lg bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/80 ring-1 ring-white/15 transition-all cursor-pointer shadow-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <div
+                onClick={e => e.stopPropagation()}
+                className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95"
+              >
+                <button
+                  onClick={handleCopyLink}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                  <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    soundFx.playFavoriteSound();
+                    onToggleFavorite(bookmark.id);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+                  <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    onOpenNote(bookmark);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  <FileText className="size-3.5" />
+                  <span>{bookmark.note ? 'Edit Note' : 'Add Note'}</span>
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    soundFx.playArchiveSound();
+                    onArchive(bookmark.id);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Archive className="size-3.5" />
+                  <span>{bookmark.isArchived ? 'Unarchive' : 'Archive'}</span>
+                </button>
+                <div className="my-1 h-px bg-white/10" />
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(false);
+                    soundFx.playArchiveSound();
+                    onDelete(bookmark.id);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="size-3.5" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Selection Checkbox */}
+        {isSelectionMode && (
+          <div className="absolute top-2.5 left-2.5 z-20">
+            <div
+              className={`flex size-5 items-center justify-center rounded-md border transition-colors shadow-md ${
+                isSelected
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-white/40 bg-black/60 backdrop-blur-xs'
+              }`}
+            >
+              {isSelected && <Check className="size-3.5" />}
+            </div>
+          </div>
+        )}
+
+        {/* Pure Image / Video Display */}
+        <div className="relative w-full overflow-hidden">
+          {!isImageLoaded && (
+            <div className="aspect-square w-full bg-white/5 animate-pulse" />
+          )}
+          {imgSrc && !hasImageError ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={imgSrc}
+              alt={bookmark.displayName || 'Media'}
+              className={`w-full object-cover transition-all duration-300 group-hover/mosaic:scale-[1.02] ${
+                isImageLoaded ? 'opacity-100' : 'opacity-0'
+              } ${
+                bookmark.platform === 'youtube' ? 'aspect-video' : 'h-auto max-h-[36rem]'
+              }`}
+              loading="lazy"
+              onLoad={() => setIsImageLoaded(true)}
+              onError={handleImageError}
+            />
+          ) : (
+            <div className="aspect-square flex items-center justify-center bg-white/5 text-muted-foreground p-4 text-center text-xs">
+              <span>No image available</span>
+            </div>
+          )}
+
+          {/* Video Play Overlay */}
+          {isVideo && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex items-center justify-center rounded-full bg-black/65 ring-1 ring-white/30 backdrop-blur-md size-11 shadow-2xl transition-transform group-hover/mosaic:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
+                  <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5"/>
+                </svg>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <ContextMenu
+          isOpen={rightClickMenu.isOpen}
+          position={rightClickMenu.position}
+          items={bookmarkMenuItems}
+          onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
+        />
+      </article>
+    );
+  }
+
+  // 4. GRID VIEW (Default)
   return (
     <div
       onContextMenu={handleCardContextMenu}
