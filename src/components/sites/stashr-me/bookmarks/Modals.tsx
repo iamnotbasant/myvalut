@@ -185,9 +185,21 @@ export function AddBookmarkModal({
 
     soundFx.playSaveSound();
 
+    let resolvedDisplayName = displayName.trim();
+    let resolvedUsername = username.trim();
+
+    if (platform === 'web' && url.trim()) {
+      try {
+        const host = new URL(url.trim()).hostname.replace(/^www\./, '');
+        const rootName = host.split('.')[0];
+        if (!resolvedDisplayName) resolvedDisplayName = rootName ? rootName.charAt(0).toUpperCase() + rootName.slice(1) : host;
+        if (!resolvedUsername) resolvedUsername = rootName ? rootName.toLowerCase() : host;
+      } catch {}
+    }
+
     onAdd({
-      displayName: displayName.trim() || (platform === 'youtube' ? 'YouTube Creator' : platform === 'reddit' ? 'Reddit' : 'Basant'),
-      username: username.trim() || (platform === 'youtube' ? 'youtube' : 'user'),
+      displayName: resolvedDisplayName || (platform === 'youtube' ? 'YouTube Creator' : platform === 'reddit' ? 'Reddit' : 'Basant'),
+      username: resolvedUsername || (platform === 'youtube' ? 'youtube' : 'user'),
       platform,
       title: title.trim() || undefined,
       text: text.trim() || title.trim() || url,

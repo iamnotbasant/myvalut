@@ -359,9 +359,23 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             displayName = subreddit;
             username = post.author || 'reddit_user';
             text = post.selftext ? post.selftext.slice(0, 1000) : title;
-            imageUrl =
-              post.preview?.images?.[0]?.source?.url?.replace(/&amp;/g, '&') ||
-              (post.thumbnail?.startsWith('http') ? post.thumbnail : '');
+            // Only attach image if this post genuinely has media attachments (not a text-only selfpost)
+            const isSelfPost = Boolean(post.is_self);
+            const hasRealMedia = post.post_hint === 'image' || post.post_hint === 'link' || Boolean(post.preview?.images?.length);
+            const cleanThumb =
+              post.thumbnail &&
+              post.thumbnail.startsWith('http') &&
+              !['default', 'self', 'nsfw', 'spoiler'].includes(post.thumbnail)
+                ? post.thumbnail
+                : '';
+
+            if (!isSelfPost && hasRealMedia) {
+              imageUrl =
+                post.preview?.images?.[0]?.source?.url?.replace(/&amp;/g, '&') ||
+                cleanThumb;
+            } else {
+              imageUrl = '';
+            }
 
             avatarUrl =
               post.sr_detail?.community_icon?.replace(/&amp;/g, '&') ||
@@ -403,7 +417,18 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
               displayName = tweet.author?.name || tweetUser || 'X User';
               username = tweet.author?.screen_name || tweetUser || 'xuser';
               avatarUrl = tweet.author?.avatar_url || (username ? `https://unavatar.io/x/${username}` : undefined);
-              imageUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url || '';
+              
+              // Only attach image if tweet actually contains attached photos or videos
+              const hasAttachedMedia =
+                (tweet.media?.photos && tweet.media.photos.length > 0) ||
+                (tweet.media?.videos && tweet.media.videos.length > 0);
+
+              if (hasAttachedMedia) {
+                imageUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url || '';
+              } else {
+                imageUrl = '';
+              }
+
               title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
             }
           }
@@ -439,7 +464,13 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
               const handleMatch = ogTitle.match(/\(@([^)]+)\)/);
               if (handleMatch) username = handleMatch[1];
             }
-            if (ogImage) imageUrl = ogImage;
+            // Ignore tweet card previews or author avatars disguised as og:image for text tweets
+            const isSyntheticCard = ogImage.includes('profile_images') || ogImage.includes('/card') || ogImage.includes('tweet_card');
+            if (ogImage && !isSyntheticCard && (ogImage.includes('media') || ogImage.includes('video'))) {
+              imageUrl = ogImage;
+            } else {
+              imageUrl = '';
+            }
             if (username && !avatarUrl) avatarUrl = `https://unavatar.io/x/${username}`;
           }
         } catch (e) {
@@ -459,6 +490,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             const $ = cheerio.load(data.html || '');
             text = $('p').text() || '';
             title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
+            imageUrl = ''; // oEmbed text tweets should never have fake images
             if (data.author_url) {
               const handle = data.author_url.split('/').filter(Boolean).pop();
               if (handle) {
@@ -506,18 +538,28 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           $('meta[name="twitter:image"]').attr('content') ||
           '';
 
+        let hostname = '';
+        try {
+          hostname = new URL(inputUrl).hostname.replace(/^www\./, '');
+        } catch {}
+
         let siteName =
           $('meta[property="og:site_name"]').attr('content') ||
           $('meta[name="application-name"]').attr('content') ||
-          new URL(inputUrl).hostname.replace(/^www\./, '');
+          hostname;
 
         if (inputUrl.includes('github.com')) {
           displayName = 'GitHub';
-          username = '';
-          avatarUrl = '';
+          username = 'github';
+          avatarUrl = 'https://github.githubassets.com/favicons/favicon.svg';
         } else {
-          displayName = siteName;
-          username = '';
+          // Derive a distinct creator name and username from the website brand/domain
+          const domainParts = hostname ? hostname.split('.').filter(Boolean) : [];
+          const domainRoot = domainParts.length > 1 ? domainParts[domainParts.length - 2] : (domainParts[0] || '');
+          const cleanRoot = domainRoot.toLowerCase().replace(/[^a-z0-9_]/g, '');
+          const cleanBrand = cleanRoot ? cleanRoot.charAt(0).toUpperCase() + cleanRoot.slice(1) : (siteName || 'Website');
+          displayName = (siteName && siteName.length < 40 && siteName.toLowerCase() !== 'creator' ? siteName : cleanBrand).trim();
+          username = cleanRoot || hostname || 'website';
         }
 
         if (!avatarUrl && !inputUrl.includes('github.com')) {
@@ -550,11 +592,40 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
     text = title;
   }
 
+  // Fallback domain derivation for website creators - NEVER fall back to generic 'creator'
+  let finalUsername = username.trim();
+  if (platform === 'web' || !finalUsername || finalUsername.toLowerCase() === 'creator') {
+    if (!finalUsername || finalUsername.toLowerCase() === 'creator') {
+      try {
+        const parsedHost = new URL(inputUrl).hostname.replace(/^www\./, '');
+        const domainParts = parsedHost.split('.').filter(Boolean);
+        const rootDomain = domainParts.length > 1 ? domainParts[domainParts.length - 2] : (domainParts[0] || '');
+        finalUsername = rootDomain.toLowerCase().replace(/[^a-z0-9_]/g, '') || parsedHost || 'website';
+      } catch {
+        finalUsername = (displayName || 'web').toLowerCase().replace(/[^a-z0-9_]/g, '') || 'website';
+      }
+    }
+  }
+
+  let finalDisplayName = displayName.trim();
+  if (platform === 'web' || !finalDisplayName || finalDisplayName.toLowerCase() === 'creator') {
+    if (!finalDisplayName || finalDisplayName.toLowerCase() === 'creator') {
+      try {
+        const parsedHost = new URL(inputUrl).hostname.replace(/^www\./, '');
+        const domainParts = parsedHost.split('.').filter(Boolean);
+        const rootDomain = domainParts.length > 1 ? domainParts[domainParts.length - 2] : (domainParts[0] || '');
+        finalDisplayName = rootDomain ? rootDomain.charAt(0).toUpperCase() + rootDomain.slice(1) : parsedHost;
+      } catch {
+        finalDisplayName = 'Website';
+      }
+    }
+  }
+
   return {
     title: title.trim(),
     text: text.trim(),
-    displayName: displayName.trim() || 'Creator',
-    username: username.trim() || 'creator',
+    displayName: finalDisplayName || 'Website',
+    username: finalUsername || 'website',
     avatarUrl: avatarUrl || undefined,
     imageUrl: imageUrl || undefined,
     platform,

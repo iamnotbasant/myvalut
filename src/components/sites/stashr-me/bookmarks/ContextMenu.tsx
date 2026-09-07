@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {
   id: string;
@@ -29,6 +30,11 @@ export function ContextMenu({
   title
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close on outside click or escape
   useEffect(() => {
@@ -61,35 +67,35 @@ export function ContextMenu({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || items.length === 0) return null;
+  if (!isOpen || items.length === 0 || !mounted) return null;
 
   // Calculate safe coordinates inside viewport
-  const menuWidth = 200;
-  const menuHeight = items.length * 34 + (title ? 30 : 0) + 16;
+  const menuWidth = 224;
+  const menuHeight = items.length * 36 + (title ? 36 : 0) + 20;
   const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
   let x = position.x;
   let y = position.y;
 
-  if (x + menuWidth > screenWidth - 10) {
-    x = Math.max(10, screenWidth - menuWidth - 10);
+  if (x + menuWidth > screenWidth - 12) {
+    x = Math.max(12, screenWidth - menuWidth - 12);
   }
-  if (y + menuHeight > screenHeight - 10) {
-    y = Math.max(10, screenHeight - menuHeight - 10);
+  if (y + menuHeight > screenHeight - 12) {
+    y = Math.max(12, screenHeight - menuHeight - 12);
   }
 
-  return (
+  const menuElement = (
     <div
       ref={menuRef}
       style={{ top: `${y}px`, left: `${x}px` }}
-      className="fixed z-50 w-52 rounded-xl border border-white/[0.12] bg-[#121212]/95 backdrop-blur-md p-1 shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none text-xs"
+      className="fixed z-[9999] w-56 rounded-xl border border-white/[0.14] bg-[#121214]/95 backdrop-blur-xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08)] animate-in fade-in zoom-in-95 duration-150 select-none text-xs"
       onClick={e => e.stopPropagation()}
       onContextMenu={e => e.preventDefault()}
     >
       {title && (
-        <div className="px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-white/[0.08] mb-1 truncate">
-          {title}
+        <div className="px-2.5 py-1.5 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider border-b border-white/[0.08] mb-1 truncate flex items-center justify-between">
+          <span className="truncate">{title}</span>
         </div>
       )}
 
@@ -145,4 +151,6 @@ export function ContextMenu({
       </div>
     </div>
   );
+
+  return createPortal(menuElement, document.body);
 }

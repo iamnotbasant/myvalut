@@ -101,10 +101,39 @@ export function CreatorsView({
     const map = new Map<string, CreatorProfile>();
 
     for (const b of sourceBookmarks) {
-      const rawHandle = (b.username || b.displayName || 'creator').trim();
-      const cleanHandle = rawHandle.replace(/^@+/, '').replace(/^u\//i, '').trim() || 'creator';
-      const cleanDisplayName = (b.displayName || b.username || 'Creator').trim();
       const platform: PlatformType = b.platform || 'web';
+      let rawHandle = (b.username || b.displayName || '').trim();
+      let cleanHandle = rawHandle.replace(/^@+/, '').replace(/^u\//i, '').trim();
+      let cleanDisplayName = (b.displayName || b.username || 'Creator').trim();
+
+      // For website bookmarks, never merge distinct websites into generic 'creator'
+      if (platform === 'web') {
+        let domainRoot = '';
+        let cleanHost = '';
+        if (b.url) {
+          try {
+            cleanHost = new URL(b.url).hostname.replace(/^www\./, '');
+            const parts = cleanHost.split('.').filter(Boolean);
+            domainRoot = (parts.length > 1 ? parts[parts.length - 2] : (parts[0] || '')).toLowerCase().replace(/[^a-z0-9_]/g, '');
+          } catch {}
+        }
+
+        if (!cleanHandle || cleanHandle.toLowerCase() === 'creator' || cleanHandle.toLowerCase() === 'website') {
+          cleanHandle = domainRoot || (cleanHost ? cleanHost.replace(/[^a-z0-9_]/g, '') : '') || (b.displayName || 'site').toLowerCase().replace(/[^a-z0-9_]/g, '');
+        }
+
+        if (!cleanDisplayName || cleanDisplayName.toLowerCase() === 'creator' || cleanDisplayName.toLowerCase() === 'website') {
+          if (domainRoot) {
+            cleanDisplayName = domainRoot.charAt(0).toUpperCase() + domainRoot.slice(1);
+          } else if (cleanHost) {
+            cleanDisplayName = cleanHost;
+          } else {
+            cleanDisplayName = cleanHandle ? cleanHandle.charAt(0).toUpperCase() + cleanHandle.slice(1) : 'Website';
+          }
+        }
+      } else if (!cleanHandle) {
+        cleanHandle = 'creator';
+      }
       
       const key = `${platform}___${cleanHandle.toLowerCase()}`;
       const existing = map.get(key);
@@ -144,7 +173,7 @@ export function CreatorsView({
           .split(/[\s_.-]+/)
           .filter(Boolean)
           .slice(0, 2)
-          .map(w => w[0]?.toUpperCase())
+          .map((w: string) => w[0]?.toUpperCase())
           .join('') || cleanDisplayName.slice(0, 2).toUpperCase() || 'CR';
 
         const isPinned = pinnedCreatorIds.includes(key);

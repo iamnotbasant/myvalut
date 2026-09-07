@@ -99,9 +99,9 @@ export function SecondaryToolbar({
     (filterState.onlyFavorites ? 1 : 0);
 
   return (
-    <div className="flex h-[52px] shrink-0 items-stretch justify-between gap-2 md:gap-4 border-b border-white/[0.08] bg-[#080808] pr-2 md:pr-3 pl-1.5 md:pl-2 select-none overflow-x-auto no-scrollbar">
+    <div className="relative z-40 flex h-[52px] shrink-0 items-stretch justify-between gap-2 md:gap-4 border-b border-white/[0.08] bg-[#080808] pr-2 md:pr-3 pl-1.5 md:pl-2 select-none overflow-visible">
       {/* Left: View Tabs (Grid, Row, Timeline, Mosaic) */}
-      <div className="relative flex items-end gap-0.5 sm:gap-1 h-full pb-0">
+      <div className="relative flex items-end gap-0.5 sm:gap-1 h-full pb-0 overflow-x-auto no-scrollbar">
         {/* Grid Tab */}
         <button
           type="button"
@@ -176,7 +176,7 @@ export function SecondaryToolbar({
       </div>
 
       {/* Right: Search, Shuffle, Add Filters, Select/Cancel, + Collection */}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 overflow-visible">
         {/* Search Input Box */}
         <div className="hidden w-full max-w-64 min-[936px]:block">
           <div className="relative w-full">
@@ -199,7 +199,7 @@ export function SecondaryToolbar({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-visible">
           {/* Sort Dropdown */}
           <div className="relative" ref={sortDropdownRef}>
             <button
@@ -227,7 +227,7 @@ export function SecondaryToolbar({
             </button>
 
             {isSortOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1.5 w-44 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 top-full z-[60] mt-1.5 w-44 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
                 <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                   Sort Order
                 </div>

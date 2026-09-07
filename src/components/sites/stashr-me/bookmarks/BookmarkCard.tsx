@@ -44,7 +44,12 @@ import { TagColor } from '@/types/stashr';
 
 function getCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  return url;
+  const clean = url.trim();
+  if (!clean) return undefined;
+  if (clean.includes('google.com/s2/favicons')) return undefined;
+  if (clean.includes('default') && (clean.includes('thumbs') || clean.includes('reddit'))) return undefined;
+  if (clean.includes('profile_images') || clean.includes('avatar')) return undefined;
+  return clean;
 }
 
 export function getCleanCardContent(bookmark: BookmarkItem) {
@@ -268,16 +273,6 @@ export function BookmarkCard({
     const target = e.currentTarget;
     if (target.src.includes('maxresdefault.jpg')) {
       target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
-    } else if (bookmark.url) {
-      try {
-        const domain = new URL(bookmark.url).hostname;
-        const fallbackFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-        if (target.src !== fallbackFavicon) {
-          target.src = fallbackFavicon;
-          return;
-        }
-      } catch {}
-      setHasImageError(true);
     } else {
       setHasImageError(true);
     }
@@ -397,7 +392,7 @@ export function BookmarkCard({
           }
         }}
         className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
-          isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
+          isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary bg-primary/10 shadow-2xl' : ''
         }`}
       >
         {/* Top Header */}
@@ -530,6 +525,7 @@ export function BookmarkCard({
           isOpen={rightClickMenu.isOpen}
           position={rightClickMenu.position}
           items={bookmarkMenuItems}
+          title={displayTitle || bookmark.title || bookmark.displayName || bookmark.username || 'Bookmark'}
           onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
         />
       </article>
@@ -551,7 +547,7 @@ export function BookmarkCard({
           }
         }}
         className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
-          isSelected ? 'ring-primary ring-2 border-primary bg-primary/5' : ''
+          isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary bg-primary/10 shadow-2xl' : ''
         }`}
       >
         {/* Top Header */}
@@ -672,6 +668,7 @@ export function BookmarkCard({
           isOpen={rightClickMenu.isOpen}
           position={rightClickMenu.position}
           items={bookmarkMenuItems}
+          title={displayTitle || bookmark.title || bookmark.displayName || bookmark.username || 'Bookmark'}
           onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
         />
       </article>
@@ -693,7 +690,7 @@ export function BookmarkCard({
           }
         }}
         className={`group/mosaic relative block overflow-hidden rounded-2xl bg-[#0e0e11] border border-white/[0.08] shadow-[0_8px_25px_-8px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_36px_-10px_rgba(0,0,0,0.95)] hover:border-white/20 transition-all duration-300 cursor-pointer ${
-          isSelected ? 'ring-primary ring-2 border-primary' : ''
+          isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary shadow-2xl scale-[1.01]' : ''
         }`}
       >
         {/* Floating Top Action Bar (Revealed on Hover) */}
@@ -868,6 +865,7 @@ export function BookmarkCard({
           isOpen={rightClickMenu.isOpen}
           position={rightClickMenu.position}
           items={bookmarkMenuItems}
+          title={displayTitle || bookmark.title || bookmark.displayName || bookmark.username || 'Bookmark'}
           onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
         />
       </article>
@@ -888,7 +886,7 @@ export function BookmarkCard({
         }
       }}
       className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
-        isSelected ? 'ring-primary ring-2 border-primary' : ''
+        isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary shadow-2xl scale-[1.01] bg-primary/[0.04]' : ''
       }`}
     >
       {/* Top Right Floating Hover Action Bar */}
@@ -1184,6 +1182,7 @@ export function BookmarkCard({
         isOpen={rightClickMenu.isOpen}
         position={rightClickMenu.position}
         items={bookmarkMenuItems}
+        title={displayTitle || bookmark.title || bookmark.displayName || bookmark.username || 'Bookmark'}
         onClose={() => setRightClickMenu({ isOpen: false, position: { x: 0, y: 0 } })}
       />
     </div>

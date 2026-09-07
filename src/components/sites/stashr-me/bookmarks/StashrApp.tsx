@@ -553,6 +553,111 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
   };
 
+  // Orphan tags and creators cleanup on bookmark deletion
+  const cleanupOrphanTagsAndCreators = useCallback((deletedBookmarks: BookmarkItem[]) => {
+    if (!deletedBookmarks || deletedBookmarks.length === 0) return;
+
+    const deletedIdSet = new Set(deletedBookmarks.map(b => b.id));
+    const remainingBookmarks = bookmarks.filter(b => !deletedIdSet.has(b.id));
+
+    // 1. Gather all tags still used by remaining bookmarks
+    const remainingTagNames = new Set<string>();
+    remainingBookmarks.forEach(b => {
+      (b.tags || []).forEach(t => {
+        if (t?.name) remainingTagNames.add(t.name.toLowerCase().trim());
+      });
+    });
+
+    // Check which tags on deleted bookmarks are no longer used anywhere else
+    const candidateDeletedTags = new Set<string>();
+    deletedBookmarks.forEach(b => {
+      (b.tags || []).forEach(t => {
+        if (t?.name) {
+          const lower = t.name.toLowerCase().trim();
+          if (!remainingTagNames.has(lower)) {
+            candidateDeletedTags.add(lower);
+          }
+        }
+      });
+    });
+
+    if (candidateDeletedTags.size > 0) {
+      const tagsToDelete = tags.filter(t => candidateDeletedTags.has(t.name.toLowerCase().trim()));
+
+      // Remove from local tags state
+      setTags(prev => prev.filter(t => !candidateDeletedTags.has(t.name.toLowerCase().trim())));
+
+      // Remove from active filter if selected
+      setFilterState(prev => {
+        const filteredTags = prev.tags.filter(t => !candidateDeletedTags.has(t.toLowerCase().trim()));
+        if (filteredTags.length !== prev.tags.length) {
+          return { ...prev, tags: filteredTags };
+        }
+        return prev;
+      });
+
+      // Delete from Supabase DB
+      if (isSupabaseConfigured && isOnline) {
+        tagsToDelete.forEach(t => {
+          deleteTagFromDb(t.id).catch(console.error);
+        });
+      }
+    }
+
+    // 2. Orphan Creator cleanup
+    const remainingCreatorHandles = new Set<string>();
+    const remainingCreatorKeys = new Set<string>();
+    remainingBookmarks.forEach(b => {
+      const platform = b.platform || 'web';
+      let handle = (b.username || '').toLowerCase().trim();
+      if (!handle || handle === 'creator') {
+        if (b.url) {
+          try {
+            const host = new URL(b.url).hostname.replace(/^www\./, '');
+            const parts = host.split('.').filter(Boolean);
+            handle = (parts.length > 1 ? parts[parts.length - 2] : parts[0] || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+          } catch {}
+        }
+      }
+      if (handle) {
+        remainingCreatorHandles.add(handle);
+        remainingCreatorKeys.add(`${platform}___${handle}`);
+      }
+    });
+
+    const candidateDeletedCreators = new Set<string>();
+    deletedBookmarks.forEach(b => {
+      const platform = b.platform || 'web';
+      let handle = (b.username || '').toLowerCase().trim();
+      if (!handle || handle === 'creator') {
+        if (b.url) {
+          try {
+            const host = new URL(b.url).hostname.replace(/^www\./, '');
+            const parts = host.split('.').filter(Boolean);
+            handle = (parts.length > 1 ? parts[parts.length - 2] : parts[0] || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+          } catch {}
+        }
+      }
+      if (handle && !remainingCreatorHandles.has(handle)) {
+        candidateDeletedCreators.add(handle);
+        candidateDeletedCreators.add(`${platform}___${handle}`);
+      }
+    });
+
+    if (candidateDeletedCreators.size > 0) {
+      setPinnedCreatorIds(prev =>
+        prev.filter(id => !candidateDeletedCreators.has(id.toLowerCase().trim()))
+      );
+
+      setFilterState(prev => {
+        if (prev.query && candidateDeletedCreators.has(prev.query.toLowerCase().trim())) {
+          return { ...prev, query: '' };
+        }
+        return prev;
+      });
+    }
+  }, [bookmarks, tags, isOnline]);
+
   const handleDelete = (id: string) => {
     const target = bookmarks.find(b => b.id === id);
     if (!target) return;
@@ -575,6 +680,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
             next.delete(id);
             return next;
           });
+          cleanupOrphanTagsAndCreators([target]);
           if (isSupabaseConfigured && isOnline) {
             deleteBookmarkFromDb(id).catch(() => {
               queueOfflineMutation({ id, type: 'delete_bookmark', payload: null });
@@ -936,8 +1042,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       onConfirm: () => {
         soundFx.playArchiveSound();
         const idSet = new Set(ids);
+        const deletedBms = creator.bookmarks;
         setBookmarks(prev => prev.filter(b => !idSet.has(b.id)));
         deleteMultipleBookmarksFromDb(ids);
+        cleanupOrphanTagsAndCreators(deletedBms);
       }
     });
   };
@@ -1025,8 +1133,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         onConfirm: () => {
           soundFx.playArchiveSound();
           const idSet = new Set(ids);
+          const deletedBms = bookmarks.filter(b => idSet.has(b.id));
           setBookmarks(prev => prev.filter(b => !idSet.has(b.id)));
           deleteMultipleBookmarksFromDb(ids);
+          cleanupOrphanTagsAndCreators(deletedBms);
           setSelectedIds(new Set());
           setIsSelectionMode(false);
         }
