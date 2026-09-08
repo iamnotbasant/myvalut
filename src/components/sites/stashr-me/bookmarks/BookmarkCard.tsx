@@ -218,7 +218,6 @@ export function BookmarkCard({
   onGenerateTags,
   onEditTags
 }: BookmarkCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
@@ -243,6 +242,13 @@ export function BookmarkCard({
   });
 
   const { showTitle, title: displayTitle, showText, text: displayText } = resolveBookmarkDisplayContent(bookmark);
+
+  const isLongText = Boolean(
+    displayText && (
+      displayText.length > 180 ||
+      displayText.split('\n').filter(l => l.trim().length > 0).length > 3
+    )
+  );
 
   const imgSrc = getCleanImageUrl(bookmark.imageUrl);
 
@@ -470,8 +476,19 @@ export function BookmarkCard({
               </h3>
             )}
             {showText && displayText && (
-              <div className="text-xs leading-relaxed text-neutral-400 line-clamp-2">
-                <FormattedPostText text={displayText} />
+              <div className="relative z-10">
+                {isLongText ? (
+                  <div className="relative max-h-14 overflow-hidden text-xs leading-relaxed text-neutral-400">
+                    <FormattedPostText text={displayText} />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
+                      <span className="text-[10px] font-medium text-neutral-400 pl-0.5">...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs leading-relaxed text-neutral-400">
+                    <FormattedPostText text={displayText} />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -615,7 +632,16 @@ export function BookmarkCard({
         {/* Content text */}
         {showText && displayText && (
           <div className="relative z-10 text-[14px] leading-relaxed text-neutral-200">
-            <FormattedPostText text={displayText} />
+            {isLongText ? (
+              <div className="relative max-h-24 sm:max-h-28 overflow-hidden">
+                <FormattedPostText text={displayText} />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
+                  <span className="text-[11px] font-medium text-neutral-400 pl-0.5">...</span>
+                </div>
+              </div>
+            ) : (
+              <FormattedPostText text={displayText} />
+            )}
           </div>
         )}
 
@@ -1077,25 +1103,18 @@ export function BookmarkCard({
         </p>
       )}
 
-      {/* Post Text & Show More */}
+      {/* Post Text */}
       {showText && displayText && (
-        <div className="relative z-10 space-y-2 text-[13.5px] leading-relaxed text-neutral-200">
-          <FormattedPostText
-            text={displayText}
-            isExpanded={isExpanded}
-            maxLines={displayText.length > 220 ? 4 : undefined}
-          />
-          {displayText.length > 220 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-              className="text-xs text-neutral-400 hover:text-white font-medium transition-colors cursor-pointer"
-            >
-              {isExpanded ? 'Show less' : 'Show more'}
-            </button>
+        <div className="relative z-10 text-[13.5px] leading-relaxed text-neutral-200">
+          {isLongText ? (
+            <div className="relative max-h-24 sm:max-h-28 overflow-hidden">
+              <FormattedPostText text={displayText} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
+                <span className="text-[11px] font-medium text-neutral-400 pl-0.5">...</span>
+              </div>
+            </div>
+          ) : (
+            <FormattedPostText text={displayText} />
           )}
         </div>
       )}

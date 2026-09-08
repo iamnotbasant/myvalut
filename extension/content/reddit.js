@@ -314,19 +314,26 @@
     button.classList.add('valut-saving');
     button.innerHTML = `${SPINNER_ICON} <span>Saving...</span>`;
 
-    const titleEl = postEl ? postEl.querySelector('[slot="title"], h1, h2, a[data-click-id="body"], a[slot="full-post-link"]') : null;
-    const title = titleEl ? repairFragmentedUrls((titleEl.innerText || titleEl.textContent || '').trim()) : document.title || 'Reddit Post';
+    const post = (postEl && postEl.closest('shreddit-post, [data-testid="post-container"], article, main')) || postEl || document;
 
-    const authorEl = postEl ? postEl.querySelector('[slot="authorName"], a[href*="/user/"], [author]') : null;
+    const titleEl = post.querySelector('[slot="title"], h1, h2, a[data-click-id="body"], a[slot="full-post-link"]') || document.querySelector('h1');
+    const title = titleEl ? repairFragmentedUrls((titleEl.innerText || titleEl.textContent || '').trim()) : document.title.replace(/ - Reddit$/, '') || 'Reddit Post';
+
+    const authorEl = post.querySelector('[slot="authorName"], a[href*="/user/"], [author]') || document.querySelector('a[href*="/user/"]');
     const username = authorEl ? (authorEl.innerText || authorEl.textContent || '').replace(/^u\//, '').trim() : 'reddit_user';
 
-    const subredditEl = postEl ? postEl.querySelector('a[href*="/r/"]') : null;
-    const displayName = subredditEl ? (subredditEl.innerText || subredditEl.textContent || '').trim() : 'Reddit';
+    const subredditEl = post.querySelector('a[href*="/r/"]') || document.querySelector('a[href*="/r/"]');
+    let displayName = subredditEl ? (subredditEl.innerText || subredditEl.textContent || '').trim() : '';
+    if (!displayName) {
+      const matchSub = window.location.pathname.match(/\/r\/([^/]+)/);
+      if (matchSub) displayName = `r/${matchSub[1]}`;
+      else displayName = 'Reddit';
+    }
 
-    const textEl = postEl ? postEl.querySelector('[slot="text-body"], .RichTextJSON-root, [data-click-id="text"]') : null;
+    const textEl = post.querySelector('[slot="text-body"], .RichTextJSON-root, [data-click-id="text"], div[id$="-post-rtjson-content"]') || document.querySelector('[slot="text-body"], .RichTextJSON-root');
     const text = extractCleanRedditText(textEl, title);
 
-    const imgEl = postEl ? postEl.querySelector('shreddit-media-lightbox img, img[alt="Post image"], img[src*="preview.redd.it"], img[src*="i.redd.it"]') : null;
+    const imgEl = post.querySelector('shreddit-media-lightbox img, img[alt="Post image"], img[src*="preview.redd.it"], img[src*="i.redd.it"]') || document.querySelector('shreddit-media-lightbox img, img[alt="Post image"], img[src*="preview.redd.it"], img[src*="i.redd.it"]');
     const imageUrl = imgEl ? imgEl.src : '';
 
     try {
@@ -362,100 +369,189 @@
     }
   }
 
+  function getActionRowTopChild(el, root) {
+    let curr = el;
+    while (curr && curr.parentElement && curr.parentElement !== root && curr.parentElement !== document.body) {
+      const p = curr.parentElement;
+      const slot = p.getAttribute('slot');
+      const tag = p.tagName ? p.tagName.toLowerCase() : '';
+      const role = p.getAttribute('role');
+
+      // If parent is the action row container
+      if (
+        slot === 'action-row' ||
+        tag === 'shreddit-post-action-row' ||
+        role === 'toolbar' ||
+        role === 'group' ||
+        p.classList.contains('action-row') ||
+        p.hasAttribute('action-row')
+      ) {
+        return curr;
+      }
+
+      // If parent is the post container itself, stop
+      if (tag === 'shreddit-post' || tag === 'article' || tag === 'main') {
+        return curr;
+      }
+
+      curr = p;
+    }
+    return el;
+  }
+
+  function findShareItem(root) {
+    // 1. Direct custom elements / testids
+    const selectors = [
+      'shreddit-post-share-button',
+      'faceplate-dropdown[name="share-dropdown"]',
+      'faceplate-tracker[noun="share"]',
+      '[data-testid="share-button"]',
+      '[data-click-id="share"]',
+      'button[name="share-button"]',
+      'button[aria-label*="share" i]',
+      'a[aria-label*="share" i]',
+    ];
+
+    for (const sel of selectors) {
+      const el = root.querySelector(sel);
+      if (el) {
+        return getActionRowTopChild(el, root);
+      }
+    }
+
+    // 2. Buttons with text "Share" or share SVG icon
+    const candidates = root.querySelectorAll('button, a[role="button"], div[role="button"]');
+    for (const btn of candidates) {
+      const text = (btn.textContent || '').trim().toLowerCase();
+      const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+      const hasShareIcon = Boolean(btn.querySelector('svg[icon-name*="share" i], svg[class*="share" i]'));
+
+      if (text === 'share' || text.startsWith('share') || aria.includes('share') || hasShareIcon) {
+        return getActionRowTopChild(btn, root);
+      }
+    }
+
+    return null;
+  }
+
+  function findActionRow(root) {
+    return (
+      root.querySelector('[slot="action-row"]') ||
+      root.querySelector('shreddit-post-action-row') ||
+      root.querySelector('div[class*="action-row"]') ||
+      root.querySelector('[data-testid="post-bar"]') ||
+      root.querySelector('[role="toolbar"]') ||
+      root.querySelector('[role="group"]')
+    );
+  }
+
+  function getPostUrl(postEl) {
+    if (postEl) {
+      const permalink = postEl.getAttribute('permalink');
+      if (permalink) return `https://www.reddit.com${permalink.split('?')[0]}`;
+
+      const contentHref = postEl.getAttribute('content-href');
+      if (contentHref && contentHref.includes('/comments/')) return contentHref.split('?')[0];
+
+      const commentLink = postEl.querySelector('a[href*="/comments/"]');
+      if (commentLink && commentLink.href) return commentLink.href.split('?')[0];
+    }
+
+    if (window.location.pathname.includes('/comments/')) {
+      return window.location.href.split('?')[0];
+    }
+
+    return window.location.href;
+  }
+
+  function createRedditValutButton(postUrl, postEl) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'valut-reddit-btn';
+    btn.title = 'Save to Valut (AI Tagging)';
+    btn.setAttribute('aria-label', 'Save to Valut');
+    btn.innerHTML = `${VALUT_ICON} <span>Valut</span>`;
+
+    checkRedditSaved(postUrl).then(isSaved => {
+      if (isSaved) {
+        btn.classList.add('valut-is-saved', 'valut-saved');
+        btn.innerHTML = `${VALUT_ICON} <span>Saved</span>`;
+        btn.title = 'Saved in Valut';
+      }
+    });
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSaveReddit(btn, postUrl, postEl);
+    });
+
+    return btn;
+  }
+
   // Universal Reddit Injector Supporting All Reddit Versions (2024-2026+)
   function injectRedditButtons() {
-    // 1. Target shreddit-post custom elements
-    const shredditPosts = document.querySelectorAll('shreddit-post:not([data-valut-done])');
-    shredditPosts.forEach(post => {
-      // Look for the action row or share button inside shreddit-post
-      let actionRow =
-        post.querySelector('[slot="action-row"]') ||
-        post.querySelector('shreddit-post-action-row') ||
-        post.querySelector('div[class*="action-row"]') ||
-        post.querySelector('div[class*="items-center"][class*="flex"]');
+    // 1. Check all shreddit-post and post containers
+    const posts = document.querySelectorAll(
+      'shreddit-post, [data-testid="post-container"], div[id^="t3_"], article[data-testid="post-container"]'
+    );
+    posts.forEach(post => {
+      if (post.querySelector('.valut-reddit-btn')) return;
 
-      const shareBtn = post.querySelector('shreddit-post-share-button, button[aria-label*="share" i], [name="share-button"], button:has(svg[icon-name*="share"])');
-      const targetContainer = shareBtn?.parentElement || actionRow;
+      const shareItem = findShareItem(post);
+      const actionRow = findActionRow(post);
 
-      if (targetContainer && !post.querySelector('.valut-reddit-btn')) {
-        post.setAttribute('data-valut-done', 'true');
+      if (shareItem || actionRow) {
+        const postUrl = getPostUrl(post);
+        const btn = createRedditValutButton(postUrl, post);
 
-        let postUrl = post.getAttribute('permalink')
-          ? `https://www.reddit.com${post.getAttribute('permalink')}`
-          : post.getAttribute('content-href') || window.location.href;
-
-        const btn = document.createElement('button');
-        btn.className = 'valut-reddit-btn';
-        btn.title = 'Save to Valut (AI Tagging)';
-        btn.setAttribute('aria-label', 'Save to Valut');
-        btn.innerHTML = `${VALUT_ICON} <span>Valut</span>`;
-
-        checkRedditSaved(postUrl).then(isSaved => {
-          if (isSaved) {
-            btn.classList.add('valut-is-saved', 'valut-saved');
-            btn.innerHTML = `${VALUT_ICON} <span>Saved</span>`;
-            btn.title = 'Saved in Valut';
-          }
-        });
-
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleSaveReddit(btn, postUrl, post);
-        });
-
-        if (shareBtn && shareBtn.parentElement === targetContainer) {
-          shareBtn.after(btn);
-        } else {
-          targetContainer.appendChild(btn);
+        if (shareItem) {
+          shareItem.after(btn);
+        } else if (actionRow) {
+          actionRow.appendChild(btn);
         }
       }
     });
 
-    // 2. Legacy / Classical / Fallback Reddit Action Bars
-    const fallbackBars = document.querySelectorAll(
-      '[data-testid="post-container"] [role="toolbar"]:not([data-valut-done]), div[id^="t3_"] [role="toolbar"]:not([data-valut-done]), article [role="group"]:not([data-valut-done])'
+    // 2. Also check any standalone action rows (e.g. single post /comments/ pages)
+    const actionRows = document.querySelectorAll(
+      '[slot="action-row"], shreddit-post-action-row, [role="toolbar"]'
     );
+    actionRows.forEach(row => {
+      if (row.querySelector('.valut-reddit-btn') || row.closest('shreddit-post')?.querySelector('.valut-reddit-btn')) return;
 
-    fallbackBars.forEach(bar => {
-      bar.setAttribute('data-valut-done', 'true');
-      const post = bar.closest('[data-testid="post-container"], div[id^="t3_"], article');
-      const linkEl = post?.querySelector('a[data-click-id="comments"], a[data-click-id="body"], a[href*="/comments/"]');
-      const postUrl = linkEl ? linkEl.href : window.location.href;
+      const shareItem = findShareItem(row);
+      const postEl = row.closest('shreddit-post, [data-testid="post-container"], article, main') || row;
+      const postUrl = getPostUrl(postEl);
+      const btn = createRedditValutButton(postUrl, postEl);
 
-      if (!bar.querySelector('.valut-reddit-btn')) {
-        const btn = document.createElement('button');
-        btn.className = 'valut-reddit-btn';
-        btn.title = 'Save to Valut (AI Tagging)';
-        btn.innerHTML = `${VALUT_ICON} <span>Valut</span>`;
-
-        checkRedditSaved(postUrl).then(isSaved => {
-          if (isSaved) {
-            btn.classList.add('valut-is-saved', 'valut-saved');
-            btn.innerHTML = `${VALUT_ICON} <span>Saved</span>`;
-          }
-        });
-
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleSaveReddit(btn, postUrl, post);
-        });
-
-        bar.appendChild(btn);
+      if (shareItem) {
+        shareItem.after(btn);
+      } else {
+        row.appendChild(btn);
       }
     });
   }
 
-  // Initial Injection
+  // Initial Injections
   setTimeout(injectRedditButtons, 300);
-  setTimeout(injectRedditButtons, 1000);
+  setTimeout(injectRedditButtons, 800);
+  setTimeout(injectRedditButtons, 1500);
 
+  // Periodic polling to catch lazy-loaded posts and SPA navigation smoothly
+  setInterval(injectRedditButtons, 750);
+
+  // Mutation Observer for real-time injection on DOM mutations
   let debounceTimer = null;
   const observer = new MutationObserver(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(injectRedditButtons, 250);
+    debounceTimer = setTimeout(injectRedditButtons, 200);
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
+
+  // SPA navigation handling
+  window.addEventListener('popstate', () => {
+    setTimeout(injectRedditButtons, 300);
+  });
 })();

@@ -38,9 +38,7 @@ export function FormattedPostText({
 
   return (
     <div
-      className={`space-y-1.5 whitespace-pre-line text-neutral-100 ${
-        maxLines && !isExpanded ? `line-clamp-${maxLines}` : ''
-      } ${className}`}
+      className={`space-y-1.5 whitespace-pre-line text-neutral-100 ${className}`}
     >
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
