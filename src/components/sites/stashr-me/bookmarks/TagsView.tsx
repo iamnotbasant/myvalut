@@ -76,11 +76,12 @@ function FolderAccentGraphic({ type, color }: { type: string; color: string }) {
 
 const FOLDER_COLOR_THEMES: Record<TagColor, {
   name: string;
+  gradStart: string;
+  gradMid: string;
+  gradEnd: string;
   backBg: string;
   frontBg: string;
   frontBorder: string;
-  tabBorder: string;
-  tabBg: string;
   glowHover: string;
   accentFont: string;
   splashColor: string;
@@ -88,120 +89,130 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
 }> = {
   red: {
     name: 'Red',
+    gradStart: '#ff4d4f',
+    gradMid: '#f5222d',
+    gradEnd: '#cf1322',
     backBg: 'from-[#ff4d4f] via-[#f5222d] to-[#cf1322]',
-    frontBg: 'from-[#ff6b6b]/95 via-[#f5222d]/90 to-[#cf1322]/95',
-    frontBorder: 'border-[#ffa39e]/45',
-    tabBorder: 'border-[#ff4d4f]/60',
-    tabBg: 'bg-[#ff4d4f]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(245,34,45,0.4)]',
+    frontBg: 'from-[#ff5a5f] via-[#f5222d] to-[#cf1322]',
+    frontBorder: 'border-[#ffa39e]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(245,34,45,0.45)]',
     accentFont: 'text-[#cf1322]',
     splashColor: '#820014',
     splashType: 'seeds'
   },
   blue: {
     name: 'Blue',
+    gradStart: '#38bdf8',
+    gradMid: '#2563eb',
+    gradEnd: '#1d4ed8',
     backBg: 'from-[#38bdf8] via-[#2563eb] to-[#1d4ed8]',
-    frontBg: 'from-[#60a5fa]/95 via-[#3b82f6]/90 to-[#1d4ed8]/95',
-    frontBorder: 'border-[#93c5fd]/45',
-    tabBorder: 'border-[#38bdf8]/60',
-    tabBg: 'bg-[#2563eb]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(37,99,235,0.4)]',
+    frontBg: 'from-[#4fa5fa] via-[#3b82f6] to-[#1d4ed8]',
+    frontBorder: 'border-[#93c5fd]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(37,99,235,0.45)]',
     accentFont: 'text-[#1d4ed8]',
     splashColor: '#1e3a8a',
     splashType: 'splash'
   },
   amber: {
     name: 'Amber',
+    gradStart: '#fde047',
+    gradMid: '#f59e0b',
+    gradEnd: '#d97706',
     backBg: 'from-[#fde047] via-[#f59e0b] to-[#d97706]',
-    frontBg: 'from-[#fef08a]/95 via-[#fbbf24]/90 to-[#d97706]/95',
-    frontBorder: 'border-[#fef08a]/50',
-    tabBorder: 'border-[#facc15]/60',
-    tabBg: 'bg-[#f59e0b]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(245,158,11,0.4)]',
+    frontBg: 'from-[#fde68a] via-[#fbbf24] to-[#d97706]',
+    frontBorder: 'border-[#fef08a]/45',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(245,158,11,0.45)]',
     accentFont: 'text-[#15803d]',
     splashColor: '#15803d',
     splashType: 'leaf'
   },
   green: {
     name: 'Green',
+    gradStart: '#34d399',
+    gradMid: '#10b981',
+    gradEnd: '#047857',
     backBg: 'from-[#34d399] via-[#10b981] to-[#047857]',
-    frontBg: 'from-[#6ee7b7]/95 via-[#10b981]/90 to-[#047857]/95',
-    frontBorder: 'border-[#a7f3d0]/45',
-    tabBorder: 'border-[#34d399]/60',
-    tabBg: 'bg-[#10b981]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(16,185,129,0.4)]',
+    frontBg: 'from-[#6ee7b7] via-[#10b981] to-[#047857]',
+    frontBorder: 'border-[#a7f3d0]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(16,185,129,0.45)]',
     accentFont: 'text-[#047857]',
     splashColor: '#064e3b',
     splashType: 'leaf'
   },
   violet: {
     name: 'Violet',
+    gradStart: '#c084fc',
+    gradMid: '#9333ea',
+    gradEnd: '#6b21a8',
     backBg: 'from-[#c084fc] via-[#9333ea] to-[#6b21a8]',
-    frontBg: 'from-[#d8b4fe]/95 via-[#a855f7]/90 to-[#6b21a8]/95',
-    frontBorder: 'border-[#e9d5ff]/45',
-    tabBorder: 'border-[#c084fc]/60',
-    tabBg: 'bg-[#9333ea]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(147,51,234,0.4)]',
+    frontBg: 'from-[#d8b4fe] via-[#a855f7] to-[#6b21a8]',
+    frontBorder: 'border-[#e9d5ff]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(147,51,234,0.45)]',
     accentFont: 'text-[#6b21a8]',
     splashColor: '#3b0764',
     splashType: 'splash'
   },
   indigo: {
     name: 'Indigo',
+    gradStart: '#818cf8',
+    gradMid: '#4f46e5',
+    gradEnd: '#3730a3',
     backBg: 'from-[#818cf8] via-[#4f46e5] to-[#3730a3]',
-    frontBg: 'from-[#a5b4fc]/95 via-[#6366f1]/90 to-[#3730a3]/95',
-    frontBorder: 'border-[#c7d2fe]/45',
-    tabBorder: 'border-[#818cf8]/60',
-    tabBg: 'bg-[#4f46e5]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(79,70,229,0.4)]',
+    frontBg: 'from-[#a5b4fc] via-[#6366f1] to-[#3730a3]',
+    frontBorder: 'border-[#c7d2fe]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(79,70,229,0.45)]',
     accentFont: 'text-[#3730a3]',
     splashColor: '#1e1b4b',
     splashType: 'splash'
   },
   pink: {
     name: 'Pink',
+    gradStart: '#f472b6',
+    gradMid: '#db2777',
+    gradEnd: '#9d174d',
     backBg: 'from-[#f472b6] via-[#db2777] to-[#9d174d]',
-    frontBg: 'from-[#fbcfe8]/95 via-[#ec4899]/90 to-[#9d174d]/95',
-    frontBorder: 'border-[#fbcfe8]/45',
-    tabBorder: 'border-[#f472b6]/60',
-    tabBg: 'bg-[#db2777]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(219,39,119,0.4)]',
+    frontBg: 'from-[#fbcfe8] via-[#ec4899] to-[#9d174d]',
+    frontBorder: 'border-[#fbcfe8]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(219,39,119,0.45)]',
     accentFont: 'text-[#9d174d]',
     splashColor: '#500724',
     splashType: 'seeds'
   },
   orange: {
     name: 'Orange',
+    gradStart: '#fb923c',
+    gradMid: '#ea580c',
+    gradEnd: '#9a3412',
     backBg: 'from-[#fb923c] via-[#ea580c] to-[#9a3412]',
-    frontBg: 'from-[#fed7aa]/95 via-[#f97316]/90 to-[#9a3412]/95',
-    frontBorder: 'border-[#fed7aa]/45',
-    tabBorder: 'border-[#fb923c]/60',
-    tabBg: 'bg-[#ea580c]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(234,88,12,0.4)]',
+    frontBg: 'from-[#fed7aa] via-[#f97316] to-[#9a3412]',
+    frontBorder: 'border-[#fed7aa]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(234,88,12,0.45)]',
     accentFont: 'text-[#9a3412]',
     splashColor: '#431407',
     splashType: 'splash'
   },
   cyan: {
     name: 'Cyan',
+    gradStart: '#22d3ee',
+    gradMid: '#0891b2',
+    gradEnd: '#155e75',
     backBg: 'from-[#22d3ee] via-[#0891b2] to-[#155e75]',
-    frontBg: 'from-[#67e8f9]/95 via-[#06b6d4]/90 to-[#155e75]/95',
-    frontBorder: 'border-[#a5f3fc]/45',
-    tabBorder: 'border-[#22d3ee]/60',
-    tabBg: 'bg-[#0891b2]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(8,145,178,0.4)]',
+    frontBg: 'from-[#67e8f9] via-[#06b6d4] to-[#155e75]',
+    frontBorder: 'border-[#a5f3fc]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(8,145,178,0.45)]',
     accentFont: 'text-[#155e75]',
     splashColor: '#083344',
     splashType: 'splash'
   },
   teal: {
     name: 'Teal',
+    gradStart: '#2dd4bf',
+    gradMid: '#0d9488',
+    gradEnd: '#115e59',
     backBg: 'from-[#2dd4bf] via-[#0d9488] to-[#115e59]',
-    frontBg: 'from-[#5eead4]/95 via-[#14b8a6]/90 to-[#115e59]/95',
-    frontBorder: 'border-[#99f6e4]/45',
-    tabBorder: 'border-[#2dd4bf]/60',
-    tabBg: 'bg-[#0d9488]',
-    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(13,148,136,0.4)]',
+    frontBg: 'from-[#5eead4] via-[#14b8a6] to-[#115e59]',
+    frontBorder: 'border-[#99f6e4]/40',
+    glowHover: 'hover:shadow-[0_24px_50px_-10px_rgba(13,148,136,0.45)]',
     accentFont: 'text-[#115e59]',
     splashColor: '#042f2e',
     splashType: 'leaf'
@@ -224,22 +235,22 @@ function FolderTuckedCard({
   const isCenter = position === 'center';
   const isLeft = position === 'left';
 
-  // Base positions & hover transform classes so all 3 cards are visibly layered
+  // Layering & smooth hover glide transforms
   const posClasses = isLeft
-    ? 'left-1.5 w-[86%] top-2 -rotate-6 z-10 group-hover/folder:-translate-y-8 group-hover/folder:-translate-x-4 group-hover/folder:-rotate-12'
+    ? 'left-2 w-[88%] top-2.5 h-[220px] -rotate-3.5 z-10 group-hover/folder:-translate-y-20 group-hover/folder:-translate-x-3 group-hover/folder:-rotate-8'
     : isCenter
-    ? 'inset-x-3 top-4 rotate-0 z-20 group-hover/folder:-translate-y-10 group-hover/folder:scale-[1.02]'
-    : 'right-1.5 w-[86%] top-2 rotate-6 z-10 group-hover/folder:-translate-y-8 group-hover/folder:translate-x-4 group-hover/folder:rotate-12';
+    ? 'inset-x-3.5 top-3.5 h-[230px] rotate-0 z-20 group-hover/folder:-translate-y-24 group-hover/folder:scale-[1.02]'
+    : 'right-2 w-[88%] top-2.5 h-[220px] rotate-3.5 z-10 group-hover/folder:-translate-y-20 group-hover/folder:translate-x-3 group-hover/folder:rotate-8';
 
   return (
     <div
-      className={`absolute h-[165px] rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.18)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-2.5 transition-all duration-400 ease-out pointer-events-none ${posClasses}`}
+      className={`absolute rounded-[22px] bg-white shadow-[0_8px_22px_rgba(0,0,0,0.16)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-3 transition-all duration-500 ease-out pointer-events-none ${posClasses}`}
     >
       {/* Top Header Row matching Reference 2 */}
       <div className="flex items-start justify-between gap-1.5 pb-1 shrink-0">
         <div className="flex flex-col gap-1 pt-0.5">
-          <div className="h-1.5 w-7 rounded-full bg-neutral-200" />
-          <div className="h-1 w-4.5 rounded-full bg-neutral-200/70" />
+          <div className="h-1.5 w-8 bg-neutral-200 rounded-full" />
+          <div className="h-1 w-5 bg-neutral-200/70 rounded-full" />
         </div>
         <div className="text-right truncate max-w-[65%]">
           <span className="text-[11px] font-bold text-neutral-800 tracking-tight font-mono truncate block">
@@ -253,30 +264,30 @@ function FolderTuckedCard({
 
       {/* Card Body: Thumbnail Media or Document Snippet */}
       {item?.imageUrl ? (
-        <div className="relative h-[105px] w-full rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/60 shadow-xs">
+        <div className="relative h-[120px] w-full rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/60 shadow-xs">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
             alt=""
             className="size-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-          <div className="absolute bottom-1 left-2 right-2 flex items-center justify-between text-white">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-white">
             <span className="text-[9.5px] font-semibold truncate drop-shadow-sm max-w-[70%]">
-              {item.title || item.text.slice(0, 22) || 'Bookmark'}
+              {item.title || item.text.slice(0, 24) || 'Bookmark'}
             </span>
-            <span className="text-[8px] font-mono opacity-80 uppercase shrink-0">
+            <span className="text-[8px] font-mono opacity-85 uppercase shrink-0">
               {item.platform}
             </span>
           </div>
         </div>
       ) : item ? (
-        <div className="flex flex-col justify-between h-[105px] w-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/50">
-          <p className="text-[10.5px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
-            {item.title || item.text.slice(0, 45)}
+        <div className="flex flex-col justify-between h-[120px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/50">
+          <p className="text-[11px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
+            {item.title || item.text.slice(0, 50)}
           </p>
           <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
-            <span className="text-[8.5px] text-neutral-400 font-medium truncate">
+            <span className="text-[9px] text-neutral-400 font-medium truncate">
               {item.displayName || '@' + item.username}
             </span>
             <span className="text-[8px] font-mono font-bold uppercase text-neutral-500">
@@ -285,14 +296,14 @@ function FolderTuckedCard({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col justify-between h-[105px] w-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/40">
-          <div className="space-y-1.5 my-auto py-1">
+        <div className="flex flex-col justify-between h-[120px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/40">
+          <div className="space-y-2 my-auto py-1">
             <div className="h-1.5 w-full bg-neutral-100 rounded-full" />
             <div className="h-1.5 w-4/5 bg-neutral-100 rounded-full" />
             <div className="h-1.5 w-3/5 bg-neutral-100 rounded-full" />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[8.5px] font-mono text-neutral-400">
+          <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
+            <span className="text-[9px] font-mono text-neutral-400">
               #{tagName}
             </span>
             <div className="size-2 rounded-full" style={{ backgroundColor: accentColor }} />
@@ -576,7 +587,7 @@ export function TagsView({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 sm:gap-6 pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 pb-16">
           {processedTags.map(tag => {
             const theme = FOLDER_COLOR_THEMES[tag.color] || FOLDER_COLOR_THEMES.violet;
             const items = tagStats.bookmarkMap[tag.name.toLowerCase()] || [];
@@ -603,10 +614,10 @@ export function TagsView({
                     tag: tag
                   });
                 }}
-                className={`group/folder relative w-full max-w-[260px] mx-auto h-[275px] rounded-[28px] cursor-pointer select-none transition-all duration-400 ease-out hover:-translate-y-2 ${theme.glowHover}`}
+                className={`group/folder relative w-full max-w-[310px] mx-auto h-[310px] rounded-[30px] cursor-pointer select-none transition-all duration-500 ease-out hover:-translate-y-2 ${theme.glowHover}`}
               >
                 {/* 1. Folder Back Body */}
-                <div className={`absolute inset-0 rounded-[28px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
+                <div className={`absolute inset-0 rounded-[30px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
                   <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/10 pointer-events-none" />
                 </div>
 
@@ -634,14 +645,20 @@ export function TagsView({
                 />
 
                 {/* 3. Front Pocket Sleeve with Organic Cutout & Bottom Artwork */}
-                <div className="absolute inset-x-0 bottom-0 h-[56%] z-30 flex flex-col justify-end pointer-events-none">
+                <div className="absolute inset-x-0 bottom-0 h-[64%] z-30 flex flex-col justify-end pointer-events-none">
                   {/* Sculpted Wavy Top Lip */}
-                  <svg viewBox="0 0 400 48" preserveAspectRatio="none" className="w-full h-8 block -mb-0.5 drop-shadow-sm">
-                    <path d="M 0 24 Q 90 6 180 26 T 400 12 L 400 48 L 0 48 Z" fill="currentColor" className={`bg-gradient-to-b ${theme.frontBg} text-transparent`} style={{ fill: 'currentColor' }} />
+                  <svg viewBox="0 0 400 50" preserveAspectRatio="none" className="w-full h-9 block -mb-0.5 pointer-events-none drop-shadow-xs">
+                    <defs>
+                      <linearGradient id={`wave-${tag.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={theme.gradStart} />
+                        <stop offset="100%" stopColor={theme.gradMid} />
+                      </linearGradient>
+                    </defs>
+                    <path d="M 0 26 C 100 8 180 38 400 16 L 400 50 L 0 50 Z" fill={`url(#wave-${tag.id})`} />
                   </svg>
 
                   {/* Pocket Body */}
-                  <div className={`relative rounded-b-[28px] bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-3.5 pt-1 flex flex-col justify-between min-h-[92px] backdrop-blur-md shadow-2xl pointer-events-auto`}>
+                  <div className={`relative rounded-b-[30px] bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-4 pt-1 flex flex-col justify-between min-h-[110px] backdrop-blur-md shadow-2xl pointer-events-auto`}>
                     {/* Splash / Leaves / Seeds Graphic at Bottom Left */}
                     <div className="absolute bottom-2.5 left-3 pointer-events-none select-none">
                       <FolderAccentGraphic type={theme.splashType} color={theme.splashColor} />
@@ -650,11 +667,11 @@ export function TagsView({
                     {/* Front Content: Tag Name & Saves Count Pill */}
                     <div className="flex items-center justify-between gap-2 relative z-10 pl-1">
                       <div className="min-w-0 pr-1.5">
-                        <h3 className="text-[15px] sm:text-base font-bold text-white drop-shadow-md tracking-tight truncate group-hover/folder:text-white transition-colors">
+                        <h3 className="text-base sm:text-[17px] font-bold text-white drop-shadow-md tracking-tight truncate group-hover/folder:text-white transition-colors">
                           {tag.name}
                         </h3>
                         <div className="inline-flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10.5px] font-semibold text-white/90 bg-black/20 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/10">
+                          <span className="text-[11px] font-semibold text-white/95 bg-black/20 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/10">
                             {count} {count === 1 ? 'save' : 'saves'}
                           </span>
                         </div>
@@ -672,10 +689,10 @@ export function TagsView({
                             tag: tag
                           });
                         }}
-                        className="flex size-7 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white transition-colors cursor-pointer shrink-0 border border-white/20 shadow-xs"
+                        className="flex size-7.5 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white transition-colors cursor-pointer shrink-0 border border-white/20 shadow-xs"
                         title="More options"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal className="size-4" />
                       </button>
                     </div>
                   </div>
