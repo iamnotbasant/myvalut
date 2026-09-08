@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { BookmarkItem, Tag, TagColor } from '@/types/stashr';
 import {
   TagDot,
@@ -10,13 +9,11 @@ import {
   Pencil,
   Trash2,
   Copy,
-  ExternalLink,
   Sparkles,
   SlidersHorizontal,
   Bookmark as BookmarkIcon,
   Check,
   MoreHorizontal,
-  Folder,
   Tag as TagIcon,
   X
 } from '@/components/icons';
@@ -224,37 +221,39 @@ function FolderTuckedCard({
   position,
   tagName,
   count,
-  accentColor
+  accentColor,
+  accentFont
 }: {
   item?: BookmarkItem;
   position: 'left' | 'center' | 'right';
   tagName: string;
   count: number;
   accentColor: string;
+  accentFont: string;
 }) {
   const isCenter = position === 'center';
   const isLeft = position === 'left';
 
-  // Layering & smooth hover glide transforms
+  // Contained fanning transforms: elegant subtle motion that stays inside the folder boundary and never collides with upper rows
   const posClasses = isLeft
-    ? 'left-2 w-[88%] top-2.5 h-[220px] -rotate-3.5 z-10 group-hover/folder:-translate-y-20 group-hover/folder:-translate-x-3 group-hover/folder:-rotate-8'
+    ? 'left-2.5 w-[88%] top-2.5 h-[230px] -rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:-translate-x-1.5 group-hover/folder:-rotate-5'
     : isCenter
-    ? 'inset-x-3.5 top-3.5 h-[230px] rotate-0 z-20 group-hover/folder:-translate-y-24 group-hover/folder:scale-[1.02]'
-    : 'right-2 w-[88%] top-2.5 h-[220px] rotate-3.5 z-10 group-hover/folder:-translate-y-20 group-hover/folder:translate-x-3 group-hover/folder:rotate-8';
+    ? 'inset-x-3.5 top-3 h-[235px] rotate-0 z-20 group-hover/folder:-translate-y-3.5 group-hover/folder:scale-[1.01]'
+    : 'right-2.5 w-[88%] top-2.5 h-[230px] rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:translate-x-1.5 group-hover/folder:rotate-5';
 
   return (
     <div
-      className={`absolute rounded-[22px] bg-white shadow-[0_8px_22px_rgba(0,0,0,0.16)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-3 transition-all duration-500 ease-out pointer-events-none ${posClasses}`}
+      className={`absolute rounded-[22px] bg-white shadow-[0_6px_18px_rgba(0,0,0,0.14)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-3 transition-all duration-300 ease-out pointer-events-none ${posClasses}`}
     >
       {/* Top Header Row matching Reference 2 */}
       <div className="flex items-start justify-between gap-1.5 pb-1 shrink-0">
         <div className="flex flex-col gap-1 pt-0.5">
-          <div className="h-1.5 w-8 bg-neutral-200 rounded-full" />
-          <div className="h-1 w-5 bg-neutral-200/70 rounded-full" />
+          <div className="h-1.5 w-8 rounded-full" style={{ backgroundColor: accentColor, opacity: 0.4 }} />
+          <div className="h-1 w-5 rounded-full" style={{ backgroundColor: accentColor, opacity: 0.25 }} />
         </div>
         <div className="text-right truncate max-w-[65%]">
-          <span className="text-[11px] font-bold text-neutral-800 tracking-tight font-mono truncate block">
-            {isCenter ? tagName : item?.platform ? item.platform.toUpperCase() : `#${tagName}`}
+          <span className={`text-[11px] font-bold tracking-tight font-mono truncate block ${accentFont}`}>
+            {isCenter ? `#${tagName}` : item?.platform ? item.platform.toUpperCase() : `#${tagName}`}
           </span>
           <span className="text-[9px] text-neutral-400 block font-medium">
             {isCenter ? `• ${count} ${count === 1 ? 'save' : 'saves'}` : item?.displayName ? `@${item.username}` : '• note'}
@@ -264,7 +263,7 @@ function FolderTuckedCard({
 
       {/* Card Body: Thumbnail Media or Document Snippet */}
       {item?.imageUrl ? (
-        <div className="relative h-[120px] w-full rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/60 shadow-xs">
+        <div className="relative h-[115px] w-full rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/60 shadow-xs">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
@@ -282,7 +281,7 @@ function FolderTuckedCard({
           </div>
         </div>
       ) : item ? (
-        <div className="flex flex-col justify-between h-[120px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/50">
+        <div className="flex flex-col justify-between h-[115px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/50">
           <p className="text-[11px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
             {item.title || item.text.slice(0, 50)}
           </p>
@@ -296,7 +295,7 @@ function FolderTuckedCard({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col justify-between h-[120px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/40">
+        <div className="flex flex-col justify-between h-[115px] w-full p-2.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/40">
           <div className="space-y-2 my-auto py-1">
             <div className="h-1.5 w-full bg-neutral-100 rounded-full" />
             <div className="h-1.5 w-4/5 bg-neutral-100 rounded-full" />
@@ -628,6 +627,7 @@ export function TagsView({
                   tagName={tag.name}
                   count={count}
                   accentColor={theme.splashColor}
+                  accentFont={theme.accentFont}
                 />
                 <FolderTuckedCard
                   item={cardRight}
@@ -635,6 +635,7 @@ export function TagsView({
                   tagName={tag.name}
                   count={count}
                   accentColor={theme.splashColor}
+                  accentFont={theme.accentFont}
                 />
                 <FolderTuckedCard
                   item={cardCenter}
@@ -642,6 +643,7 @@ export function TagsView({
                   tagName={tag.name}
                   count={count}
                   accentColor={theme.splashColor}
+                  accentFont={theme.accentFont}
                 />
 
                 {/* 3. Front Pocket Sleeve with Organic Cutout & Bottom Artwork */}
@@ -730,8 +732,8 @@ export function TagsView({
                 },
                 {
                   id: 'copy',
-                  label: 'Copy Tag Name',
-                  icon: <Copy className="size-3.5" />,
+                  label: copiedTagName === contextMenu.tag.name ? 'Copied!' : 'Copy Tag Name',
+                  icon: copiedTagName === contextMenu.tag.name ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />,
                   onClick: () => {
                     if (contextMenu.tag) handleCopyTag(contextMenu.tag.name);
                   }
