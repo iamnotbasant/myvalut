@@ -591,7 +591,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
             const subreddit = post.subreddit_name_prefixed || `r/${post.subreddit}`;
             displayName = subreddit;
             username = post.author || 'reddit_user';
-            text = post.selftext ? post.selftext.slice(0, 1000) : title;
+            text = post.selftext ? post.selftext.slice(0, 3000) : title;
             // Only attach image if this post genuinely has media attachments (not a text-only selfpost)
             const isSelfPost = Boolean(post.is_self);
             const hasRealMedia = post.post_hint === 'image' || post.post_hint === 'link' || Boolean(post.preview?.images?.length);
@@ -802,11 +802,11 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           '';
 
         let bodyText = '';
-        $('p').slice(0, 3).each((_, el) => {
+        $('p').slice(0, 6).each((_, el) => {
           bodyText += $(el).text() + ' ';
         });
 
-        text = (metaDesc + ' ' + bodyText).trim().slice(0, 1200);
+        text = (metaDesc + ' ' + bodyText).trim().slice(0, 2500);
 
         imageUrl =
           $('meta[property="og:image"]').attr('content') ||
