@@ -159,12 +159,28 @@ export function BookmarkDetailModal({
           </h2>
         )}
 
-        {/* Post Text */}
-        {showText && displayText && (
+        {/* Post Text or Live AI Synthesis Skeleton */}
+        {isGeneratingTags ? (
+          <div className="rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/30 via-[#13111c] to-indigo-950/20 p-4 shadow-inner space-y-3 animate-in fade-in-50 duration-300">
+            <div className="flex items-center gap-2 text-purple-300 font-medium text-xs animate-pulse">
+              <Sparkles className="size-3.5 text-purple-400 animate-spin" />
+              <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
+                {bookmark.platform === 'youtube' || bookmark.platform === 'instagram'
+                  ? 'Synthesizing AI Summary & Key Takeaways from transcript...'
+                  : 'Analyzing content & generating AI tags...'}
+              </span>
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-full bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" />
+              <div className="h-3 w-11/12 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '150ms' }} />
+              <div className="h-3 w-4/5 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
+        ) : showText && displayText ? (
           <div className="space-y-3 text-[14.5px] leading-relaxed text-neutral-100 font-normal">
             <FormattedPostText text={displayText} />
           </div>
-        )}
+        ) : null}
 
         {/* Media / Video Preview (100% Full Uncropped Original Display with Smooth Scroll) */}
         {cleanImageUrl && (
@@ -178,28 +194,17 @@ export function BookmarkDetailModal({
               src={cleanImageUrl}
               alt={bookmark.displayName}
               onClick={() => onOpenImage?.(cleanImageUrl)}
-              className={`w-full h-auto block rounded-xl transition-transform duration-300 ${
-                bookmark.platform === 'youtube' ? 'aspect-video object-cover' : 'object-contain'
-              }`}
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.src.includes('maxresdefault.jpg')) {
-                  target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
-                }
-              }}
+              className="w-full object-contain max-h-[65vh] rounded-lg transition-transform group-hover/media:scale-[1.005]"
+              loading="lazy"
             />
-
-            {/* Subtle Overlay Badge on Hover */}
-            <div className="pointer-events-none absolute bottom-3 right-3 opacity-0 group-hover/media:opacity-100 transition-opacity bg-black/75 backdrop-blur-md border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-medium text-neutral-200 flex items-center gap-1.5 shadow-lg">
-              <span>Double-click to open post</span>
-              <ExternalLink className="size-3" />
-            </div>
-
-            {/* Video Play Button Overlay */}
+            {/* Circular Frosted Video Play Button Overlay */}
             {isVideo && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex items-center justify-center rounded-full bg-black/75 ring-1 ring-white/30 backdrop-blur-md size-13 shadow-2xl transition-transform group-hover/media:scale-105">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
+              <div
+                onClick={handleOpenOriginalPost}
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+              >
+                <div className="flex items-center justify-center rounded-full bg-black/70 ring-1 ring-white/30 backdrop-blur-md size-14 shadow-2xl transition-transform group-hover/media:scale-110">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" className="text-white ml-0.5">
                     <path d="M18.8906 12.846C18.5371 14.189 16.8667 15.138 13.5257 17.0361C10.296 18.8709 8.6812 19.7884 7.37983 19.4196C6.8418 19.2671 6.35159 18.9776 5.95624 18.5787C5 17.6139 5 15.7426 5 12C5 8.2574 5 6.3861 5.95624 5.42132C6.35159 5.02245 6.8418 4.73288 7.37983 4.58042C8.6812 4.21165 10.296 5.12907 13.5257 6.96393C16.8667 8.86197 18.5371 9.811 18.8906 11.154C19.0365 11.7084 19.0365 12.2916 18.8906 12.846Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5"/>
                   </svg>
                 </div>
@@ -208,32 +213,53 @@ export function BookmarkDetailModal({
           </div>
         )}
 
+        {/* Note Box */}
+        {bookmark.note && (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm italic text-neutral-200">
+            <span className="font-semibold text-primary not-italic text-xs block mb-1">Attached Note:</span>
+            {bookmark.note}
+          </div>
+        )}
+
         {/* Footer: Tags and Platform */}
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/[0.06] mt-auto">
           {/* Tags list */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {isGeneratingTags ? (
-              <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2.5 py-1 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+              <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/35 bg-purple-950/40 px-2.5 py-1 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
                 <Sparkles className="size-3.5 text-purple-400 animate-spin" />
                 <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
-                  Generating tags...
+                  AI Synthesizing & Tagging...
                 </span>
               </div>
             ) : bookmark.tags && bookmark.tags.length > 0 ? (
-              bookmark.tags.map((tag, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  onClick={() => {
-                    onSelectTag?.(tag.name);
-                    onClose();
-                  }}
-                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
-                >
-                  <TagDot color={tag.color} />
-                  <span>{tag.name}</span>
-                </button>
-              ))
+              <>
+                {bookmark.tags.map((tag, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => {
+                      onSelectTag?.(tag.name);
+                      onClose();
+                    }}
+                    className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-lg font-normal text-xs h-6 text-neutral-200 hover:text-white gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <TagDot color={tag.color} />
+                    <span>{tag.name}</span>
+                  </button>
+                ))}
+                {onGenerateTags && (
+                  <button
+                    type="button"
+                    onClick={() => onGenerateTags(bookmark)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-purple-950/30 hover:border-purple-500/30 text-[11px] text-neutral-400 hover:text-purple-300 transition-colors cursor-pointer ml-1"
+                    title="Regenerate AI summary & tags"
+                  >
+                    <Sparkles className="size-2.5 text-purple-400" />
+                    <span>{bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Refresh Summary' : 'Refresh Tags'}</span>
+                  </button>
+                )}
+              </>
             ) : onGenerateTags ? (
               <button
                 type="button"
@@ -241,7 +267,7 @@ export function BookmarkDetailModal({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-dashed border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer"
               >
                 <Sparkles className="size-3 text-purple-400" />
-                <span>Generate AI tags</span>
+                <span>{bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Generate AI Summary & Tags' : 'Generate AI tags'}</span>
               </button>
             ) : (
               <span className="text-xs text-neutral-500">No tags</span>

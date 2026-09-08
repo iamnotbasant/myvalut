@@ -259,6 +259,12 @@
           body: JSON.stringify({
             url: saveData.url,
             platform: saveData.platform || 'youtube',
+            title: saveData.title,
+            text: saveData.text,
+            displayName: saveData.displayName,
+            username: saveData.username,
+            avatarUrl: saveData.avatarUrl,
+            imageUrl: saveData.imageUrl,
           }),
         });
 
@@ -404,11 +410,25 @@
 
     // Attempt to extract live timed-text transcript from page captionTracks
     try {
-      let playerResponse = null;
+      let captionTracks = null;
       if (typeof ytInitialPlayerResponse !== 'undefined') {
-        playerResponse = ytInitialPlayerResponse;
+        captionTracks = ytInitialPlayerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
       }
-      const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (!captionTracks || !Array.isArray(captionTracks) || captionTracks.length === 0) {
+        const scripts = document.querySelectorAll('script');
+        for (const s of scripts) {
+          const content = s.textContent || '';
+          if (content.includes('captionTracks')) {
+            const match = content.match(/"captionTracks":\s*(\[.*?\])/);
+            if (match) {
+              try {
+                captionTracks = JSON.parse(match[1]);
+                break;
+              } catch {}
+            }
+          }
+        }
+      }
       if (captionTracks && captionTracks.length > 0) {
         const enTrack = captionTracks.find(t => t.languageCode?.startsWith('en')) || captionTracks[0];
         if (enTrack?.baseUrl) {

@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
           // If YouTube or Instagram and not yet summarized, extract transcript and summarize via Gemini
           if (
             (bgPlatform === 'youtube' || bgPlatform === 'instagram') &&
-            (!bgText || !bgText.includes('Summary:'))
+            (!bgText || !bgText.includes('Takeaway') || bgText.length < 120)
           ) {
             try {
               let transcriptToSummarize = bgText;

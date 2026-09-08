@@ -94,17 +94,18 @@ export function DynamicCardTags({
   };
 
   const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 150);
+    }, 250);
   };
 
   if (isGeneratingTags) {
     return (
-      <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-950/40 px-2 py-0.5 text-xs text-purple-200 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)] animate-pulse">
+      <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/35 bg-purple-950/40 px-2 py-0.5 text-xs text-purple-200 shadow-[0_0_14px_-2px_rgba(168,85,247,0.4)] animate-pulse">
         <Sparkles className="size-3 text-purple-400 animate-spin" />
         <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide">
-          Generating...
+          AI Tagging...
         </span>
       </div>
     );
@@ -134,7 +135,7 @@ export function DynamicCardTags({
   const hiddenCount = overflowTags.length;
 
   return (
-    <div className="flex items-center gap-1.5 min-w-0">
+    <div className="flex items-center gap-1.5 min-w-0 max-w-full">
       {primaryTags.map((tag, idx) => (
         <button
           type="button"
@@ -144,16 +145,16 @@ export function DynamicCardTags({
             soundFx.playTagSound();
             onSelectTag?.(tag.name);
           }}
-          className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-md font-normal text-xs h-5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95 shadow-2xs"
+          className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#171717] hover:bg-[#222222] hover:border-white/20 rounded-md font-normal text-xs h-5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95 shadow-2xs shrink min-w-0"
         >
           <TagDot color={tag.color} />
-          <span className="truncate max-w-[120px] text-[11px] leading-none">{tag.name}</span>
+          <span className="truncate max-w-[85px] sm:max-w-[105px] text-[11px] leading-none">{tag.name}</span>
         </button>
       ))}
 
       {hiddenCount > 0 && (
         <div
-          className="relative inline-block"
+          className="relative inline-block shrink-0"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -175,8 +176,11 @@ export function DynamicCardTags({
               onClick={e => e.stopPropagation()}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              className="absolute bottom-full left-0 z-50 mb-1.5 flex flex-wrap gap-1 rounded-xl border border-white/15 bg-[#141414]/95 p-1.5 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.9)] backdrop-blur-md min-w-[120px] max-w-[220px] max-h-48 overflow-y-auto scrollbar-none animate-in fade-in-0 zoom-in-95 duration-150 pointer-events-auto"
+              className="absolute bottom-full left-0 z-[70] mb-2 flex flex-wrap gap-1 rounded-xl border border-white/15 bg-[#141414]/98 p-2 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.95)] backdrop-blur-xl min-w-[140px] max-w-[240px] max-h-52 overflow-y-auto scrollbar-none animate-in fade-in-0 zoom-in-95 duration-150 pointer-events-auto"
             >
+              <div className="w-full text-[10px] uppercase font-semibold tracking-wider text-neutral-400 px-1 pb-1 mb-0.5 border-b border-white/10 select-none">
+                More Tags ({overflowTags.length})
+              </div>
               {overflowTags.map((tag, idx) => (
                 <button
                   key={idx}
@@ -187,10 +191,10 @@ export function DynamicCardTags({
                     setIsHovered(false);
                     onSelectTag?.(tag.name);
                   }}
-                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#1e1e1e] hover:bg-[#2a2a2a] hover:border-white/25 rounded-md font-normal text-[11px] h-5.5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95"
+                  className="inline-flex select-none items-center justify-center whitespace-nowrap border border-white/10 bg-[#1e1e1e] hover:bg-[#2a2a2a] hover:border-white/25 rounded-md font-normal text-[11px] h-5.5 text-neutral-200 hover:text-white gap-1 px-2 py-0.5 cursor-pointer transition-all active:scale-95 shrink-0"
                 >
                   <TagDot color={tag.color} />
-                  <span className="truncate max-w-[130px]">{tag.name}</span>
+                  <span className="truncate max-w-[140px]">{tag.name}</span>
                 </button>
               ))}
             </div>
@@ -312,7 +316,9 @@ export function BookmarkCard({
     },
     {
       id: 'ai-tag',
-      label: isGeneratingTags ? 'Generating tags...' : 'Generate AI Tags',
+      label: isGeneratingTags
+        ? 'Analyzing & Tagging...'
+        : (bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Regenerate AI Summary & Tags' : 'Generate AI Tags'),
       icon: <Sparkles className="size-3.5 text-purple-400" />,
       onClick: () => onGenerateTags?.(bookmark)
     },
@@ -531,7 +537,7 @@ export function BookmarkCard({
             onGenerateTags={() => onGenerateTags?.(bookmark)}
           />
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 ml-auto pl-2">
             <span className="text-neutral-400 text-xs font-normal">{bookmark.date}</span>
             <div className="h-3 w-px bg-neutral-700"></div>
             <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
@@ -911,7 +917,7 @@ export function BookmarkCard({
           onOpenImage?.(imgSrc);
         }
       }}
-      className={`group/bookmarkcard relative flex flex-col gap-3 sm:gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3 sm:p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
+      className={`group/bookmarkcard relative flex flex-col gap-3 sm:gap-3.5 rounded-2xl bg-[#0d0d0d] p-3 sm:p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
         isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary shadow-2xl scale-[1.01] bg-primary/[0.04]' : ''
       }`}
     >
@@ -939,7 +945,7 @@ export function BookmarkCard({
             {isMenuOpen && (
               <div
                 onClick={e => e.stopPropagation()}
-                className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95"
+                className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95"
               >
                 <button
                   onClick={handleCopyLink}
@@ -969,7 +975,11 @@ export function BookmarkCard({
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
                   <Sparkles className="size-3.5 text-purple-400" />
-                  <span>{isGeneratingTags ? 'Generating tags...' : 'Generate AI tags'}</span>
+                  <span>
+                    {isGeneratingTags
+                      ? 'Analyzing...'
+                      : (bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Regenerate AI Summary' : 'Generate AI tags')}
+                  </span>
                 </button>
                 <button
                   onClick={e => {
@@ -1103,8 +1113,24 @@ export function BookmarkCard({
         </p>
       )}
 
-      {/* Post Text */}
-      {showText && displayText && (
+      {/* Post Text or Live AI Synthesis Skeleton */}
+      {isGeneratingTags ? (
+        <div className="relative z-10 rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/30 via-[#13111c] to-indigo-950/20 p-3 shadow-inner overflow-hidden animate-in fade-in-50 duration-300">
+          <div className="flex items-center gap-2 text-purple-300 font-medium text-xs mb-2 animate-pulse">
+            <Sparkles className="size-3.5 text-purple-400 animate-spin" />
+            <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
+              {bookmark.platform === 'youtube' || bookmark.platform === 'instagram'
+                ? 'Synthesizing AI Summary & Key Takeaways...'
+                : 'Analyzing content & generating AI tags...'}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-2.5 w-full bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" />
+            <div className="h-2.5 w-5/6 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '150ms' }} />
+            <div className="h-2.5 w-3/4 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      ) : showText && displayText ? (
         <div className="relative z-10 text-[13.5px] leading-relaxed text-neutral-200">
           {isLongText ? (
             <div className="relative max-h-52 sm:max-h-64 overflow-hidden">
@@ -1117,7 +1143,7 @@ export function BookmarkCard({
             <FormattedPostText text={displayText} />
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Image / Video Preview */}
       {imgSrc && !hasImageError && (
@@ -1182,8 +1208,8 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-2 border-t border-white/[0.04] w-full min-w-0">
-        <div className="min-w-0 flex-1 overflow-hidden">
+      <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-2 border-t border-white/[0.04] w-full min-w-0">
+        <div className="min-w-0 flex-1 relative">
           <DynamicCardTags
             tags={bookmark.tags || []}
             isGeneratingTags={isGeneratingTags}
@@ -1192,7 +1218,7 @@ export function BookmarkCard({
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 select-none ml-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 select-none ml-auto pl-1.5">
           <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
           <PlatformIcon platform={bookmark.platform} url={bookmark.url} />

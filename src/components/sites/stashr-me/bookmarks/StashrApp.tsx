@@ -347,11 +347,32 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
               if (prev.some((b) => b.id === newBm.id)) return prev;
               return [newBm, ...prev];
             });
+
+            // If new bookmark doesn't have tags or is a video without summary yet,
+            // trigger live AI processing animation on the card!
+            if (!newBm.tags || newBm.tags.length === 0 || !newBm.text?.includes('Takeaway')) {
+              setGeneratingTagIds((prev) => new Set(prev).add(newBm.id));
+              setTimeout(() => {
+                setGeneratingTagIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(newBm.id);
+                  return next;
+                });
+              }, 15000);
+            }
           } else if (payload.eventType === 'UPDATE') {
             const updatedBm = mapDbBookmarkToApp(payload.new as DbBookmark);
             setBookmarks((prev) =>
               prev.map((b) => (b.id === updatedBm.id ? updatedBm : b))
             );
+            // Clear processing state once update with tags arrives
+            if (updatedBm.tags && updatedBm.tags.length > 0) {
+              setGeneratingTagIds((prev) => {
+                const next = new Set(prev);
+                next.delete(updatedBm.id);
+                return next;
+              });
+            }
           } else if (payload.eventType === 'DELETE') {
             const deletedId = (payload.old as { id?: string })?.id;
             if (deletedId) {
@@ -785,40 +806,64 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           displayName: bookmark.displayName || '',
           username: bookmark.username || '',
           userId: user?.id,
+          regenerateSummary: true,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
         const newTags = Array.isArray(result.tags) ? result.tags : [];
+        const newText = result.text && typeof result.text === 'string' ? result.text : null;
 
-        if (newTags.length > 0) {
+        if (newTags.length > 0 || newText) {
           // Update bookmark in local state
           setBookmarks(prev =>
-            prev.map(b => (b.id === bookmark.id ? { ...b, tags: newTags } : b))
+            prev.map(b => {
+              if (b.id !== bookmark.id) return b;
+              return {
+                ...b,
+                ...(newTags.length > 0 ? { tags: newTags } : {}),
+                ...(newText && newText !== b.text ? { text: newText } : {}),
+              };
+            })
           );
 
-          // Update tags catalog if new tags added
-          setTags(prevTags => {
-            const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
-            const toAdd: Tag[] = [];
-            for (const nt of newTags) {
-              if (!existingNames.has(nt.name.toLowerCase())) {
-                const newTagObj: Tag = {
-                  id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-                  name: nt.name,
-                  color: nt.color,
-                };
-                toAdd.push(newTagObj);
-                existingNames.add(nt.name.toLowerCase());
-                insertTagToDb(newTagObj, user?.id);
-              }
-            }
-            return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
+          // If detail modal is open for this bookmark, update it too
+          setActiveDetailBookmark(prev => {
+            if (!prev || prev.id !== bookmark.id) return prev;
+            return {
+              ...prev,
+              ...(newTags.length > 0 ? { tags: newTags } : {}),
+              ...(newText && newText !== prev.text ? { text: newText } : {}),
+            };
           });
 
-          // Save bookmark tags update to Supabase
-          updateBookmarkInDb(bookmark.id, { tags: newTags });
+          // Update tags catalog if new tags added
+          if (newTags.length > 0) {
+            setTags(prevTags => {
+              const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
+              const toAdd: Tag[] = [];
+              for (const nt of newTags) {
+                if (!existingNames.has(nt.name.toLowerCase())) {
+                  const newTagObj: Tag = {
+                    id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+                    name: nt.name,
+                    color: nt.color,
+                  };
+                  toAdd.push(newTagObj);
+                  existingNames.add(nt.name.toLowerCase());
+                  insertTagToDb(newTagObj, user?.id);
+                }
+              }
+              return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
+            });
+          }
+
+          // Save bookmark tags and text update to Supabase
+          const dbUpdates: Record<string, unknown> = {};
+          if (newTags.length > 0) dbUpdates.tags = newTags;
+          if (newText) dbUpdates.text = newText;
+          updateBookmarkInDb(bookmark.id, dbUpdates);
         }
       }
     } catch (err) {

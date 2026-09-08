@@ -279,25 +279,30 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
         try {
           const tracks = JSON.parse(captionsMatch[1]);
           if (Array.isArray(tracks) && tracks.length > 0) {
-            const chosenTrack = tracks.find((t: any) => t.languageCode?.startsWith('en')) || tracks[0];
-            if (chosenTrack?.baseUrl) {
-              const captionRes = await fetch(chosenTrack.baseUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
-                signal: AbortSignal.timeout(5000),
-              });
-              if (captionRes.ok) {
-                const xml = await captionRes.text();
-                const $ = cheerio.load(xml, { xmlMode: true });
-                const texts: string[] = [];
-                $('text').each((_, el) => {
-                  const t = $(el).text().trim();
-                  if (t) texts.push(t);
+            const preferredTracks = tracks.filter((t: { languageCode?: string }) => t.languageCode?.startsWith('en'));
+            const candidateTracks = preferredTracks.length > 0 ? [...preferredTracks, ...tracks] : tracks;
+
+            for (const track of candidateTracks) {
+              if (!track?.baseUrl) continue;
+              try {
+                const captionRes = await fetch(track.baseUrl, {
+                  headers: { 'User-Agent': 'Mozilla/5.0' },
+                  signal: AbortSignal.timeout(5000),
                 });
-                const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
-                if (transcript.length > 30) {
-                  return transcript.slice(0, 12000);
+                if (captionRes.ok) {
+                  const xml = await captionRes.text();
+                  const $ = cheerio.load(xml, { xmlMode: true });
+                  const texts: string[] = [];
+                  $('text').each((_, el) => {
+                    const t = $(el).text().trim();
+                    if (t) texts.push(t);
+                  });
+                  const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
+                  if (transcript.length > 30) {
+                    return transcript.slice(0, 16000);
+                  }
                 }
-              }
+              } catch {}
             }
           }
         } catch (e) {
@@ -323,7 +328,7 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
           });
           const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
           if (transcript.length > 30) {
-            return transcript.slice(0, 12000);
+            return transcript.slice(0, 16000);
           }
         }
       }
@@ -376,44 +381,49 @@ export async function generateMediaSummary(params: {
   const isReel = platform === 'instagram';
   const systemInstruction = isReel
     ? `You are an expert content distiller for Instagram Reels.
-Your task is to analyze this Reel's caption, audio transcription, or spoken text, and generate a high-value structured summary.
+Your task is to analyze this Reel's caption, audio transcription, or spoken dialogue, and generate a rich, high-value structured summary.
 
 FORMAT REQUIREMENTS:
-✨ Reel Summary:
-[A punchy 2-3 sentence overview explaining what the Reel is demonstrating, discussing, or showcasing]
+✨ Reel Executive Summary:
+[A punchy 2-paragraph overview explaining what the Reel demonstrates, discusses, or showcases, including exact techniques, tools, or tips mentioned]
 
 Key Takeaways:
-• [Takeaway 1]
-• [Takeaway 2]
-• [Takeaway 3]
+• [Takeaway 1: Specific actionable technique or advice]
+• [Takeaway 2: Key workflow, software, or tool shown]
+• [Takeaway 3: Practical outcome or lesson learned]
+• [Takeaway 4: Caveat, tip, or limitation]
 
 RULES:
 - No meta commentary like "In this reel..." or "The creator shows...". Get right to the point.
 - Keep bullet points actionable and specific.
-- Keep the entire summary under 160 words.`
-    : `You are an expert video summarizer and research assistant.
-Your task is to analyze this YouTube video's transcript / content and generate a high-value structured summary.
+- Never truncate or cut off mid-sentence; write complete thoughts.`
+    : `You are an elite video research analyst and content distiller.
+Your task is to analyze the provided YouTube video transcript and produce an insightful, comprehensive, and well-structured breakdown.
 
 FORMAT REQUIREMENTS:
-✨ AI Summary:
-[A punchy 2-3 sentence overview explaining the core premise, solution, or lesson of the video]
+✨ AI Executive Summary:
+[Write a thorough, high-value 2-paragraph overview:
+Paragraph 1: The core premise, problem being addressed, and primary thesis or breakthrough presented in the video.
+Paragraph 2: The actual implementation, workflow, or technical mechanism demonstrated, with specific names of tools, apps, commands, or settings.]
 
-Key Takeaways:
-• [Key takeaway 1]
-• [Key takeaway 2]
-• [Key takeaway 3]
-• [Key takeaway 4 (optional)]
+Key Takeaways & Insights:
+• [Takeaway 1: Specific finding or step explained with context]
+• [Takeaway 2: Key workflow, software, or configuration mentioned]
+• [Takeaway 3: Practical benefits, performance metrics, or comparisons highlighted]
+• [Takeaway 4: Crucial caveats, limitations, or prerequisites]
+• [Takeaway 5: Final conclusion or actionable recommendation]
 
 RULES:
-- No meta commentary like "In this video..." or "The speaker begins by...". Get straight to the key insights.
-- Highlight specific techniques, tools, steps, or insights mentioned.
-- Keep the entire summary under 200 words.`;
+- Ground everything strictly in the provided transcript and content.
+- Do NOT use filler meta commentary like "In this video...", "The creator starts by...", "The video explains...". Get straight to the substance.
+- Be specific, authoritative, and informative so the reader gains deep, practical value without needing to watch the whole video.
+- Never truncate or cut off mid-sentence; always complete all thoughts cleanly.`;
 
   const userPrompt = `Title: ${title || 'Video / Reel'}
 Creator: ${creator || 'Creator'}
 Platform: ${platform}
 Content / Transcript:
-${transcriptOrText.slice(0, 10000)}`;
+${transcriptOrText.slice(0, 16000)}`;
 
   const modelCandidates = [
     'gemini-2.5-flash',
@@ -434,16 +444,20 @@ ${transcriptOrText.slice(0, 10000)}`;
           },
           contents: [{ parts: [{ text: userPrompt }] }],
           generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 500,
+            temperature: 0.25,
+            maxOutputTokens: 2048,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text && text.trim().length > 30) {
+        const candidate = data?.candidates?.[0];
+        const text = candidate?.content?.parts?.[0]?.text;
+        if (text && text.trim().length > 60) {
           return text.trim();
         }
       }
