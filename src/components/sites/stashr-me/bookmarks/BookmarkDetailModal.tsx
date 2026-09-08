@@ -73,11 +73,11 @@ export function BookmarkDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-5 pb-6 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 group/modal select-text"
+        className="relative flex flex-col gap-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0e0e0e] p-4 sm:p-6 pb-5 sm:pb-6 text-foreground shadow-[0_25px_60px_-15px_rgba(0,0,0,0.98)] ring-1 ring-white/10 animate-in zoom-in-95 duration-150 group/modal select-text"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
@@ -85,7 +85,7 @@ export function BookmarkDetailModal({
       >
         {/* Top Right Action Bar: Open Original Post Button + Close Button */}
         <div className="sticky top-0 z-20 -mt-1 flex items-center justify-end gap-2 pointer-events-none">
-          <div className="flex items-center gap-2 pointer-events-auto bg-[#0e0e0e]/80 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
+          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto bg-[#0e0e0e]/85 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
             {bookmark.url && (
               <button
                 type="button"
@@ -115,7 +115,7 @@ export function BookmarkDetailModal({
         </div>
 
         {/* Header with Avatar & Author / Platform Logo */}
-        <div className="flex items-center gap-3 -mt-6 pr-32">
+        <div className="flex items-center gap-2.5 sm:gap-3 -mt-6 pr-20 sm:pr-32">
           {isGitHub ? (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-black text-white shadow-md">
               <GitHubIcon className="size-6 text-white" />

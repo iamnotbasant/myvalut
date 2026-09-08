@@ -218,7 +218,7 @@ export function SystemLogsView({ bookmarks, onGenerateTags }: SystemLogsViewProp
   });
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 max-w-6xl mx-auto space-y-6">
+    <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 max-w-6xl mx-auto space-y-5 sm:space-y-6 w-full min-w-0">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>

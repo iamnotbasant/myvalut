@@ -168,10 +168,17 @@ html:not(.dark) {
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    touch-action: pan-y pinch-zoom;
   }
   html {
     @apply font-sans;
     background-color: var(--background);
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
   }
   
   /* Global Cursor Pointer Rule for all interactive elements */

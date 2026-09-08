@@ -30,9 +30,9 @@ export function FilterBar({
   if (!hasAnyFilter) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-2 text-xs lg:px-6 animate-in fade-in slide-in-from-top-1 duration-150">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground mr-0.5">Active filters:</span>
+    <div className="flex items-center justify-between gap-2 sm:gap-3 border-b border-border/60 bg-muted/20 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs lg:px-6 animate-in fade-in slide-in-from-top-1 duration-150 w-full min-w-0">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+        <span className="text-muted-foreground mr-0.5 text-[11px] sm:text-xs">Active filters:</span>
 
         {/* Collection Filter Pill */}
         {activeCollection && (

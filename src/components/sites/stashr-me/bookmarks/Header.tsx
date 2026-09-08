@@ -97,10 +97,10 @@ export function Header({
   };
 
   return (
-    <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080808] pr-[9px] pl-2">
+    <header className="flex h-[54px] w-full min-w-0 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080808] pr-[9px] pl-2 select-none">
       {/* Left: Sidebar Toggle Button + Divider + Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => {
               soundFx.playClickSound();
@@ -115,10 +115,10 @@ export function Header({
           <div className="hidden h-4 w-px bg-white/[0.15] md:block" />
         </div>
 
-        <nav aria-label="breadcrumb">
-          <ol className="flex items-center gap-1.5 text-neutral-400 text-sm">
+        <nav aria-label="breadcrumb" className="min-w-0">
+          <ol className="flex items-center gap-1.5 text-neutral-400 text-sm min-w-0">
             <li className="inline-flex items-center gap-1 min-w-0">
-              <span className="font-normal text-white text-xs md:text-sm max-w-[130px] sm:max-w-none truncate block">
+              <span className="font-normal text-white text-xs md:text-sm max-w-[110px] xs:max-w-[150px] sm:max-w-none truncate block">
                 {getBreadcrumbTitle()}
               </span>
             </li>
@@ -127,7 +127,7 @@ export function Header({
       </div>
 
       {/* Right: + Add Bookmark + Sound Toggle + Extension Indicator + User Profile Avatar */}
-      <div className="flex items-center gap-1 sm:gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
 
 
         {/* Sound Effects Toggle Button */}

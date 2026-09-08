@@ -1392,7 +1392,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   }, [bookmarks, user?.id, isOnline]);
 
   return (
-    <div className="flex h-svh overflow-hidden bg-background md:bg-sidebar text-foreground antialiased selection:bg-primary/20">
+    <div className="flex h-svh w-full max-w-full overflow-x-hidden min-w-0 bg-background md:bg-sidebar text-foreground antialiased selection:bg-primary/20">
       {/* 1. Left Navigation Sidebar (w-56) */}
       <Sidebar
         filterState={filterState}
@@ -1422,7 +1422,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
       />
 
       {/* 2. Main Content Floating Rounded Container */}
-      <main className="flex flex-1 flex-col overflow-hidden bg-background md:my-2 md:mr-2 md:rounded-xl md:border">
+      <main className="flex flex-1 min-w-0 w-full max-w-full flex-col overflow-hidden bg-background md:my-2 md:mr-2 md:rounded-xl md:border">
         {/* Top Header & Breadcrumbs & Action Toolbar */}
         <Header
           filterState={filterState}
@@ -1724,16 +1724,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
       {/* 6. Undo Toast Notification */}
       {undoToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-white/15 bg-neutral-900/95 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 text-white">
-          <span className="text-xs font-medium">{undoToast.message}</span>
-          <div className="h-4 w-px bg-white/20" />
+        <div className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 sm:gap-3 rounded-2xl border border-white/15 bg-neutral-900/95 px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 text-white max-w-[calc(100vw-24px)]">
+          <span className="text-xs font-medium truncate">{undoToast.message}</span>
+          <div className="h-4 w-px bg-white/20 shrink-0" />
           <button
             onClick={() => {
               undoToast.onUndo();
               if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
               setUndoToast(null);
             }}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer active:scale-95 shadow-xs"
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer active:scale-95 shadow-xs shrink-0"
           >
             <RotateCcw className="size-3" />
             <span>Undo</span>
@@ -1743,7 +1743,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
               if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
               setUndoToast(null);
             }}
-            className="text-neutral-400 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer"
+            className="text-neutral-400 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer shrink-0"
           >
             <X className="size-3.5" />
           </button>
@@ -1752,9 +1752,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
       {/* 7. Subtle Offline Status Indicator */}
       {!isOnline && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-amber-500/30 bg-neutral-900/90 px-4 py-2 text-xs text-amber-300 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
-          <span className="size-2 rounded-full bg-amber-400 animate-ping" />
-          <span>Offline mode — your bookmarks are cached locally and will auto-sync when online.</span>
+        <div className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-amber-500/30 bg-neutral-900/90 px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs text-amber-300 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 max-w-[calc(100vw-24px)]">
+          <span className="size-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+          <span className="truncate">Offline mode — changes cached locally & will sync.</span>
         </div>
       )}
     </div>

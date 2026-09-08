@@ -236,14 +236,14 @@ function FolderTuckedCard({
 
   // Contained fanning transforms: elegant subtle motion that stays inside the folder boundary and never collides with upper rows
   const posClasses = isLeft
-    ? 'left-2.5 w-[88%] top-2.5 h-[230px] -rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:-translate-x-1.5 group-hover/folder:-rotate-5'
+    ? 'left-2 sm:left-2.5 w-[88%] top-2 sm:top-2.5 h-[220px] sm:h-[230px] -rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:-translate-x-1.5 group-hover/folder:-rotate-5'
     : isCenter
-    ? 'inset-x-3.5 top-3 h-[235px] rotate-0 z-20 group-hover/folder:-translate-y-3.5 group-hover/folder:scale-[1.01]'
-    : 'right-2.5 w-[88%] top-2.5 h-[230px] rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:translate-x-1.5 group-hover/folder:rotate-5';
+    ? 'inset-x-2.5 sm:inset-x-3.5 top-2.5 sm:top-3 h-[225px] sm:h-[235px] rotate-0 z-20 group-hover/folder:-translate-y-3.5 group-hover/folder:scale-[1.01]'
+    : 'right-2 sm:right-2.5 w-[88%] top-2 sm:top-2.5 h-[220px] sm:h-[230px] rotate-3 z-10 group-hover/folder:-translate-y-3 group-hover/folder:translate-x-1.5 group-hover/folder:rotate-5';
 
   return (
     <div
-      className={`absolute rounded-[22px] bg-white shadow-[0_6px_18px_rgba(0,0,0,0.14)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-3 transition-all duration-300 ease-out pointer-events-none ${posClasses}`}
+      className={`absolute rounded-[18px] sm:rounded-[22px] bg-white shadow-[0_6px_18px_rgba(0,0,0,0.14)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-2.5 sm:p-3 transition-all duration-300 ease-out pointer-events-none ${posClasses}`}
     >
       {/* Top Header Row matching Reference 2 */}
       <div className="flex items-start justify-between gap-1.5 pb-1 shrink-0">
@@ -586,7 +586,7 @@ export function TagsView({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 pb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8 pb-16">
           {processedTags.map(tag => {
             const theme = FOLDER_COLOR_THEMES[tag.color] || FOLDER_COLOR_THEMES.violet;
             const items = tagStats.bookmarkMap[tag.name.toLowerCase()] || [];
@@ -613,10 +613,10 @@ export function TagsView({
                     tag: tag
                   });
                 }}
-                className={`group/folder relative w-full max-w-[300px] sm:max-w-[310px] mx-auto h-[300px] sm:h-[310px] rounded-[28px] sm:rounded-[30px] cursor-pointer select-none transition-all duration-500 ease-out hover:-translate-y-2 ${theme.glowHover}`}
+                className={`group/folder relative w-full max-w-full sm:max-w-[310px] mx-auto h-[290px] sm:h-[310px] rounded-[24px] sm:rounded-[30px] cursor-pointer select-none transition-all duration-500 ease-out hover:-translate-y-2 ${theme.glowHover}`}
               >
                 {/* 1. Folder Back Body */}
-                <div className={`absolute inset-0 rounded-[30px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
+                <div className={`absolute inset-0 rounded-[24px] sm:rounded-[30px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
                   <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/10 pointer-events-none" />
                 </div>
 

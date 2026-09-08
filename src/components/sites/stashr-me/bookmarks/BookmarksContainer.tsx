@@ -130,11 +130,11 @@ export function BookmarksContainer({
   }
 
   return (
-    <div className={`flex-1 overflow-y-auto ${viewMode === 'mosaic' ? 'p-2.5 pt-2' : 'p-3 sm:p-4'}`}>
-      <div className="relative flex min-h-full flex-col">
+    <div className={`flex-1 min-w-0 w-full max-w-full overflow-y-auto ${viewMode === 'mosaic' ? 'p-2 sm:p-2.5 pt-2' : 'p-2.5 sm:p-4'}`}>
+      <div className="relative flex min-h-full flex-col min-w-0 w-full">
       {/* 1. ROW VIEW (Vertical list) */}
       {viewMode === 'row' && (
-        <div className="flex flex-col gap-3.5 max-w-4xl mx-auto w-full">
+        <div className="flex flex-col gap-3 sm:gap-3.5 max-w-4xl mx-auto w-full min-w-0">
           {bookmarks.map(bm => (
             <BookmarkCard
               key={bm.id}
@@ -160,7 +160,7 @@ export function BookmarksContainer({
 
       {/* 2. TIMELINE VIEW (Vertical feed) */}
       {viewMode === 'timeline' && (
-        <div className="flex flex-col gap-5 max-w-2xl mx-auto w-full">
+        <div className="flex flex-col gap-4 sm:gap-5 max-w-2xl mx-auto w-full min-w-0">
           {bookmarks.map(bm => (
             <BookmarkCard
               key={bm.id}
@@ -196,16 +196,16 @@ export function BookmarksContainer({
           );
         }
 
-        const mosaicCols = Math.max(1, Math.min(3, effectiveColumns));
+        const mosaicCols = effectiveColumns === 1 ? 1 : Math.max(1, Math.min(3, effectiveColumns));
         const columnBuckets = Array.from({ length: mosaicCols }, () => [] as typeof mediaBookmarks);
         mediaBookmarks.forEach((bm, idx) => {
           columnBuckets[idx % mosaicCols].push(bm);
         });
 
         return (
-          <div className="flex gap-2.5 items-start w-full">
+          <div className="flex gap-2 sm:gap-2.5 items-start w-full min-w-0">
             {columnBuckets.map((colBms, colIdx) => (
-              <div key={colIdx} className="flex-1 flex flex-col gap-2.5 min-w-0">
+              <div key={colIdx} className="flex-1 flex flex-col gap-2 sm:gap-2.5 min-w-0">
                 {colBms.map(bm => (
                   <BookmarkCard
                     key={bm.id}
@@ -234,12 +234,12 @@ export function BookmarksContainer({
 
       {/* 4. GRID VIEW (Dynamic Height Masonry Columns) */}
       {viewMode === 'grid' && (
-        <div className="flex gap-3 sm:gap-4 items-start w-full">
+        <div className="flex gap-2.5 sm:gap-4 items-start w-full min-w-0">
           {Array.from({ length: effectiveColumns }).map((_, colIndex) => {
             const columnBookmarks = bookmarks.filter((_, idx) => idx % effectiveColumns === colIndex);
             if (columnBookmarks.length === 0) return null;
             return (
-              <div key={colIndex} className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
+              <div key={colIndex} className="flex-1 flex flex-col gap-2.5 sm:gap-4 min-w-0">
                 {columnBookmarks.map(bm => (
                   <BookmarkCard
                     key={bm.id}
@@ -268,7 +268,7 @@ export function BookmarksContainer({
 
       {/* Floating Bulk Selection Action Bar */}
       {isSelectionMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 sm:gap-3 rounded-2xl border border-border bg-popover/95 px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-4 max-w-[calc(100vw-24px)] overflow-x-auto">
+        <div className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 sm:gap-3 rounded-2xl border border-border bg-popover/95 px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-4 max-w-[calc(100vw-20px)] overflow-x-auto">
           <span className="font-mono text-xs font-semibold text-strong">
             {selectedIds.size} selected
           </span>

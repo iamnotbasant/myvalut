@@ -100,22 +100,22 @@ export function SecondaryToolbar({
     (filterState.onlyFavorites ? 1 : 0);
 
   return (
-    <div className="relative z-40 flex h-[52px] shrink-0 items-stretch justify-between gap-2 md:gap-4 border-b border-white/[0.08] bg-[#080808] pr-2 md:pr-3 pl-1.5 md:pl-2 select-none overflow-visible">
+    <div className="relative z-40 flex h-[52px] w-full min-w-0 shrink-0 items-stretch justify-between gap-1 sm:gap-2 md:gap-4 border-b border-white/[0.08] bg-[#080808] px-1.5 sm:px-2 md:pr-3 md:pl-2 select-none overflow-visible">
       {/* Left: View Tabs (Grid, Row, Timeline, Mosaic) */}
-      <div className="relative flex items-end gap-0.5 sm:gap-1 h-full pb-0 overflow-x-auto no-scrollbar">
+      <div className="relative flex items-end gap-0.5 sm:gap-1 h-full pb-0 shrink-0 overflow-x-auto no-scrollbar">
         {/* Grid Tab */}
         <button
           type="button"
           aria-label="Grid"
           onClick={() => handleModeChange('grid')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'grid'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <ViewGrid className="size-4 sm:size-4.5" />
-          <span className="inline">Grid</span>
+          <span className="hidden min-[540px]:inline">Grid</span>
           {viewMode === 'grid' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
           )}
@@ -126,14 +126,14 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Row"
           onClick={() => handleModeChange('row')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'row'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <ViewRow className="size-4 sm:size-4.5" />
-          <span className="inline">Row</span>
+          <span className="hidden min-[540px]:inline">Row</span>
           {viewMode === 'row' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
           )}
@@ -144,14 +144,14 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Timeline"
           onClick={() => handleModeChange('timeline')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'timeline'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <ViewTimeline className="size-4 sm:size-4.5" />
-          <span className="inline">Timeline</span>
+          <span className="hidden min-[540px]:inline">Timeline</span>
           {viewMode === 'timeline' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
           )}
@@ -162,14 +162,14 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Mosaic"
           onClick={() => handleModeChange('mosaic')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'mosaic'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <ViewMosaic className="size-4 sm:size-4.5" />
-          <span className="inline">Mosaic</span>
+          <span className="hidden min-[540px]:inline">Mosaic</span>
           {viewMode === 'mosaic' && (
             <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-white transition-all duration-200 ease-out" />
           )}
@@ -177,7 +177,7 @@ export function SecondaryToolbar({
       </div>
 
       {/* Right: Search, Shuffle, Add Filters, Select/Cancel, + Collection */}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 overflow-visible">
+      <div className="flex min-w-0 shrink-0 sm:flex-1 items-center justify-end gap-1 sm:gap-2 overflow-visible">
         {/* Desktop Search Input Box */}
         <div className="hidden w-full max-w-64 min-[936px]:block">
           <div className="relative w-full">
@@ -244,7 +244,7 @@ export function SecondaryToolbar({
             </button>
 
             {isSortOpen && (
-              <div className="absolute right-0 top-full z-[60] mt-1.5 w-44 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 top-full z-[60] mt-1.5 w-44 max-w-[calc(100vw-16px)] rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
                 <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                   Sort Order
                 </div>

@@ -397,7 +397,7 @@ export function BookmarkCard({
             onOpenImage?.(imgSrc);
           }
         }}
-        className={`group/row relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
+        className={`group/row relative flex flex-col gap-2.5 sm:gap-3 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-3 sm:p-4 text-foreground text-sm shadow-[0_10px_25px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary bg-primary/10 shadow-2xl' : ''
         }`}
       >
@@ -468,17 +468,17 @@ export function BookmarkCard({
         </div>
 
         {/* Content Block */}
-        <div className="relative z-10 flex gap-4">
+        <div className="relative z-10 flex gap-2.5 sm:gap-4 items-start">
           <div className="flex-1 min-w-0 space-y-1">
             {showTitle && displayTitle && (
-              <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2">
+              <h3 className="font-semibold text-white text-xs sm:text-sm leading-snug line-clamp-2">
                 {displayTitle}
               </h3>
             )}
             {showText && displayText && (
               <div className="relative z-10">
                 {isLongText ? (
-                  <div className="relative max-h-20 sm:max-h-24 overflow-hidden text-xs leading-relaxed text-neutral-400">
+                  <div className="relative max-h-16 sm:max-h-24 overflow-hidden text-xs leading-relaxed text-neutral-400">
                     <FormattedPostText text={displayText} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
                       <span className="text-[10px] font-medium text-neutral-400 pl-0.5">...</span>
@@ -494,7 +494,7 @@ export function BookmarkCard({
           </div>
 
           {imgSrc && !hasImageError && (
-            <div className="relative size-20 sm:size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
+            <div className="relative size-16 sm:size-20 md:size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
               {!isImageLoaded && (
                 <div className="absolute inset-0 bg-white/5 animate-pulse" />
               )}
@@ -563,19 +563,19 @@ export function BookmarkCard({
             onOpenImage?.(imgSrc);
           }
         }}
-        className={`group/timeline relative flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
+        className={`group/timeline relative flex flex-col gap-3 sm:gap-3.5 rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-3.5 sm:p-5 text-foreground text-sm shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all hover:border-white/[0.18] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] cursor-pointer overflow-hidden ${
           isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary bg-primary/10 shadow-2xl' : ''
         }`}
       >
         {/* Top Header */}
         <div className="relative z-10 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             {isGitHub ? (
-              <div className="relative size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 bg-black text-white shadow-sm">
-                <GitHubIcon className="size-5.5 text-white" />
+              <div className="relative size-8.5 sm:size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 bg-black text-white shadow-sm">
+                <GitHubIcon className="size-4.5 sm:size-5.5 text-white" />
               </div>
             ) : bookmark.avatarUrl && isSocialPlatform ? (
-              <div className="relative size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
+              <div className="relative size-8.5 sm:size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
                 <Image
                   src={bookmark.avatarUrl}
                   alt={bookmark.displayName}
@@ -585,11 +585,11 @@ export function BookmarkCard({
                 />
               </div>
             ) : bookmark.platform === 'reddit' ? (
-              <div className="size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 shadow-sm">
+              <div className="size-8.5 sm:size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 shadow-sm">
                 <RedditIcon className="size-full" />
               </div>
             ) : (
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-white/20 bg-accent text-xs font-semibold text-strong">
+              <div className="flex size-8.5 sm:size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-white/20 bg-accent text-xs font-semibold text-strong">
                 {bookmark.displayName ? bookmark.displayName.charAt(0) : 'V'}
               </div>
             )}
@@ -911,7 +911,7 @@ export function BookmarkCard({
           onOpenImage?.(imgSrc);
         }
       }}
-      className={`group/bookmarkcard relative flex flex-col gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
+      className={`group/bookmarkcard relative flex flex-col gap-3 sm:gap-3.5 overflow-hidden rounded-2xl bg-[#0d0d0d] p-3 sm:p-3.5 text-foreground text-sm border border-white/[0.08] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.9)] hover:border-white/[0.18] transition-all duration-200 cursor-pointer ${
         isSelected || rightClickMenu.isOpen ? 'ring-primary ring-2 border-primary shadow-2xl scale-[1.01] bg-primary/[0.04]' : ''
       }`}
     >
@@ -1182,15 +1182,17 @@ export function BookmarkCard({
       )}
 
       {/* Footer with Tags and Date/Platform */}
-      <div className="relative z-10 flex items-center justify-between gap-3 mt-auto pt-2 border-t border-white/[0.04] w-full min-w-0">
-        <DynamicCardTags
-          tags={bookmark.tags || []}
-          isGeneratingTags={isGeneratingTags}
-          onSelectTag={onSelectTag}
-          onGenerateTags={() => onGenerateTags?.(bookmark)}
-        />
+      <div className="relative z-10 flex items-center justify-between gap-2 mt-auto pt-2 border-t border-white/[0.04] w-full min-w-0">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <DynamicCardTags
+            tags={bookmark.tags || []}
+            isGeneratingTags={isGeneratingTags}
+            onSelectTag={onSelectTag}
+            onGenerateTags={() => onGenerateTags?.(bookmark)}
+          />
+        </div>
 
-        <div className="flex shrink-0 items-center gap-2 select-none ml-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 select-none ml-2">
           <span className="text-neutral-400 text-xs font-normal whitespace-nowrap">{bookmark.date}</span>
           <div className="h-3.5 w-px bg-white/[0.15]"></div>
           <PlatformIcon platform={bookmark.platform} url={bookmark.url} />
