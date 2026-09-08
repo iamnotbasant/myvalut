@@ -254,3 +254,17 @@ html:not(.dark) {
 .animate-tag-pulse {
   animation: tag-pulse 2s ease-in-out infinite;
 }
+
+/* Mobile & Touch Utilities */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}

@@ -117,8 +117,8 @@ export function Header({
 
         <nav aria-label="breadcrumb">
           <ol className="flex items-center gap-1.5 text-neutral-400 text-sm">
-            <li className="inline-flex items-center gap-1">
-              <span className="font-normal text-white text-xs md:text-sm">
+            <li className="inline-flex items-center gap-1 min-w-0">
+              <span className="font-normal text-white text-xs md:text-sm max-w-[130px] sm:max-w-none truncate block">
                 {getBreadcrumbTitle()}
               </span>
             </li>
@@ -127,7 +127,7 @@ export function Header({
       </div>
 
       {/* Right: + Add Bookmark + Sound Toggle + Extension Indicator + User Profile Avatar */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5">
 
 
         {/* Sound Effects Toggle Button */}
@@ -176,7 +176,7 @@ export function Header({
           </button>
 
           {isUserMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 top-full z-50 mt-2 w-56 max-w-[calc(100vw-20px)] rounded-xl border border-white/10 bg-[#121212] p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
               <div className="border-b border-white/10 px-3 py-2">
                 <p className="text-xs font-medium text-white">Basant</p>
                 <p className="font-mono text-[11px] text-neutral-400">Personal Vault</p>

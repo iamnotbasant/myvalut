@@ -88,7 +88,7 @@ export function CommandPalette({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 pt-10 sm:pt-20 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
       <div
         onClick={e => e.stopPropagation()}
@@ -103,7 +103,7 @@ export function CommandPalette({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search or jump to…"
-            className="h-full flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            className="h-full flex-1 bg-transparent text-[16px] sm:text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
             ESC

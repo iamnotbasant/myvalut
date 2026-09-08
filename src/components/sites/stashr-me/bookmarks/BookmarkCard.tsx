@@ -477,7 +477,7 @@ export function BookmarkCard({
           </div>
 
           {imgSrc && !hasImageError && (
-            <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
+            <div className="relative size-20 sm:size-24 shrink-0 overflow-hidden rounded-xl border border-neutral-700/80 bg-neutral-900 group/thumb">
               {!isImageLoaded && (
                 <div className="absolute inset-0 bg-white/5 animate-pulse" />
               )}
@@ -694,7 +694,7 @@ export function BookmarkCard({
         }`}
       >
         {/* Floating Top Action Bar (Revealed on Hover) */}
-        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover/mosaic:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/mosaic:opacity-100 transition-opacity duration-200">
           {/* Favorite Quick Button */}
           <button
             type="button"
@@ -891,7 +891,7 @@ export function BookmarkCard({
     >
       {/* Top Right Floating Hover Action Bar */}
       <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-0.5">
-        <div className="flex items-center gap-0.5 rounded-lg bg-gradient-to-l from-[#0d0d0d] from-60% to-transparent pl-8 opacity-0 transition-opacity group-hover/bookmarkcard:opacity-100 has-[:focus-visible]:opacity-100">
+        <div className="flex items-center gap-0.5 rounded-lg bg-gradient-to-l from-[#0d0d0d] from-60% to-transparent pl-8 opacity-100 sm:opacity-0 transition-opacity group-hover/bookmarkcard:opacity-100 has-[:focus-visible]:opacity-100">
           <div className="relative" ref={menuRef}>
             <button
               type="button"

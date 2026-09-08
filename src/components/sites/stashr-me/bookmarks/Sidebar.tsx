@@ -128,7 +128,7 @@ export function Sidebar({
 
       <aside
         data-mobile={isMobileOpen ? "true" : undefined}
-        className="fixed inset-y-0 left-0 z-40 flex w-56 -translate-x-full flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 ease-in-out md:static md:translate-x-0 group-data-[state=collapsed]/sidebar:w-16 data-[mobile=true]:translate-x-0"
+        className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-sidebar-border bg-sidebar shadow-2xl transition-transform duration-300 ease-out md:static md:w-56 md:translate-x-0 md:shadow-none group-data-[state=collapsed]/sidebar:w-16 data-[mobile=true]:translate-x-0"
       >
         {/* Brand Header */}
         <div className="flex h-12 items-center justify-between px-3 border-b border-sidebar-border/40">
@@ -317,7 +317,7 @@ export function Sidebar({
                               collection: col
                             });
                           }}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-accent hover:text-foreground transition-all cursor-pointer"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-100 sm:opacity-0 group-hover/row:opacity-100 hover:bg-accent hover:text-foreground transition-all cursor-pointer"
                           title="Collection options"
                         >
                           <MoreHorizontal className="size-3.5" />
@@ -383,7 +383,7 @@ export function Sidebar({
         />
 
         {/* Footer: Settings & Backup */}
-        <div className="mt-auto flex flex-col gap-1 px-3 py-3 group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0 border-t border-sidebar-border/40">
+        <div className="mt-auto flex flex-col gap-1 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] group-data-[state=collapsed]/sidebar:items-center group-data-[state=collapsed]/sidebar:px-0 border-t border-sidebar-border/40">
           {/* Settings */}
           <Link
             href="/settings/account"

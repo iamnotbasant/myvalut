@@ -48,6 +48,7 @@ export function SecondaryToolbar({
 }: SecondaryToolbarProps) {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<'platform' | 'tag' | 'media' | null>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -107,7 +108,7 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Grid"
           onClick={() => handleModeChange('grid')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'grid'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -125,7 +126,7 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Row"
           onClick={() => handleModeChange('row')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'row'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -143,7 +144,7 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Timeline"
           onClick={() => handleModeChange('timeline')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'timeline'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -161,7 +162,7 @@ export function SecondaryToolbar({
           type="button"
           aria-label="Mosaic"
           onClick={() => handleModeChange('mosaic')}
-          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
+          className={`relative group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-t-lg h-full pb-2.5 pt-2 gap-1.5 sm:gap-2 px-2 sm:px-3.5 text-xs sm:text-[13.5px] font-medium outline-none transition-colors cursor-pointer ${
             viewMode === 'mosaic'
               ? 'text-white'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -177,7 +178,7 @@ export function SecondaryToolbar({
 
       {/* Right: Search, Shuffle, Add Filters, Select/Cancel, + Collection */}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 overflow-visible">
-        {/* Search Input Box */}
+        {/* Desktop Search Input Box */}
         <div className="hidden w-full max-w-64 min-[936px]:block">
           <div className="relative w-full">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-400" />
@@ -198,6 +199,22 @@ export function SecondaryToolbar({
             )}
           </div>
         </div>
+
+        {/* Mobile Search Button (< 936px) */}
+        <button
+          type="button"
+          onClick={() => {
+            soundFx.playClickSound();
+            setIsMobileSearchOpen(true);
+          }}
+          title="Search bookmarks"
+          aria-label="Search bookmarks"
+          className={`min-[936px]:hidden group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 size-8.5 transition-colors cursor-pointer ${
+            filterState.query ? 'border-white text-white' : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Search className="size-3.5" />
+        </button>
 
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-visible">
           {/* Sort Dropdown */}
@@ -287,7 +304,7 @@ export function SecondaryToolbar({
               }`}
             >
               <FilterSlidersIcon className="size-3.5" />
-              <span>Filters</span>
+              <span className="hidden sm:inline">Filters</span>
               {totalActiveFilters > 0 && (
                 <span className="flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-black">
                   {totalActiveFilters}
@@ -297,7 +314,7 @@ export function SecondaryToolbar({
 
             {/* Filter Dropdown & Submenus (1:1 Reference Image 3) */}
             {isFilterDropdownOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1.5 flex gap-1">
+              <div className="absolute right-0 top-full z-50 mt-1.5 flex flex-col sm:flex-row gap-1 max-w-[calc(100vw-20px)]">
                 {/* Main Filter Menu */}
                 <div className="w-56 rounded-xl border border-white/10 bg-[#121212] p-1.5 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
                   <div className="px-2 py-1 mb-1">
@@ -467,19 +484,19 @@ export function SecondaryToolbar({
           <button
             type="button"
             onClick={onToggleSelectionMode}
-            className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-3 text-xs font-medium transition-colors ${
+            className={`group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#121212] hover:bg-neutral-800 text-neutral-300 hover:text-white h-8.5 gap-1.5 px-2.5 sm:px-3 text-xs font-medium transition-colors cursor-pointer ${
               isSelectionMode ? 'border-white text-white' : ''
             }`}
           >
             {isSelectionMode ? (
               <>
                 <X className="size-3.5" />
-                <span>Cancel</span>
+                <span className="hidden sm:inline">Cancel</span>
               </>
             ) : (
               <>
                 <SelectCursorIcon className="size-3.5" />
-                <span>Select</span>
+                <span className="hidden sm:inline">Select</span>
               </>
             )}
           </button>
@@ -488,13 +505,45 @@ export function SecondaryToolbar({
           <button
             type="button"
             onClick={onOpenAddBookmark}
-            className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg bg-white hover:bg-neutral-200 text-black font-semibold text-xs h-8.5 gap-1.5 px-3.5 shadow-sm transition-all cursor-pointer active:scale-95"
+            className="inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg bg-white hover:bg-neutral-200 text-black font-semibold text-xs h-8.5 gap-1.5 px-2.5 sm:px-3.5 shadow-sm transition-all cursor-pointer active:scale-95"
           >
             <Plus className="size-3.5 stroke-[2.5]" />
-            <span>Bookmark</span>
+            <span className="hidden sm:inline">Bookmark</span>
           </button>
         </div>
       </div>
+
+      {/* Mobile Full-width Expandable Search Overlay */}
+      {isMobileSearchOpen && (
+        <div className="absolute inset-0 z-50 flex items-center gap-2 bg-[#080808] px-2 sm:px-3 animate-in fade-in duration-150">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              autoFocus
+              type="text"
+              value={filterState.query}
+              onChange={e => onFilterChange({ query: e.target.value })}
+              placeholder="Search bookmarks..."
+              className="h-8.5 w-full rounded-lg border border-neutral-700/80 bg-[#121214] pl-9 pr-8 text-xs text-neutral-200 outline-none placeholder:text-neutral-500 focus:border-neutral-500"
+            />
+            {filterState.query && (
+              <button
+                onClick={() => onFilterChange({ query: '' })}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white p-0.5"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileSearchOpen(false)}
+            className="inline-flex h-8.5 items-center justify-center rounded-lg border border-white/10 bg-[#121212] px-3 text-xs font-medium text-neutral-300 hover:text-white cursor-pointer"
+          >
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 }

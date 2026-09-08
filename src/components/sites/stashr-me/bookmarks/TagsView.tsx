@@ -403,9 +403,9 @@ export function TagsView({
   const allColors: TagColor[] = ['cyan', 'teal', 'blue', 'indigo', 'violet', 'pink', 'amber', 'orange', 'green', 'red'];
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
       {/* Top Banner & Stats Overview */}
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-5 md:p-6 shadow-xl space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-4 sm:p-5 md:p-6 shadow-xl space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
@@ -419,7 +419,7 @@ export function TagsView({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             {tagStats.untaggedCount > 0 && onAutoTagUntagged && (
               <button
                 type="button"
@@ -492,9 +492,9 @@ export function TagsView({
         </div>
 
         {/* Color Chips + Sort Dropdown */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 w-full sm:w-auto">
           {/* Color Selector */}
-          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-neutral-900/60 p-1">
+          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-neutral-900/60 p-1 shrink-0 overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setSelectedColor('all')}
@@ -613,7 +613,7 @@ export function TagsView({
                     tag: tag
                   });
                 }}
-                className={`group/folder relative w-full max-w-[310px] mx-auto h-[310px] rounded-[30px] cursor-pointer select-none transition-all duration-500 ease-out hover:-translate-y-2 ${theme.glowHover}`}
+                className={`group/folder relative w-full max-w-[300px] sm:max-w-[310px] mx-auto h-[300px] sm:h-[310px] rounded-[28px] sm:rounded-[30px] cursor-pointer select-none transition-all duration-500 ease-out hover:-translate-y-2 ${theme.glowHover}`}
               >
                 {/* 1. Folder Back Body */}
                 <div className={`absolute inset-0 rounded-[30px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>

@@ -282,12 +282,12 @@ export function CreatorsView({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-background px-4 py-4 md:px-7 md:py-5 space-y-4">
+    <div className="flex flex-1 flex-col overflow-y-auto bg-background px-3 py-3 sm:px-4 sm:py-4 md:px-7 md:py-5 space-y-4">
       {/* Top Filter, Search & Sort Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Search input */}
-          <div className="relative w-64 md:w-72">
+          <div className="relative w-full sm:w-64 md:w-72">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -776,7 +776,7 @@ export function ConnectionsView({ bookmarks = [], onOpenExtensionGuide }: Connec
   }, [bookmarks]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-background px-4 py-4 md:px-7 md:py-5 space-y-4">
+    <div className="flex flex-1 flex-col overflow-y-auto bg-background px-3 py-3 sm:px-4 sm:py-4 md:px-7 md:py-5 space-y-4">
       {/* Top Extension Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card/80 p-4 md:p-5 shadow-xs">
         <div className="flex items-start sm:items-center gap-3.5">

@@ -62,7 +62,15 @@ export function BookmarksContainer({
   onEditTags
 }: BookmarksContainerProps) {
   // Adaptive responsive column calculation: 1 col on mobile, 2 on tablet, N on desktop
-  const [effectiveColumns, setEffectiveColumns] = React.useState(columns);
+  const [effectiveColumns, setEffectiveColumns] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      if (w < 640) return 1;
+      if (w < 1024) return Math.min(2, columns);
+      return columns;
+    }
+    return columns;
+  });
 
   React.useEffect(() => {
     function updateColumns() {
@@ -260,7 +268,7 @@ export function BookmarksContainer({
 
       {/* Floating Bulk Selection Action Bar */}
       {isSelectionMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-border bg-popover/95 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-4">
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 sm:gap-3 rounded-2xl border border-border bg-popover/95 px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-4 max-w-[calc(100vw-24px)] overflow-x-auto">
           <span className="font-mono text-xs font-semibold text-strong">
             {selectedIds.size} selected
           </span>

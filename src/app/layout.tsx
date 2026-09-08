@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
@@ -13,13 +13,20 @@ const geistMono = Geist_Mono({
   subsets: ['latin']
 });
 
+export const viewport: Viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover'
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://myvalut.vercel.app'),
   title: 'Valut - AI Bookmark Vault',
   description:
     'Valut is your private AI bookmark manager that captures every save from Twitter/X, Reddit, Instagram, YouTube, and the Web — auto-tagged and cloud synced.',
   manifest: '/site.webmanifest',
-  themeColor: '#000000',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
