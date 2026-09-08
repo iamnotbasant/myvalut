@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { BookmarkItem, PlatformType } from '@/types/stashr';
-import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl } from '@/lib/gemini-tagger';
+import { scrapeUrlMetadata, generateGeminiTags, detectPlatformFromUrl, fetchYouTubeTranscript, generateMediaSummary } from '@/lib/gemini-tagger';
 import { repairFragmentedUrls } from '@/lib/url-utils';
 
 // Helper for CORS headers
@@ -216,6 +216,44 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // If YouTube or Instagram and not yet summarized, extract transcript and summarize via Gemini
+          if (
+            (bgPlatform === 'youtube' || bgPlatform === 'instagram') &&
+            (!bgText || !bgText.includes('Summary:'))
+          ) {
+            try {
+              let transcriptToSummarize = bgText;
+              if (bgPlatform === 'youtube') {
+                const vidMatch = url?.match(/(?:watch\?v=|shorts\/|live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                if (vidMatch) {
+                  const fetchedTranscript = await fetchYouTubeTranscript(vidMatch[1]);
+                  if (fetchedTranscript) {
+                    transcriptToSummarize = fetchedTranscript;
+                  }
+                  if (!bgImageUrl) {
+                    bgImageUrl = `https://i.ytimg.com/vi/${vidMatch[1]}/maxresdefault.jpg`;
+                  }
+                }
+              }
+
+              if (transcriptToSummarize && transcriptToSummarize.length > 25) {
+                const summary = await generateMediaSummary({
+                  platform: bgPlatform,
+                  title: bgTitle || '',
+                  transcriptOrText: transcriptToSummarize,
+                  creator: bgDisplayName || bgUsername,
+                  apiKey,
+                });
+
+                if (summary) {
+                  bgText = summary;
+                }
+              }
+            } catch (sumErr) {
+              console.warn('[Background Worker] Media summarization error:', sumErr);
+            }
+          }
+
           // Generate tags via Gemini AI
           const tagResult = await generateGeminiTags({
             platform: bgPlatform,
@@ -227,13 +265,12 @@ export async function POST(req: NextRequest) {
           });
 
           const generatedTags = tagResult.tags || [];
-          if (generatedTags.length > 0 && isSupabaseConfigured && supabase) {
-            const updates: Record<string, any> = {
-              tags: generatedTags,
-            };
+          if (isSupabaseConfigured && supabase) {
+            const updates: Record<string, any> = {};
+            if (generatedTags.length > 0) updates.tags = generatedTags;
             if (bgTitle && !title) updates.title = bgTitle;
-            if (bgText && !text) updates.text = bgText;
-            if (bgImageUrl && !imageUrl) updates.image_url = bgImageUrl;
+            if (bgText && bgText !== text) updates.text = bgText;
+            if (bgImageUrl && (!imageUrl || bgPlatform === 'youtube')) updates.image_url = bgImageUrl;
             if (bgAvatarUrl && !avatarUrl) updates.avatar_url = bgAvatarUrl;
             if (bgDisplayName && !displayName) updates.display_name = bgDisplayName;
             if (bgUsername && !username) {

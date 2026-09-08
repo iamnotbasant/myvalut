@@ -245,8 +245,8 @@ export function BookmarkCard({
 
   const isLongText = Boolean(
     displayText && (
-      displayText.length > 180 ||
-      displayText.split('\n').filter(l => l.trim().length > 0).length > 3
+      displayText.length > 360 ||
+      displayText.split('\n').filter(l => l.trim().length > 0).length > 6
     )
   );
 
@@ -478,9 +478,9 @@ export function BookmarkCard({
             {showText && displayText && (
               <div className="relative z-10">
                 {isLongText ? (
-                  <div className="relative max-h-14 overflow-hidden text-xs leading-relaxed text-neutral-400">
+                  <div className="relative max-h-20 sm:max-h-24 overflow-hidden text-xs leading-relaxed text-neutral-400">
                     <FormattedPostText text={displayText} />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
                       <span className="text-[10px] font-medium text-neutral-400 pl-0.5">...</span>
                     </div>
                   </div>
@@ -633,7 +633,7 @@ export function BookmarkCard({
         {showText && displayText && (
           <div className="relative z-10 text-[14px] leading-relaxed text-neutral-200">
             {isLongText ? (
-              <div className="relative max-h-24 sm:max-h-28 overflow-hidden">
+              <div className="relative max-h-36 sm:max-h-44 overflow-hidden">
                 <FormattedPostText text={displayText} />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
                   <span className="text-[11px] font-medium text-neutral-400 pl-0.5">...</span>
@@ -1107,7 +1107,7 @@ export function BookmarkCard({
       {showText && displayText && (
         <div className="relative z-10 text-[13.5px] leading-relaxed text-neutral-200">
           {isLongText ? (
-            <div className="relative max-h-24 sm:max-h-28 overflow-hidden">
+            <div className="relative max-h-36 sm:max-h-44 overflow-hidden">
               <FormattedPostText text={displayText} />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/85 to-transparent flex items-end justify-start pb-0.5">
                 <span className="text-[11px] font-medium text-neutral-400 pl-0.5">...</span>

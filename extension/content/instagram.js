@@ -280,12 +280,37 @@
     const usernameEl = containerEl ? containerEl.querySelector('header a[href^="/"], a[role="link"][href^="/"]') : null;
     const username = usernameEl ? (usernameEl.innerText || usernameEl.textContent || '').trim().replace('/', '') : 'instagram_user';
 
-    const captionEl = containerEl ? containerEl.querySelector('h1, span._ap3a, div._a9zs, span[dir="auto"]') : null;
-    const text = captionEl ? (captionEl.innerText || captionEl.textContent || '').trim() : '';
-    const title = text ? (text.length > 80 ? `${text.slice(0, 80)}...` : text) : `Instagram post by @${username}`;
+    // Collect multi-span caption and on-screen text
+    let caption = '';
+    if (containerEl) {
+      const captionNodes = containerEl.querySelectorAll('h1, span._ap3a, div._a9zs, span[dir="auto"]');
+      const parts = [];
+      captionNodes.forEach(node => {
+        const t = (node.innerText || node.textContent || '').trim();
+        if (t && !parts.includes(t)) parts.push(t);
+      });
+      caption = parts.join('\n');
+    }
 
-    const imgEl = containerEl ? containerEl.querySelector('img[src*="cdninstagram"], img[srcset], video') : null;
-    const imageUrl = imgEl ? (imgEl.src || imgEl.getAttribute('poster') || '') : '';
+    // Extract Audio track info (Reels)
+    const audioEl = containerEl ? containerEl.querySelector('a[href*="/audio/"] span, div:has(> svg[aria-label*="Audio" i]) span') : null;
+    const audio = audioEl ? (audioEl.innerText || audioEl.textContent || '').trim() : '';
+
+    const text = [caption, audio ? `Audio: ${audio}` : ''].filter(Boolean).join('\n\n');
+    const title = caption ? (caption.length > 80 ? `${caption.slice(0, 80)}...` : caption) : `Instagram Reel by @${username}`;
+
+    // Extract high-res thumbnail / video poster
+    let imageUrl = '';
+    if (containerEl) {
+      const videoEl = containerEl.querySelector('video');
+      if (videoEl) {
+        imageUrl = videoEl.getAttribute('poster') || videoEl.poster || '';
+      }
+      if (!imageUrl) {
+        const imgEl = containerEl.querySelector('img[src*="cdninstagram"], img[src*="fbcdn"], img[srcset]');
+        if (imgEl) imageUrl = imgEl.src;
+      }
+    }
 
     try {
       const response = await sendSaveRequest({

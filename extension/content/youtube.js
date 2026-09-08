@@ -384,10 +384,69 @@
     const iconEl = targetBtn.querySelector('.valut-player-icon-wrapper') || targetBtn;
     if (iconEl) iconEl.innerHTML = SPINNER_ICON;
 
+    // Extract title, creator, thumbnail, and description/transcript from page
+    const title =
+      document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1, ytd-reel-player-header-renderer h2')?.innerText?.trim() ||
+      document.title.replace(/ - YouTube$/, '').trim() ||
+      'YouTube Video';
+
+    const displayName =
+      document.querySelector('#owner #channel-name a, ytd-channel-name a, #channel-name')?.innerText?.trim() ||
+      'YouTube Creator';
+
+    const userLink = document.querySelector('#owner #channel-name a, ytd-channel-name a')?.getAttribute('href') || '';
+    const username = userLink.replace('/@', '').replace('/', '').trim() || 'youtube';
+
+    const avatarUrl = document.querySelector('#owner #avatar img')?.src || '';
+    const imageUrl = vid ? `https://i.ytimg.com/vi/${vid}/maxresdefault.jpg` : '';
+
+    let text = document.querySelector('#description-inline-expander, ytd-text-inline-expander, #description')?.innerText?.trim() || '';
+
+    // Attempt to extract live timed-text transcript from page captionTracks
+    try {
+      let playerResponse = null;
+      if (typeof ytInitialPlayerResponse !== 'undefined') {
+        playerResponse = ytInitialPlayerResponse;
+      }
+      const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (captionTracks && captionTracks.length > 0) {
+        const enTrack = captionTracks.find(t => t.languageCode?.startsWith('en')) || captionTracks[0];
+        if (enTrack?.baseUrl) {
+          const captionRes = await fetch(enTrack.baseUrl);
+          if (captionRes.ok) {
+            const xml = await captionRes.text();
+            const matches = xml.matchAll(/<text[^>]*>(.*?)<\/text>/gs);
+            const parts = [];
+            for (const m of matches) {
+              const cleaned = m[1]
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&#39;/g, "'")
+                .replace(/&quot;/g, '"');
+              parts.push(cleaned.trim());
+            }
+            const fullTranscript = parts.join(' ').replace(/\s+/g, ' ').trim();
+            if (fullTranscript.length > 40) {
+              text = fullTranscript;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Transcript extraction error:', e);
+    }
+
     try {
       const response = await sendSaveRequest({
         url: videoUrl,
         platform: 'youtube',
+        title,
+        text,
+        displayName,
+        username,
+        avatarUrl,
+        imageUrl,
       });
 
       if (response && response.success) {
