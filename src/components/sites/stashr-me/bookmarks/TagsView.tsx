@@ -76,7 +76,6 @@ function FolderAccentGraphic({ type, color }: { type: string; color: string }) {
 
 const FOLDER_COLOR_THEMES: Record<TagColor, {
   name: string;
-  emoji: string;
   backBg: string;
   frontBg: string;
   frontBorder: string;
@@ -89,7 +88,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
 }> = {
   red: {
     name: 'Red',
-    emoji: '🥺',
     backBg: 'from-[#ff4d4f] via-[#f5222d] to-[#cf1322]',
     frontBg: 'from-[#ff6b6b]/95 via-[#f5222d]/90 to-[#cf1322]/95',
     frontBorder: 'border-[#ffa39e]/45',
@@ -102,7 +100,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   blue: {
     name: 'Blue',
-    emoji: '😭',
     backBg: 'from-[#38bdf8] via-[#2563eb] to-[#1d4ed8]',
     frontBg: 'from-[#60a5fa]/95 via-[#3b82f6]/90 to-[#1d4ed8]/95',
     frontBorder: 'border-[#93c5fd]/45',
@@ -115,7 +112,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   amber: {
     name: 'Amber',
-    emoji: '😠',
     backBg: 'from-[#fde047] via-[#f59e0b] to-[#d97706]',
     frontBg: 'from-[#fef08a]/95 via-[#fbbf24]/90 to-[#d97706]/95',
     frontBorder: 'border-[#fef08a]/50',
@@ -128,7 +124,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   green: {
     name: 'Green',
-    emoji: '🌱',
     backBg: 'from-[#34d399] via-[#10b981] to-[#047857]',
     frontBg: 'from-[#6ee7b7]/95 via-[#10b981]/90 to-[#047857]/95',
     frontBorder: 'border-[#a7f3d0]/45',
@@ -141,7 +136,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   violet: {
     name: 'Violet',
-    emoji: '🔮',
     backBg: 'from-[#c084fc] via-[#9333ea] to-[#6b21a8]',
     frontBg: 'from-[#d8b4fe]/95 via-[#a855f7]/90 to-[#6b21a8]/95',
     frontBorder: 'border-[#e9d5ff]/45',
@@ -154,7 +148,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   indigo: {
     name: 'Indigo',
-    emoji: '🚀',
     backBg: 'from-[#818cf8] via-[#4f46e5] to-[#3730a3]',
     frontBg: 'from-[#a5b4fc]/95 via-[#6366f1]/90 to-[#3730a3]/95',
     frontBorder: 'border-[#c7d2fe]/45',
@@ -167,7 +160,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   pink: {
     name: 'Pink',
-    emoji: '💖',
     backBg: 'from-[#f472b6] via-[#db2777] to-[#9d174d]',
     frontBg: 'from-[#fbcfe8]/95 via-[#ec4899]/90 to-[#9d174d]/95',
     frontBorder: 'border-[#fbcfe8]/45',
@@ -180,7 +172,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   orange: {
     name: 'Orange',
-    emoji: '🔥',
     backBg: 'from-[#fb923c] via-[#ea580c] to-[#9a3412]',
     frontBg: 'from-[#fed7aa]/95 via-[#f97316]/90 to-[#9a3412]/95',
     frontBorder: 'border-[#fed7aa]/45',
@@ -193,7 +184,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   cyan: {
     name: 'Cyan',
-    emoji: '💎',
     backBg: 'from-[#22d3ee] via-[#0891b2] to-[#155e75]',
     frontBg: 'from-[#67e8f9]/95 via-[#06b6d4]/90 to-[#155e75]/95',
     frontBorder: 'border-[#a5f3fc]/45',
@@ -206,7 +196,6 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
   },
   teal: {
     name: 'Teal',
-    emoji: '🌊',
     backBg: 'from-[#2dd4bf] via-[#0d9488] to-[#115e59]',
     frontBg: 'from-[#5eead4]/95 via-[#14b8a6]/90 to-[#115e59]/95',
     frontBorder: 'border-[#99f6e4]/45',
@@ -218,6 +207,92 @@ const FOLDER_COLOR_THEMES: Record<TagColor, {
     splashType: 'leaf'
   }
 };
+
+function FolderTuckedCard({
+  item,
+  position,
+  tagName,
+  accentColor
+}: {
+  item?: BookmarkItem;
+  position: 'left' | 'center' | 'right';
+  tagName: string;
+  accentColor: string;
+}) {
+  const isCenter = position === 'center';
+  const isLeft = position === 'left';
+
+  // Base and hover transform classes for multi-card fanning physics
+  const transformClasses = isLeft
+    ? '-rotate-6 -translate-x-3.5 translate-y-1.5 z-10 group-hover/folder:-translate-y-9 group-hover/folder:-translate-x-6 group-hover/folder:-rotate-12 group-hover/folder:scale-[0.98]'
+    : isCenter
+    ? 'rotate-0 translate-x-0 translate-y-0 z-20 group-hover/folder:-translate-y-12 group-hover/folder:scale-[1.04]'
+    : 'rotate-6 translate-x-3.5 translate-y-1.5 z-10 group-hover/folder:-translate-y-9 group-hover/folder:translate-x-6 group-hover/folder:rotate-12 group-hover/folder:scale-[0.98]';
+
+  return (
+    <div
+      className={`absolute inset-x-5 top-2.5 h-[135px] rounded-2xl bg-white shadow-[0_10px_25px_rgba(0,0,0,0.22)] border border-white/80 overflow-hidden flex flex-col justify-between p-2 transition-all duration-400 ease-out pointer-events-none ${transformClasses}`}
+    >
+      {item?.imageUrl ? (
+        <div className="relative size-full rounded-xl overflow-hidden bg-neutral-100 shadow-inner">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="size-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-white">
+            <span className="text-[10px] font-semibold truncate drop-shadow-sm max-w-[70%]">
+              {item.title || item.text.slice(0, 24) || 'Bookmark'}
+            </span>
+            <span className="text-[8.5px] font-mono opacity-80 uppercase shrink-0">
+              {item.platform}
+            </span>
+          </div>
+        </div>
+      ) : item ? (
+        <div className="flex flex-col justify-between h-full p-1.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl">
+          <div className="flex items-start justify-between gap-1.5">
+            <div className="flex flex-col gap-1 pt-0.5">
+              <div className="h-1.5 w-10 bg-neutral-300 rounded-full" />
+              <div className="h-1 w-6 bg-neutral-200 rounded-full" />
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+              {item.platform}
+            </span>
+          </div>
+          <p className="text-[11px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
+            {item.title || item.text.slice(0, 45)}
+          </p>
+          <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
+            <span className="text-[9px] text-neutral-400 font-medium truncate">
+              {item.displayName || '@' + item.username}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col justify-between h-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl">
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <div className="h-1.5 w-8 bg-neutral-200 rounded-full" />
+              <div className="h-1 w-5 bg-neutral-200/60 rounded-full" />
+            </div>
+            <div className="size-2 rounded-full" style={{ backgroundColor: accentColor }} />
+          </div>
+          <div className="space-y-1.5 my-auto py-1">
+            <div className="h-1.5 w-full bg-neutral-100 rounded-full" />
+            <div className="h-1.5 w-4/5 bg-neutral-100 rounded-full" />
+            <div className="h-1.5 w-3/5 bg-neutral-100 rounded-full" />
+          </div>
+          <div className="text-[9px] font-mono text-neutral-400 truncate">
+            #{tagName}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TagsView({
   tags,
@@ -412,7 +487,7 @@ export function TagsView({
             >
               All
             </button>
-            {allColors.slice(0, 5).map(c => (
+            {allColors.map(c => (
               <button
                 key={c}
                 type="button"
@@ -497,7 +572,10 @@ export function TagsView({
             const theme = FOLDER_COLOR_THEMES[tag.color] || FOLDER_COLOR_THEMES.violet;
             const items = tagStats.bookmarkMap[tag.name.toLowerCase()] || [];
             const count = items.length;
-            const previewBookmark = items[0];
+
+            const cardLeft = count >= 3 ? items[0] : (count === 2 ? items[0] : undefined);
+            const cardCenter = count >= 3 ? items[1] : (count >= 1 ? items[0] : undefined);
+            const cardRight = count >= 3 ? items[2] : (count === 2 ? items[1] : undefined);
 
             return (
               <div
@@ -512,77 +590,58 @@ export function TagsView({
                     tag: tag
                   });
                 }}
-                className={`group/folder relative h-[235px] rounded-3xl cursor-pointer select-none transition-all duration-300 ease-out hover:-translate-y-2 ${theme.glowHover}`}
+                className={`group/folder relative h-[240px] rounded-3xl cursor-pointer select-none transition-all duration-400 ease-out hover:-translate-y-2 ${theme.glowHover}`}
               >
-                {/* 1. Folder Back Body (Vibrant, warm, rich folder back) */}
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                {/* 1. Folder Back Body */}
+                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/25 overflow-hidden z-0`}>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/10 pointer-events-none" />
                 </div>
 
-                {/* 2. Floating 3D Corner Emoji Badge (1:1 Reference 2) */}
-                <div className="absolute -top-3 right-4 size-10 rounded-full bg-white/95 shadow-[0_6px_20px_rgba(0,0,0,0.25)] border-2 border-white flex items-center justify-center text-2xl select-none z-30 transition-transform duration-300 ease-out group-hover/folder:scale-125 group-hover/folder:rotate-12 group-hover/folder:-translate-y-1">
-                  {theme.emoji}
-                </div>
+                {/* 2. Tucked Layered Bookmark Cards (Multi-card fanning stack) */}
+                <FolderTuckedCard
+                  item={cardLeft}
+                  position="left"
+                  tagName={tag.name}
+                  accentColor={theme.splashColor}
+                />
+                <FolderTuckedCard
+                  item={cardRight}
+                  position="right"
+                  tagName={tag.name}
+                  accentColor={theme.splashColor}
+                />
+                <FolderTuckedCard
+                  item={cardCenter}
+                  position="center"
+                  tagName={tag.name}
+                  accentColor={theme.splashColor}
+                />
 
-                {/* 3. Crisp White Document Sheet Tucked Inside */}
-                <div className="absolute inset-x-4 top-3.5 h-[135px] flex justify-center items-start z-10 pointer-events-none">
-                  <div className="w-full h-full rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.3)] border border-white/80 p-4 flex flex-col justify-between transition-all duration-300 ease-out group-hover/folder:-translate-y-8 group-hover/folder:scale-[1.02]">
-                    {/* Top Row: Simulated document lines on left + Tag Name in accent color on right */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col gap-1.5 pt-1">
-                        <div className="h-1.5 w-10 bg-neutral-200 rounded-full" />
-                        <div className="h-1.5 w-6 bg-neutral-200/80 rounded-full" />
-                      </div>
-                      <div className="text-right">
-                        <span className={`font-mono font-bold text-sm tracking-tight ${theme.accentFont}`}>
-                          {tag.name}
-                        </span>
-                        <div className="text-[10px] font-medium text-neutral-400">
-                          • {count} {count === 1 ? 'save' : 'saves'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Middle content: Thumbnail image if available, else clean note lines */}
-                    {previewBookmark?.imageUrl ? (
-                      <div className="h-14 w-full rounded-lg overflow-hidden border border-neutral-100 bg-neutral-50 shadow-inner">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={previewBookmark.imageUrl} alt="" className="size-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1.5 py-1">
-                        <span className="text-[11px] text-neutral-600 font-medium truncate">
-                          {previewBookmark?.title || previewBookmark?.text?.slice(0, 35) || 'Curated notes & media'}
-                        </span>
-                        <div className="h-1 w-24 bg-neutral-100 rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 4. Front Pocket Sleeve with Wavy Cutout Top Edge & Bottom Splash */}
-                <div className="absolute inset-x-0 bottom-0 h-[64%] z-20 flex flex-col justify-end">
+                {/* 3. Front Pocket Sleeve with Organic Cutout & Bottom Splash */}
+                <div className="absolute inset-x-0 bottom-0 h-[62%] z-30 flex flex-col justify-end pointer-events-none">
                   {/* Sculpted Wavy Top Lip */}
-                  <svg viewBox="0 0 400 48" preserveAspectRatio="none" className="w-full h-8 block -mb-0.5 drop-shadow-xs">
+                  <svg viewBox="0 0 400 48" preserveAspectRatio="none" className="w-full h-8 block -mb-0.5 drop-shadow-sm">
                     <path d="M 0 24 Q 90 6 180 26 T 400 12 L 400 48 L 0 48 Z" fill="currentColor" className={`bg-gradient-to-b ${theme.frontBg} text-transparent`} style={{ fill: 'currentColor' }} />
                   </svg>
 
                   {/* Pocket Body */}
-                  <div className={`relative rounded-b-3xl bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-4 pt-1 flex flex-col justify-between min-h-[96px] backdrop-blur-md shadow-2xl`}>
+                  <div className={`relative rounded-b-3xl bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-4 pt-1 flex flex-col justify-between min-h-[96px] backdrop-blur-md shadow-2xl pointer-events-auto`}>
                     {/* Splash / Leaves / Seeds Graphic at Bottom Left */}
                     <div className="absolute bottom-2.5 left-3 pointer-events-none select-none">
                       <FolderAccentGraphic type={theme.splashType} color={theme.splashColor} />
                     </div>
 
-                    {/* Front Content: Tag Name & Pill Count */}
+                    {/* Front Content: Tag Name & Saves Count Pill */}
                     <div className="flex items-center justify-between gap-2 relative z-10 pl-1">
                       <div className="min-w-0 pr-2">
                         <h3 className="text-base sm:text-[17px] font-bold text-white drop-shadow-md tracking-tight truncate group-hover/folder:text-white transition-colors">
                           {tag.name}
                         </h3>
-                        <span className="text-[11px] font-semibold text-white/80">
-                          {count} {count === 1 ? 'save' : 'saves'}
-                        </span>
+                        <div className="inline-flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] font-semibold text-white/90 bg-black/20 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/10">
+                            {count} {count === 1 ? 'save' : 'saves'}
+                          </span>
+                        </div>
                       </div>
 
                       {/* 3-dots Menu Button */}

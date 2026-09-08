@@ -743,19 +743,19 @@ export function PlatformIcon({
 // 7. Tag Dot Badge
 export function TagDot({ color = 'blue' }: { color: TagColor }) {
   const colorMap: Record<TagColor, string> = {
-    violet: 'bg-neutral-400',
+    violet: 'bg-purple-500',
     amber: 'bg-amber-400',
     teal: 'bg-teal-400',
-    green: 'bg-emerald-400',
-    indigo: 'bg-neutral-300',
-    orange: 'bg-orange-400',
-    pink: 'bg-neutral-400',
-    blue: 'bg-neutral-300',
-    cyan: 'bg-teal-400',
-    red: 'bg-rose-400'
+    green: 'bg-emerald-500',
+    indigo: 'bg-indigo-500',
+    orange: 'bg-orange-500',
+    pink: 'bg-pink-500',
+    blue: 'bg-blue-500',
+    cyan: 'bg-cyan-400',
+    red: 'bg-rose-500'
   };
 
-  return <span className={`size-2 shrink-0 rounded-full ${colorMap[color] || 'bg-neutral-400'}`} />;
+  return <span className={`size-2 shrink-0 rounded-full ${colorMap[color] || 'bg-blue-500'}`} />;
 }
 
 export function Activity({ className = 'size-4', ...props }: IconProps) {
