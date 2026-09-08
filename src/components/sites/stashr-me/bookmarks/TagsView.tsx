@@ -212,81 +212,90 @@ function FolderTuckedCard({
   item,
   position,
   tagName,
+  count,
   accentColor
 }: {
   item?: BookmarkItem;
   position: 'left' | 'center' | 'right';
   tagName: string;
+  count: number;
   accentColor: string;
 }) {
   const isCenter = position === 'center';
   const isLeft = position === 'left';
 
-  // Base and hover transform classes for multi-card fanning physics
-  const transformClasses = isLeft
-    ? '-rotate-6 -translate-x-3.5 translate-y-1.5 z-10 group-hover/folder:-translate-y-9 group-hover/folder:-translate-x-6 group-hover/folder:-rotate-12 group-hover/folder:scale-[0.98]'
+  // Base positions & hover transform classes so all 3 cards are visibly layered
+  const posClasses = isLeft
+    ? 'left-1.5 w-[86%] top-2 -rotate-6 z-10 group-hover/folder:-translate-y-8 group-hover/folder:-translate-x-4 group-hover/folder:-rotate-12'
     : isCenter
-    ? 'rotate-0 translate-x-0 translate-y-0 z-20 group-hover/folder:-translate-y-12 group-hover/folder:scale-[1.04]'
-    : 'rotate-6 translate-x-3.5 translate-y-1.5 z-10 group-hover/folder:-translate-y-9 group-hover/folder:translate-x-6 group-hover/folder:rotate-12 group-hover/folder:scale-[0.98]';
+    ? 'inset-x-3 top-4 rotate-0 z-20 group-hover/folder:-translate-y-10 group-hover/folder:scale-[1.02]'
+    : 'right-1.5 w-[86%] top-2 rotate-6 z-10 group-hover/folder:-translate-y-8 group-hover/folder:translate-x-4 group-hover/folder:rotate-12';
 
   return (
     <div
-      className={`absolute inset-x-5 top-2.5 h-[135px] rounded-2xl bg-white shadow-[0_10px_25px_rgba(0,0,0,0.22)] border border-white/80 overflow-hidden flex flex-col justify-between p-2 transition-all duration-400 ease-out pointer-events-none ${transformClasses}`}
+      className={`absolute h-[165px] rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.18)] border border-neutral-100 overflow-hidden flex flex-col justify-between p-2.5 transition-all duration-400 ease-out pointer-events-none ${posClasses}`}
     >
+      {/* Top Header Row matching Reference 2 */}
+      <div className="flex items-start justify-between gap-1.5 pb-1 shrink-0">
+        <div className="flex flex-col gap-1 pt-0.5">
+          <div className="h-1.5 w-7 rounded-full bg-neutral-200" />
+          <div className="h-1 w-4.5 rounded-full bg-neutral-200/70" />
+        </div>
+        <div className="text-right truncate max-w-[65%]">
+          <span className="text-[11px] font-bold text-neutral-800 tracking-tight font-mono truncate block">
+            {isCenter ? tagName : item?.platform ? item.platform.toUpperCase() : `#${tagName}`}
+          </span>
+          <span className="text-[9px] text-neutral-400 block font-medium">
+            {isCenter ? `• ${count} ${count === 1 ? 'save' : 'saves'}` : item?.displayName ? `@${item.username}` : '• note'}
+          </span>
+        </div>
+      </div>
+
+      {/* Card Body: Thumbnail Media or Document Snippet */}
       {item?.imageUrl ? (
-        <div className="relative size-full rounded-xl overflow-hidden bg-neutral-100 shadow-inner">
+        <div className="relative h-[105px] w-full rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/60 shadow-xs">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
             alt=""
             className="size-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-white">
-            <span className="text-[10px] font-semibold truncate drop-shadow-sm max-w-[70%]">
-              {item.title || item.text.slice(0, 24) || 'Bookmark'}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          <div className="absolute bottom-1 left-2 right-2 flex items-center justify-between text-white">
+            <span className="text-[9.5px] font-semibold truncate drop-shadow-sm max-w-[70%]">
+              {item.title || item.text.slice(0, 22) || 'Bookmark'}
             </span>
-            <span className="text-[8.5px] font-mono opacity-80 uppercase shrink-0">
+            <span className="text-[8px] font-mono opacity-80 uppercase shrink-0">
               {item.platform}
             </span>
           </div>
         </div>
       ) : item ? (
-        <div className="flex flex-col justify-between h-full p-1.5 bg-gradient-to-b from-neutral-50 to-white rounded-xl">
-          <div className="flex items-start justify-between gap-1.5">
-            <div className="flex flex-col gap-1 pt-0.5">
-              <div className="h-1.5 w-10 bg-neutral-300 rounded-full" />
-              <div className="h-1 w-6 bg-neutral-200 rounded-full" />
-            </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">
-              {item.platform}
-            </span>
-          </div>
-          <p className="text-[11px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
+        <div className="flex flex-col justify-between h-[105px] w-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/50">
+          <p className="text-[10.5px] font-semibold text-neutral-800 line-clamp-3 leading-snug">
             {item.title || item.text.slice(0, 45)}
           </p>
           <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
-            <span className="text-[9px] text-neutral-400 font-medium truncate">
+            <span className="text-[8.5px] text-neutral-400 font-medium truncate">
               {item.displayName || '@' + item.username}
+            </span>
+            <span className="text-[8px] font-mono font-bold uppercase text-neutral-500">
+              {item.platform}
             </span>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col justify-between h-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl">
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="h-1.5 w-8 bg-neutral-200 rounded-full" />
-              <div className="h-1 w-5 bg-neutral-200/60 rounded-full" />
-            </div>
-            <div className="size-2 rounded-full" style={{ backgroundColor: accentColor }} />
-          </div>
+        <div className="flex flex-col justify-between h-[105px] w-full p-2 bg-gradient-to-b from-neutral-50 to-white rounded-xl border border-neutral-200/40">
           <div className="space-y-1.5 my-auto py-1">
             <div className="h-1.5 w-full bg-neutral-100 rounded-full" />
             <div className="h-1.5 w-4/5 bg-neutral-100 rounded-full" />
             <div className="h-1.5 w-3/5 bg-neutral-100 rounded-full" />
           </div>
-          <div className="text-[9px] font-mono text-neutral-400 truncate">
-            #{tagName}
+          <div className="flex items-center justify-between">
+            <span className="text-[8.5px] font-mono text-neutral-400">
+              #{tagName}
+            </span>
+            <div className="size-2 rounded-full" style={{ backgroundColor: accentColor }} />
           </div>
         </div>
       )}
@@ -567,15 +576,19 @@ export function TagsView({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 pb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 sm:gap-6 pb-12">
           {processedTags.map(tag => {
             const theme = FOLDER_COLOR_THEMES[tag.color] || FOLDER_COLOR_THEMES.violet;
             const items = tagStats.bookmarkMap[tag.name.toLowerCase()] || [];
             const count = items.length;
 
-            const cardLeft = count >= 3 ? items[0] : (count === 2 ? items[0] : undefined);
-            const cardCenter = count >= 3 ? items[1] : (count >= 1 ? items[0] : undefined);
-            const cardRight = count >= 3 ? items[2] : (count === 2 ? items[1] : undefined);
+            // Ensure unique items
+            const uniqueItems = items.filter((b, i, a) => a.findIndex(x => x.id === b.id) === i);
+
+            // Primary bookmark in center; secondary bookmarks on left and right
+            const cardCenter = uniqueItems[0];
+            const cardLeft = uniqueItems.length >= 2 ? uniqueItems[1] : undefined;
+            const cardRight = uniqueItems.length >= 3 ? uniqueItems[2] : undefined;
 
             return (
               <div
@@ -590,42 +603,45 @@ export function TagsView({
                     tag: tag
                   });
                 }}
-                className={`group/folder relative h-[240px] rounded-3xl cursor-pointer select-none transition-all duration-400 ease-out hover:-translate-y-2 ${theme.glowHover}`}
+                className={`group/folder relative w-full max-w-[260px] mx-auto h-[275px] rounded-[28px] cursor-pointer select-none transition-all duration-400 ease-out hover:-translate-y-2 ${theme.glowHover}`}
               >
                 {/* 1. Folder Back Body */}
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/25 overflow-hidden z-0`}>
+                <div className={`absolute inset-0 rounded-[28px] bg-gradient-to-b ${theme.backBg} shadow-lg border border-white/20 overflow-hidden z-0`}>
                   <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/10 pointer-events-none" />
                 </div>
 
-                {/* 2. Tucked Layered Bookmark Cards (Multi-card fanning stack) */}
+                {/* 2. Tucked Layered Bookmark Cards (Multi-card visibly peeking stack) */}
                 <FolderTuckedCard
                   item={cardLeft}
                   position="left"
                   tagName={tag.name}
+                  count={count}
                   accentColor={theme.splashColor}
                 />
                 <FolderTuckedCard
                   item={cardRight}
                   position="right"
                   tagName={tag.name}
+                  count={count}
                   accentColor={theme.splashColor}
                 />
                 <FolderTuckedCard
                   item={cardCenter}
                   position="center"
                   tagName={tag.name}
+                  count={count}
                   accentColor={theme.splashColor}
                 />
 
-                {/* 3. Front Pocket Sleeve with Organic Cutout & Bottom Splash */}
-                <div className="absolute inset-x-0 bottom-0 h-[62%] z-30 flex flex-col justify-end pointer-events-none">
+                {/* 3. Front Pocket Sleeve with Organic Cutout & Bottom Artwork */}
+                <div className="absolute inset-x-0 bottom-0 h-[56%] z-30 flex flex-col justify-end pointer-events-none">
                   {/* Sculpted Wavy Top Lip */}
                   <svg viewBox="0 0 400 48" preserveAspectRatio="none" className="w-full h-8 block -mb-0.5 drop-shadow-sm">
                     <path d="M 0 24 Q 90 6 180 26 T 400 12 L 400 48 L 0 48 Z" fill="currentColor" className={`bg-gradient-to-b ${theme.frontBg} text-transparent`} style={{ fill: 'currentColor' }} />
                   </svg>
 
                   {/* Pocket Body */}
-                  <div className={`relative rounded-b-3xl bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-4 pt-1 flex flex-col justify-between min-h-[96px] backdrop-blur-md shadow-2xl pointer-events-auto`}>
+                  <div className={`relative rounded-b-[28px] bg-gradient-to-b ${theme.frontBg} ${theme.frontBorder} border-b border-x p-3.5 pt-1 flex flex-col justify-between min-h-[92px] backdrop-blur-md shadow-2xl pointer-events-auto`}>
                     {/* Splash / Leaves / Seeds Graphic at Bottom Left */}
                     <div className="absolute bottom-2.5 left-3 pointer-events-none select-none">
                       <FolderAccentGraphic type={theme.splashType} color={theme.splashColor} />
@@ -633,12 +649,12 @@ export function TagsView({
 
                     {/* Front Content: Tag Name & Saves Count Pill */}
                     <div className="flex items-center justify-between gap-2 relative z-10 pl-1">
-                      <div className="min-w-0 pr-2">
-                        <h3 className="text-base sm:text-[17px] font-bold text-white drop-shadow-md tracking-tight truncate group-hover/folder:text-white transition-colors">
+                      <div className="min-w-0 pr-1.5">
+                        <h3 className="text-[15px] sm:text-base font-bold text-white drop-shadow-md tracking-tight truncate group-hover/folder:text-white transition-colors">
                           {tag.name}
                         </h3>
                         <div className="inline-flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[11px] font-semibold text-white/90 bg-black/20 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/10">
+                          <span className="text-[10.5px] font-semibold text-white/90 bg-black/20 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/10">
                             {count} {count === 1 ? 'save' : 'saves'}
                           </span>
                         </div>
@@ -656,10 +672,10 @@ export function TagsView({
                             tag: tag
                           });
                         }}
-                        className="flex size-7.5 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white transition-colors cursor-pointer shrink-0 border border-white/20 shadow-xs"
+                        className="flex size-7 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white transition-colors cursor-pointer shrink-0 border border-white/20 shadow-xs"
                         title="More options"
                       >
-                        <MoreHorizontal className="size-4" />
+                        <MoreHorizontal className="size-3.5" />
                       </button>
                     </div>
                   </div>
