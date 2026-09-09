@@ -209,8 +209,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }
   }, [activeDetailBookmark, user?.id]);
 
-  // Background tag generation tracking state
+  // Background tag generation and summarization tracking state
   const [generatingTagIds, setGeneratingTagIds] = useState<Set<string>>(new Set());
+  const [summarizingIds, setSummarizingIds] = useState<Set<string>>(new Set());
   const processedAutoTagIdsRef = useRef<Set<string>>(new Set());
 
   // Sync pinned creators to localStorage
@@ -785,7 +786,71 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     });
   };
 
-  // AI Tag Generator for a Bookmark (manual trigger or auto-queue)
+  // Dedicated AI Summarizer for a Bookmark (regenerates post-style breakdown without touching tags)
+  const handleSummarizeBookmark = useCallback(async (bookmark: BookmarkItem) => {
+    if (!bookmark || !bookmark.id || summarizingIds.has(bookmark.id)) return;
+
+    setSummarizingIds(prev => new Set(prev).add(bookmark.id));
+
+    try {
+      const response = await fetch('/api/ai/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: bookmark.id,
+          url: bookmark.url || '',
+          title: bookmark.title || '',
+          text: bookmark.text || '',
+          platform: bookmark.platform || 'web',
+          displayName: bookmark.displayName || '',
+          username: bookmark.username || '',
+          userId: user?.id,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const newText = result.text && typeof result.text === 'string' ? result.text : null;
+
+        if (newText) {
+          // Update ONLY text in local state (tags are completely untouched!)
+          setBookmarks(prev =>
+            prev.map(b => {
+              if (b.id !== bookmark.id) return b;
+              return {
+                ...b,
+                text: newText,
+              };
+            })
+          );
+
+          // If detail modal is open for this bookmark, update it too
+          setActiveDetailBookmark(prev => {
+            if (!prev || prev.id !== bookmark.id) return prev;
+            return {
+              ...prev,
+              text: newText,
+            };
+          });
+
+          // Save text update to Supabase
+          updateBookmarkInDb(bookmark.id, { text: newText });
+        }
+      }
+    } catch (err) {
+      console.warn('AI summarization error for bookmark:', bookmark.id, err);
+    } finally {
+      setSummarizingIds(prev => {
+        const next = new Set(prev);
+        next.delete(bookmark.id);
+        return next;
+      });
+    }
+  }, [summarizingIds, user]);
+
+  // AI Tag Generator for a Bookmark (strictly updates tags without touching summary)
   const handleGenerateTagsForBookmark = useCallback(async (bookmark: BookmarkItem) => {
     if (!bookmark || !bookmark.id || generatingTagIds.has(bookmark.id)) return;
 
@@ -806,24 +871,21 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           displayName: bookmark.displayName || '',
           username: bookmark.username || '',
           userId: user?.id,
-          regenerateSummary: true,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
         const newTags = Array.isArray(result.tags) ? result.tags : [];
-        const newText = result.text && typeof result.text === 'string' ? result.text : null;
 
-        if (newTags.length > 0 || newText) {
-          // Update bookmark in local state
+        if (newTags.length > 0) {
+          // Update ONLY tags in local state (text is completely untouched!)
           setBookmarks(prev =>
             prev.map(b => {
               if (b.id !== bookmark.id) return b;
               return {
                 ...b,
-                ...(newTags.length > 0 ? { tags: newTags } : {}),
-                ...(newText && newText !== b.text ? { text: newText } : {}),
+                tags: newTags,
               };
             })
           );
@@ -833,37 +895,31 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
             if (!prev || prev.id !== bookmark.id) return prev;
             return {
               ...prev,
-              ...(newTags.length > 0 ? { tags: newTags } : {}),
-              ...(newText && newText !== prev.text ? { text: newText } : {}),
+              tags: newTags,
             };
           });
 
           // Update tags catalog if new tags added
-          if (newTags.length > 0) {
-            setTags(prevTags => {
-              const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
-              const toAdd: Tag[] = [];
-              for (const nt of newTags) {
-                if (!existingNames.has(nt.name.toLowerCase())) {
-                  const newTagObj: Tag = {
-                    id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-                    name: nt.name,
-                    color: nt.color,
-                  };
-                  toAdd.push(newTagObj);
-                  existingNames.add(nt.name.toLowerCase());
-                  insertTagToDb(newTagObj, user?.id);
-                }
+          setTags(prevTags => {
+            const existingNames = new Set(prevTags.map(t => t.name.toLowerCase()));
+            const toAdd: Tag[] = [];
+            for (const nt of newTags) {
+              if (!existingNames.has(nt.name.toLowerCase())) {
+                const newTagObj: Tag = {
+                  id: `tag_${nt.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+                  name: nt.name,
+                  color: nt.color,
+                };
+                toAdd.push(newTagObj);
+                existingNames.add(nt.name.toLowerCase());
+                insertTagToDb(newTagObj, user?.id);
               }
-              return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
-            });
-          }
+            }
+            return toAdd.length > 0 ? [...prevTags, ...toAdd] : prevTags;
+          });
 
-          // Save bookmark tags and text update to Supabase
-          const dbUpdates: Record<string, unknown> = {};
-          if (newTags.length > 0) dbUpdates.tags = newTags;
-          if (newText) dbUpdates.text = newText;
-          updateBookmarkInDb(bookmark.id, dbUpdates);
+          // Save bookmark tags update to Supabase
+          updateBookmarkInDb(bookmark.id, { tags: newTags });
         }
       }
     } catch (err) {
@@ -1635,7 +1691,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onOpenDetail={setActiveDetailBookmark}
                 onSelectTag={handleSelectTag}
                 generatingTagIds={generatingTagIds}
+                summarizingIds={summarizingIds}
                 onGenerateTags={handleGenerateTagsForBookmark}
+                onSummarize={handleSummarizeBookmark}
                 onEditTags={setActiveEditTagsBookmark}
               />
             </div>
@@ -1648,9 +1706,12 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         bookmark={activeDetailBookmark}
         isOpen={!!activeDetailBookmark}
         isGeneratingTags={activeDetailBookmark ? generatingTagIds.has(activeDetailBookmark.id) : false}
+        isSummarizing={activeDetailBookmark ? summarizingIds.has(activeDetailBookmark.id) : false}
         onClose={() => setActiveDetailBookmark(null)}
         onSelectTag={handleSelectTag}
         onGenerateTags={handleGenerateTagsForBookmark}
+        onSummarize={handleSummarizeBookmark}
+        onOpenImage={setActiveLightboxImage}
       />
 
       <CommandPalette

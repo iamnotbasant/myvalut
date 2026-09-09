@@ -3,8 +3,6 @@ import {
   generateGeminiTags,
   detectPlatformFromUrl,
   scrapeUrlMetadata,
-  fetchYouTubeTranscript,
-  generateMediaSummary,
 } from '@/lib/gemini-tagger';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -21,12 +19,11 @@ export async function POST(req: NextRequest) {
       username = '',
       apiKey,
       userId,
-      regenerateSummary = false,
     } = body;
 
     let platform = customPlatform || (url ? detectPlatformFromUrl(url) : 'web');
 
-    // If URL is provided and metadata is sparse, attempt scraping
+    // If URL is provided and metadata is sparse, attempt scraping for better context
     if (url && (!title || !text || text.length < 20)) {
       try {
         const scraped = await scrapeUrlMetadata(url);
@@ -36,50 +33,14 @@ export async function POST(req: NextRequest) {
         username = username || scraped.username;
         platform = scraped.platform || platform;
       } catch (scrapeErr) {
-        console.warn('AI tag route auto-scrape warning:', scrapeErr);
-      }
-    }
-
-    // If YouTube or Instagram and not yet summarized or user requested regeneration
-    let updatedText = text;
-    if (
-      (platform === 'youtube' || platform === 'instagram') &&
-      (!text || !text.includes('Takeaway') || text.length < 120 || regenerateSummary)
-    ) {
-      try {
-        let transcriptToSummarize = text;
-        if (platform === 'youtube') {
-          const vidMatch = url?.match(/(?:watch\?v=|shorts\/|live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-          if (vidMatch) {
-            const fetched = await fetchYouTubeTranscript(vidMatch[1]);
-            if (fetched && fetched.length > 25) {
-              transcriptToSummarize = fetched;
-            }
-          }
-        }
-
-        if (transcriptToSummarize && transcriptToSummarize.length > 25) {
-          const summary = await generateMediaSummary({
-            platform,
-            title: title || '',
-            transcriptOrText: transcriptToSummarize,
-            creator: displayName || username,
-            apiKey,
-          });
-
-          if (summary && summary.length > 50) {
-            updatedText = summary;
-          }
-        }
-      } catch (sumErr) {
-        console.warn('AI summary generation error in tag route:', sumErr);
+        console.warn('[AI Tag] Auto-scrape warning:', scrapeErr);
       }
     }
 
     const result = await generateGeminiTags({
       platform,
-      title: title || updatedText.slice(0, 80) || url,
-      text: updatedText || title || url,
+      title: title || text.slice(0, 80) || url,
+      text: text || title || url,
       displayName,
       username,
       apiKey,
@@ -87,17 +48,13 @@ export async function POST(req: NextRequest) {
 
     const tags = result.tags || [];
 
-    // If bookmark ID provided, update database
+    // If bookmark ID provided, update ONLY the tags in the database (never touch text!)
     let savedToDatabase = false;
     if (id && isSupabaseConfigured && supabase) {
       try {
-        const updatePayload: Record<string, any> = {};
-        if (tags.length > 0) updatePayload.tags = tags;
-        if (updatedText && updatedText !== text) updatePayload.text = updatedText;
-
         const { error: updateErr } = await supabase
           .from('bookmarks')
-          .update(updatePayload)
+          .update({ tags: tags })
           .eq('id', id);
 
         if (!updateErr) {
@@ -122,14 +79,13 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (dbErr) {
-        console.warn('Database tag update warning:', dbErr);
+        console.warn('[AI Tag] Database tag update warning:', dbErr);
       }
     }
 
     return NextResponse.json({
       success: true,
       tags,
-      text: updatedText,
       bookmarkId: id,
       savedToDatabase,
       details: result.rawDetails,

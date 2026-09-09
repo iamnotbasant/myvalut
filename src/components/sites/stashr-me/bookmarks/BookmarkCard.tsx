@@ -28,6 +28,7 @@ interface BookmarkCardProps {
   isSelected?: boolean;
   isSelectionMode?: boolean;
   isGeneratingTags?: boolean;
+  isSummarizing?: boolean;
   onToggleSelect?: () => void;
   onToggleFavorite: (id: string) => void;
   onOpenNote: (bookmark: BookmarkItem) => void;
@@ -37,6 +38,7 @@ interface BookmarkCardProps {
   onOpenDetail?: (bookmark: BookmarkItem) => void;
   onSelectTag?: (tagName: string) => void;
   onGenerateTags?: (bookmark: BookmarkItem) => void;
+  onSummarize?: (bookmark: BookmarkItem) => void;
   onEditTags?: (bookmark: BookmarkItem) => void;
 }
 
@@ -102,11 +104,31 @@ export function DynamicCardTags({
 
   if (isGeneratingTags) {
     return (
-      <div className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-lg border border-purple-500/35 bg-purple-950/40 px-2 py-0.5 text-xs text-purple-200 shadow-[0_0_14px_-2px_rgba(168,85,247,0.4)] animate-pulse">
-        <Sparkles className="size-3 text-purple-400 animate-spin" />
-        <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[11px] tracking-wide">
-          AI Tagging...
-        </span>
+      <div className="flex items-center gap-1.5 shrink min-w-0 max-w-full">
+        {/* Active Primary Glowing Tag Pill */}
+        <div className="relative inline-flex shrink-0 select-none items-center gap-1.5 rounded-md border border-purple-500/40 bg-gradient-to-r from-purple-950/70 via-purple-900/40 to-indigo-950/70 px-2 py-0.5 text-xs text-purple-200 shadow-[0_0_14px_-2px_rgba(168,85,247,0.45)] overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <span className="relative flex size-1.5 shrink-0">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-purple-400 opacity-75" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-purple-400" />
+          </span>
+          <Sparkles className="size-2.5 text-purple-300 animate-spin" />
+          <span className="bg-gradient-to-r from-purple-100 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-[10.5px] tracking-wide">
+            AI Tagging...
+          </span>
+        </div>
+
+        {/* Secondary Pulsing Tag Skeleton Pill */}
+        <div className="relative hidden sm:inline-flex shrink-0 items-center gap-1 rounded-md border border-indigo-500/30 bg-[#151221] px-2 py-0.5 h-5 overflow-hidden animate-pulse">
+          <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/15 to-transparent" />
+          <span className="size-1.5 rounded-full bg-indigo-400/40" />
+          <div className="h-2 w-11 rounded-full bg-indigo-400/25" />
+        </div>
+
+        {/* Tertiary Mini Tag Skeleton Pill */}
+        <div className="relative hidden md:inline-flex shrink-0 items-center rounded-md border border-purple-500/20 bg-[#121118] px-1.5 py-0.5 h-5 overflow-hidden animate-pulse">
+          <div className="h-2 w-7 rounded-full bg-purple-400/20" />
+        </div>
       </div>
     );
   }
@@ -211,6 +233,7 @@ export function BookmarkCard({
   isSelected = false,
   isSelectionMode = false,
   isGeneratingTags = false,
+  isSummarizing = false,
   onToggleSelect,
   onToggleFavorite,
   onOpenNote,
@@ -220,6 +243,7 @@ export function BookmarkCard({
   onOpenDetail,
   onSelectTag,
   onGenerateTags,
+  onSummarize,
   onEditTags
 }: BookmarkCardProps) {
   const [copied, setCopied] = useState(false);
@@ -314,12 +338,16 @@ export function BookmarkCard({
         onToggleFavorite(bookmark.id);
       }
     },
+    ...((bookmark.platform === 'youtube' || bookmark.platform === 'instagram') ? [{
+      id: 'ai-summary',
+      label: isSummarizing ? 'Synthesizing Breakdown...' : '✦ Regenerate AI Summary',
+      icon: <Sparkles className="size-3.5 text-purple-400" />,
+      onClick: () => onSummarize?.(bookmark)
+    }] : []),
     {
       id: 'ai-tag',
-      label: isGeneratingTags
-        ? 'Analyzing & Tagging...'
-        : (bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Regenerate AI Summary & Tags' : 'Generate AI Tags'),
-      icon: <Sparkles className="size-3.5 text-purple-400" />,
+      label: isGeneratingTags ? 'Generating Tags...' : '✦ Generate / Refresh AI Tags',
+      icon: <Tag className="size-3.5 text-indigo-400" />,
       onClick: () => onGenerateTags?.(bookmark)
     },
     {
@@ -481,7 +509,20 @@ export function BookmarkCard({
                 {displayTitle}
               </h3>
             )}
-            {showText && displayText && (
+            {isSummarizing ? (
+              <div className="relative overflow-hidden rounded-lg border border-purple-500/25 bg-purple-950/25 p-2 space-y-1.5 animate-pulse">
+                <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-purple-300">
+                  <Sparkles className="size-3 animate-spin text-purple-400" />
+                  <span>AI Synthesizing Deep Breakdown...</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="h-1.5 w-3/4 rounded bg-purple-400/20" />
+                  <div className="h-1.5 w-full rounded bg-purple-400/15" />
+                  <div className="h-1.5 w-1/2 rounded bg-purple-400/10" />
+                </div>
+              </div>
+            ) : showText && displayText && (
               <div className="relative z-10">
                 {isLongText ? (
                   <div className="relative max-h-24 sm:max-h-32 overflow-hidden text-xs leading-relaxed text-neutral-400">
@@ -636,7 +677,20 @@ export function BookmarkCard({
         )}
 
         {/* Content text */}
-        {showText && displayText && (
+        {isSummarizing ? (
+          <div className="relative z-10 overflow-hidden rounded-xl border border-purple-500/25 bg-purple-950/25 p-3.5 space-y-2 animate-pulse">
+            <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
+            <div className="flex items-center gap-2 text-xs font-medium text-purple-300">
+              <Sparkles className="size-3.5 animate-spin text-purple-400" />
+              <span>AI Synthesizing Deep Breakdown & Executive Insights...</span>
+            </div>
+            <div className="space-y-1.5">
+              <div className="h-2 w-3/4 rounded bg-purple-400/20" />
+              <div className="h-2 w-full rounded bg-purple-400/15" />
+              <div className="h-2 w-2/3 rounded bg-purple-400/10" />
+            </div>
+          </div>
+        ) : showText && displayText && (
           <div className="relative z-10 text-[14px] leading-relaxed text-neutral-200">
             {isLongText ? (
               <div className="relative max-h-52 sm:max-h-64 overflow-hidden">
@@ -966,6 +1020,19 @@ export function BookmarkCard({
                   <Star className={`size-3.5 ${bookmark.isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
                   <span>{bookmark.isFavorite ? 'Favorited' : 'Favorite'}</span>
                 </button>
+                {(bookmark.platform === 'youtube' || bookmark.platform === 'instagram') && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      setIsMenuOpen(false);
+                      onSummarize?.(bookmark);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="size-3.5 text-purple-400" />
+                    <span>{isSummarizing ? 'Synthesizing Breakdown...' : '✦ Regenerate AI Summary'}</span>
+                  </button>
+                )}
                 <button
                   onClick={e => {
                     e.stopPropagation();
@@ -974,12 +1041,8 @@ export function BookmarkCard({
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
-                  <Sparkles className="size-3.5 text-purple-400" />
-                  <span>
-                    {isGeneratingTags
-                      ? 'Analyzing...'
-                      : (bookmark.platform === 'youtube' || bookmark.platform === 'instagram' ? 'Regenerate AI Summary' : 'Generate AI tags')}
-                  </span>
+                  <Tag className="size-3.5 text-indigo-400" />
+                  <span>{isGeneratingTags ? 'Generating Tags...' : '✦ Generate / Refresh AI Tags'}</span>
                 </button>
                 <button
                   onClick={e => {
@@ -1114,14 +1177,13 @@ export function BookmarkCard({
       )}
 
       {/* Post Text or Live AI Synthesis Skeleton */}
-      {isGeneratingTags ? (
+      {isSummarizing ? (
         <div className="relative z-10 rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/30 via-[#13111c] to-indigo-950/20 p-3 shadow-inner overflow-hidden animate-in fade-in-50 duration-300">
+          <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
           <div className="flex items-center gap-2 text-purple-300 font-medium text-xs mb-2 animate-pulse">
             <Sparkles className="size-3.5 text-purple-400 animate-spin" />
             <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
-              {bookmark.platform === 'youtube' || bookmark.platform === 'instagram'
-                ? 'Synthesizing AI Summary & Key Takeaways...'
-                : 'Analyzing content & generating AI tags...'}
+              Synthesizing Deep Breakdown & Key Takeaways...
             </span>
           </div>
           <div className="space-y-1.5">

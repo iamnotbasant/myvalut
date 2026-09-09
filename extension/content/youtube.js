@@ -406,7 +406,10 @@
     const avatarUrl = document.querySelector('#owner #avatar img')?.src || '';
     const imageUrl = vid ? `https://i.ytimg.com/vi/${vid}/maxresdefault.jpg` : '';
 
-    let text = document.querySelector('#description-inline-expander, ytd-text-inline-expander, #description')?.innerText?.trim() || '';
+    let text =
+      document.querySelector('#description yt-attributed-string, #description-inline-expander, ytd-text-inline-expander, #description')?.innerText?.trim() ||
+      document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ||
+      '';
 
     // Attempt to extract live timed-text transcript from page captionTracks
     try {
@@ -432,25 +435,27 @@
       if (captionTracks && captionTracks.length > 0) {
         const enTrack = captionTracks.find(t => t.languageCode?.startsWith('en')) || captionTracks[0];
         if (enTrack?.baseUrl) {
-          const captionRes = await fetch(enTrack.baseUrl);
-          if (captionRes.ok) {
-            const xml = await captionRes.text();
-            const matches = xml.matchAll(/<text[^>]*>(.*?)<\/text>/gs);
-            const parts = [];
-            for (const m of matches) {
-              const cleaned = m[1]
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&#39;/g, "'")
-                .replace(/&quot;/g, '"');
-              parts.push(cleaned.trim());
+          try {
+            const captionRes = await fetch(enTrack.baseUrl, { credentials: 'include' });
+            if (captionRes.ok) {
+              const xml = await captionRes.text();
+              const matches = xml.matchAll(/<text[^>]*>(.*?)<\/text>/gs);
+              const parts = [];
+              for (const m of matches) {
+                const cleaned = m[1]
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&#39;/g, "'")
+                  .replace(/&quot;/g, '"');
+                parts.push(cleaned.trim());
+              }
+              const fullTranscript = parts.join(' ').replace(/\s+/g, ' ').trim();
+              if (fullTranscript.length > 40) {
+                text = fullTranscript;
+              }
             }
-            const fullTranscript = parts.join(' ').replace(/\s+/g, ' ').trim();
-            if (fullTranscript.length > 40) {
-              text = fullTranscript;
-            }
-          }
+          } catch {}
         }
       }
     } catch (e) {

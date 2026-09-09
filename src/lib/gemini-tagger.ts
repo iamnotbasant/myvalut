@@ -380,44 +380,48 @@ export async function generateMediaSummary(params: {
 
   const isReel = platform === 'instagram';
   const systemInstruction = isReel
-    ? `You are an expert content distiller for Instagram Reels.
-Your task is to analyze this Reel's caption, audio transcription, or spoken dialogue, and generate a rich, high-value structured summary.
+    ? `You are an elite creative analyst and content distiller.
+Your task is to analyze this Instagram Reel's audio transcription, caption, and context, and synthesize it into a rich, structured, post-style breakdown.
 
 FORMAT REQUIREMENTS:
-✨ Reel Executive Summary:
-[A punchy 2-paragraph overview explaining what the Reel demonstrates, discusses, or showcases, including exact techniques, tools, or tips mentioned]
+✨ Reel Deep Dive & Breakdown:
+[Provide a thorough 2-3 paragraph comprehensive breakdown:
+• Paragraph 1 - The Concept & Core Insight: What technique, workflow, design concept, or insight is demonstrated and why it matters.
+• Paragraph 2 - Practical Execution & Tools: The specific tools, software, shortcuts, settings, or exact steps used to achieve the result.
+• Paragraph 3 - Pro Tip & Application: How to apply this immediately in real projects, key nuances, or common pitfalls to avoid.]
 
-Key Takeaways:
-• [Takeaway 1: Specific actionable technique or advice]
-• [Takeaway 2: Key workflow, software, or tool shown]
-• [Takeaway 3: Practical outcome or lesson learned]
-• [Takeaway 4: Caveat, tip, or limitation]
+Key Takeaways & Actionable Tips:
+• [Takeaway 1: Core technique or actionable shortcut]
+• [Takeaway 2: Key software, app, or tool configuration mentioned]
+• [Takeaway 3: Practical benefit or creative advantage]
+• [Takeaway 4: Pro tip, caveat, or refinement trick]
 
 RULES:
-- No meta commentary like "In this reel..." or "The creator shows...". Get right to the point.
-- Keep bullet points actionable and specific.
-- Never truncate or cut off mid-sentence; write complete thoughts.`
-    : `You are an elite video research analyst and content distiller.
-Your task is to analyze the provided YouTube video transcript and produce an insightful, comprehensive, and well-structured breakdown.
+- NEVER write a brief 1-line or 2-line blurb. Write an expansive, highly readable post-style breakdown packed with value.
+- Do NOT use filler phrases like "In this reel...", "The creator shows...". Get right to the high-value insights.
+- Never truncate or leave sentences incomplete; write complete, polished thoughts.`
+    : `You are an elite video research analyst and content writer.
+Your task is to analyze the provided YouTube video transcript and context, and synthesize it into an in-depth, rich, post-style breakdown (like an insightful, comprehensive Substack or Medium article).
 
 FORMAT REQUIREMENTS:
-✨ AI Executive Summary:
-[Write a thorough, high-value 2-paragraph overview:
-Paragraph 1: The core premise, problem being addressed, and primary thesis or breakthrough presented in the video.
-Paragraph 2: The actual implementation, workflow, or technical mechanism demonstrated, with specific names of tools, apps, commands, or settings.]
+✨ Video Deep Dive & Executive Breakdown:
+[Provide a rich, 4-paragraph comprehensive breakdown:
+• Paragraph 1 - Core Premise & The Big Shift: The core problem addressed, main thesis, and why this development/technique matters right now.
+• Paragraph 2 - The Exact System & Technical Architecture: Step-by-step breakdown of the exact software, tools, libraries, workflows, commands, or settings demonstrated.
+• Paragraph 3 - Real-World Performance & Trade-offs: Practical trade-offs, benchmarks, latency/efficiency impacts, limitations, or things to consider in production.
+• Paragraph 4 - Verdict & Implementation Path: Who should use this right now, best practices for adoption, and the primary conclusion.]
 
-Key Takeaways & Insights:
-• [Takeaway 1: Specific finding or step explained with context]
-• [Takeaway 2: Key workflow, software, or configuration mentioned]
-• [Takeaway 3: Practical benefits, performance metrics, or comparisons highlighted]
-• [Takeaway 4: Crucial caveats, limitations, or prerequisites]
-• [Takeaway 5: Final conclusion or actionable recommendation]
+Key Takeaways & Implementation Guide:
+• [Takeaway 1: Specific actionable technique, command, or workflow step]
+• [Takeaway 2: Core software, tool, or library name and its exact purpose]
+• [Takeaway 3: Performance, speed, or quality benefit achieved]
+• [Takeaway 4: Critical limitation, prerequisite, or trap to avoid]
+• [Takeaway 5: Final actionable recommendation or next action]
 
 RULES:
-- Ground everything strictly in the provided transcript and content.
-- Do NOT use filler meta commentary like "In this video...", "The creator starts by...", "The video explains...". Get straight to the substance.
-- Be specific, authoritative, and informative so the reader gains deep, practical value without needing to watch the whole video.
-- Never truncate or cut off mid-sentence; always complete all thoughts cleanly.`;
+- NEVER write a short 1-line or 2-line summary. Write an expansive, highly readable post-style breakdown packed with deep practical value.
+- Do NOT use filler meta-commentary like "In this video...", "The author starts with...". Write authoritative, direct content.
+- Never truncate or cut off mid-sentence; write complete, polished thoughts cleanly.`;
 
   const userPrompt = `Title: ${title || 'Video / Reel'}
 Creator: ${creator || 'Creator'}
@@ -426,10 +430,9 @@ Content / Transcript:
 ${transcriptOrText.slice(0, 16000)}`;
 
   const modelCandidates = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
     'gemini-3.6-flash',
-    'gemini-2.0-flash-lite',
   ];
 
   for (const model of modelCandidates) {
@@ -444,11 +447,8 @@ ${transcriptOrText.slice(0, 16000)}`;
           },
           contents: [{ parts: [{ text: userPrompt }] }],
           generationConfig: {
-            temperature: 0.25,
-            maxOutputTokens: 2048,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
+            temperature: 0.3,
+            maxOutputTokens: 3000,
           },
         }),
       });
@@ -1053,10 +1053,9 @@ Platform: ${platform}
 Content/Description: ${cleanContent.slice(0, 3000)}`;
 
   const modelCandidates = [
-    'gemini-3.6-flash',
     'gemini-3.5-flash',
-    'gemini-3.7-flash',
-    'gemini-2.0-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.6-flash',
   ];
 
   try {

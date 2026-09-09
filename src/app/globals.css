@@ -262,6 +262,19 @@ html:not(.dark) {
   animation: tag-pulse 2s ease-in-out infinite;
 }
 
+@keyframes tag-shimmer {
+  0% {
+    transform: translateX(-150%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.animate-tag-shimmer {
+  animation: tag-shimmer 1.8s ease-in-out infinite;
+}
+
 /* Mobile & Touch Utilities */
 * {
   -webkit-tap-highlight-color: transparent;
