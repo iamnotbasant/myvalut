@@ -231,12 +231,12 @@ export async function POST(req: NextRequest) {
                     transcriptToSummarize = fetchedTranscript;
                   }
                   if (!bgImageUrl) {
-                    bgImageUrl = `https://i.ytimg.com/vi/${vidMatch[1]}/maxresdefault.jpg`;
+                    bgImageUrl = `https://i.ytimg.com/vi/${vidMatch[1]}/hqdefault.jpg`;
                   }
                 }
               }
 
-              if (transcriptToSummarize && transcriptToSummarize.length > 25) {
+              if (transcriptToSummarize && transcriptToSummarize.length > 15) {
                 const summary = await generateMediaSummary({
                   platform: bgPlatform,
                   title: bgTitle || '',

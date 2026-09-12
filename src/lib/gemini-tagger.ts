@@ -267,7 +267,7 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
       },
       signal: AbortSignal.timeout(6000),
     });
@@ -279,7 +279,11 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
         try {
           const tracks = JSON.parse(captionsMatch[1]);
           if (Array.isArray(tracks) && tracks.length > 0) {
-            const preferredTracks = tracks.filter((t: { languageCode?: string }) => t.languageCode?.startsWith('en'));
+            // Sort tracks: prefer English, Hindi, or auto-captions
+            const preferredTracks = tracks.filter((t: { languageCode?: string }) => {
+              const code = (t.languageCode || '').toLowerCase();
+              return code.startsWith('en') || code.startsWith('hi');
+            });
             const candidateTracks = preferredTracks.length > 0 ? [...preferredTracks, ...tracks] : tracks;
 
             for (const track of candidateTracks) {
@@ -291,15 +295,35 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
                 });
                 if (captionRes.ok) {
                   const xml = await captionRes.text();
-                  const $ = cheerio.load(xml, { xmlMode: true });
-                  const texts: string[] = [];
-                  $('text').each((_, el) => {
-                    const t = $(el).text().trim();
-                    if (t) texts.push(t);
-                  });
-                  const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
-                  if (transcript.length > 30) {
-                    return transcript.slice(0, 16000);
+                  if (xml.includes('<text') || xml.includes('<transcript')) {
+                    const $ = cheerio.load(xml, { xmlMode: true });
+                    const texts: string[] = [];
+                    $('text').each((_, el) => {
+                      const t = $(el).text().trim();
+                      if (t) texts.push(t);
+                    });
+                    const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
+                    if (transcript.length > 30) {
+                      return transcript.slice(0, 28000);
+                    }
+                  } else {
+                    // Try parsing as JSON3 format if baseUrl returned json
+                    try {
+                      const json3 = JSON.parse(xml);
+                      const events = json3?.events || [];
+                      const texts: string[] = [];
+                      for (const ev of events) {
+                        if (Array.isArray(ev.segs)) {
+                          for (const seg of ev.segs) {
+                            if (seg.utf8) texts.push(seg.utf8.trim());
+                          }
+                        }
+                      }
+                      const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
+                      if (transcript.length > 30) {
+                        return transcript.slice(0, 28000);
+                      }
+                    } catch {}
                   }
                 }
               } catch {}
@@ -311,28 +335,31 @@ export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
       }
     }
 
-    // 2. Direct timedtext endpoint fallback
-    try {
-      const directRes = await fetch(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(4000),
-      });
-      if (directRes.ok) {
-        const xml = await directRes.text();
-        if (xml.includes('<text')) {
-          const $ = cheerio.load(xml, { xmlMode: true });
-          const texts: string[] = [];
-          $('text').each((_, el) => {
-            const t = $(el).text().trim();
-            if (t) texts.push(t);
-          });
-          const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
-          if (transcript.length > 30) {
-            return transcript.slice(0, 16000);
+    // 2. Direct timedtext endpoint fallbacks (en, hi)
+    const fallbackLangs = ['en', 'hi', 'a.en'];
+    for (const lang of fallbackLangs) {
+      try {
+        const directRes = await fetch(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (directRes.ok) {
+          const xml = await directRes.text();
+          if (xml.includes('<text')) {
+            const $ = cheerio.load(xml, { xmlMode: true });
+            const texts: string[] = [];
+            $('text').each((_, el) => {
+              const t = $(el).text().trim();
+              if (t) texts.push(t);
+            });
+            const transcript = texts.join(' ').replace(/\s+/g, ' ').trim();
+            if (transcript.length > 30) {
+              return transcript.slice(0, 28000);
+            }
           }
         }
-      }
-    } catch {}
+      } catch {}
+    }
   } catch (err) {
     console.warn('[YouTube Transcript] Failed to fetch transcript for video', videoId, err);
   }
@@ -380,59 +407,84 @@ export async function generateMediaSummary(params: {
 
   const isReel = platform === 'instagram';
   const systemInstruction = isReel
-    ? `You are an elite creative analyst and content distiller.
-Your task is to analyze this Instagram Reel's audio transcription, caption, and context, and synthesize it into a rich, structured, post-style breakdown.
+    ? `You are an elite creative analyst, tech researcher, and viral content distiller.
+Instagram Reels are fast-paced (15-90 seconds) and frequently showcase a specific AI tool, website, shortcut, mobile app, design trick, or creative workflow.
+Your mission is to extract the exact practical value, the exact tools or apps featured, and step-by-step instructions into an expansive, rich, post-style breakdown.
 
 FORMAT REQUIREMENTS:
-✨ Reel Deep Dive & Breakdown:
-[Provide a thorough 2-3 paragraph comprehensive breakdown:
-• Paragraph 1 - The Concept & Core Insight: What technique, workflow, design concept, or insight is demonstrated and why it matters.
-• Paragraph 2 - Practical Execution & Tools: The specific tools, software, shortcuts, settings, or exact steps used to achieve the result.
-• Paragraph 3 - Pro Tip & Application: How to apply this immediately in real projects, key nuances, or common pitfalls to avoid.]
 
-Key Takeaways & Actionable Tips:
-• [Takeaway 1: Core technique or actionable shortcut]
-• [Takeaway 2: Key software, app, or tool configuration mentioned]
-• [Takeaway 3: Practical benefit or creative advantage]
-• [Takeaway 4: Pro tip, caveat, or refinement trick]
+# [Snappy & Descriptive Title for the Reel]
+
+### 🎯 Reel Overview & Core Hook
+[Provide an insightful 1-2 paragraph breakdown explaining what this reel is demonstrating, the core problem it solves, and why it matters.]
+
+### 🛠️ Featured Tools, Apps & Websites
+(CRITICAL RULE: You MUST identify and cleanly list the EXACT name of every tool, website, AI platform, iOS/Android app, plugin, software, or prompt featured or mentioned in this reel:
+• **[Tool/App/Website Name]**: [Exact purpose, why it's useful, and how to access or use it])
+*(If no specific tool or website was named, state: "• No specific external tools mentioned in this reel.")*
+
+### 📝 Step-by-Step Tutorial / How It Works
+1. **[Step 1]**: [The exact initial action, tool opened, or prompt entered]
+2. **[Step 2]**: [The settings, parameters, or technique demonstrated]
+3. **[Step 3]**: [The final output, shortcut, or result achieved]
+
+### 💡 Pro Tips & Actionable Insights
+• **[Pro Tip 1]**: Practical advice, shortcut, or workflow improvement.
+• **[Nuance 2]**: Pricing details (free tier vs paid), limitations, or useful alternatives.
 
 RULES:
-- NEVER write a brief 1-line or 2-line blurb. Write an expansive, highly readable post-style breakdown packed with value.
-- Do NOT use filler phrases like "In this reel...", "The creator shows...". Get right to the high-value insights.
-- Never truncate or leave sentences incomplete; write complete, polished thoughts.`
-    : `You are an elite video research analyst and content writer.
-Your task is to analyze the provided YouTube video transcript and context, and synthesize it into an in-depth, rich, post-style breakdown (like an insightful, comprehensive Substack or Medium article).
+- NEVER write a short 1-line or 2-line summary. Write an expansive, highly readable breakdown packed with real value.
+- ALWAYS prominently list the exact tools and apps mentioned so the reader can immediately use them.
+- Do NOT use filler phrases like "In this reel...", "The creator shows...". Get straight to the high-value insights.
+- Write clean, polished markdown with bold highlights and numbered/bulleted points.`
+    : `You are an elite technical research analyst and executive author.
+Your task is to analyze the provided YouTube video transcript and context, and synthesize it into an in-depth, comprehensive, long-form post breakdown (like an insightful Substack or Medium deep dive).
 
 FORMAT REQUIREMENTS:
-✨ Video Deep Dive & Executive Breakdown:
-[Provide a rich, 4-paragraph comprehensive breakdown:
-• Paragraph 1 - Core Premise & The Big Shift: The core problem addressed, main thesis, and why this development/technique matters right now.
-• Paragraph 2 - The Exact System & Technical Architecture: Step-by-step breakdown of the exact software, tools, libraries, workflows, commands, or settings demonstrated.
-• Paragraph 3 - Real-World Performance & Trade-offs: Practical trade-offs, benchmarks, latency/efficiency impacts, limitations, or things to consider in production.
-• Paragraph 4 - Verdict & Implementation Path: Who should use this right now, best practices for adoption, and the primary conclusion.]
 
-Key Takeaways & Implementation Guide:
-• [Takeaway 1: Specific actionable technique, command, or workflow step]
-• [Takeaway 2: Core software, tool, or library name and its exact purpose]
-• [Takeaway 3: Performance, speed, or quality benefit achieved]
-• [Takeaway 4: Critical limitation, prerequisite, or trap to avoid]
-• [Takeaway 5: Final actionable recommendation or next action]
+# [Captivating, Informative & Accurate Title of the Breakdown]
+
+### 📌 Executive Overview & Core Concept
+[Provide an expansive 2-3 paragraph deep dive:
+• The core premise, the problem addressed, and why this development, technique, or topic matters right now.
+• The overarching context and background.]
+
+### 🛠️ Tools, Software & Resources Mentioned
+(CRITICAL RULE: Thoroughly identify and list EVERY single tool, software, AI model, website, library, framework, browser extension, GitHub repository, command line tool, or resource referenced, demonstrated, or recommended in the video. For each item:
+• **[Exact Tool/Resource Name]**: [What it is, its specific role or use-case in this workflow, pricing/free status if mentioned, and how to access it])
+*(If no specific software tools were mentioned, state: "• No specific external software tools mentioned in this discussion.")*
+
+### 📋 In-Depth Step-by-Step Technical Breakdown
+[Provide a thorough, sequential explanation of the entire workflow, process, architecture, or tutorial taught in the video:
+1. **[Phase/Step 1]**: Detailed walkthrough of the initial setup, concept, or configuration.
+2. **[Phase/Step 2]**: Core execution, technical methodology, and exact parameters used.
+3. **[Phase/Step 3]**: Integration, nuances, and optimization steps.
+4. **[Phase/Step 4]**: Testing, verification, or output generation.]
+
+### 💡 Key Takeaways & Actionable Insights
+• **[Takeaway 1]**: Primary actionable technique or formula.
+• **[Takeaway 2]**: Core software, tool, or library benefit.
+• **[Takeaway 3]**: Critical limitation, trade-off, or common pitfall to avoid.
+• **[Takeaway 4]**: Real-world performance, speed, or quality advantage.
+• **[Takeaway 5]**: Final verdict and immediate next steps for adoption.
 
 RULES:
-- NEVER write a short 1-line or 2-line summary. Write an expansive, highly readable post-style breakdown packed with deep practical value.
+- NEVER write a short 1-line or 2-line summary. Write an expansive, highly detailed, high-utility breakdown packed with practical value.
+- ALWAYS extract and highlight EVERY tool and resource mentioned in its dedicated section.
 - Do NOT use filler meta-commentary like "In this video...", "The author starts with...". Write authoritative, direct content.
-- Never truncate or cut off mid-sentence; write complete, polished thoughts cleanly.`;
+- Write complete, polished, beautiful thoughts cleanly in markdown.`;
 
   const userPrompt = `Title: ${title || 'Video / Reel'}
 Creator: ${creator || 'Creator'}
 Platform: ${platform}
 Content / Transcript:
-${transcriptOrText.slice(0, 16000)}`;
+${transcriptOrText.slice(0, 25000)}`;
 
   const modelCandidates = [
-    'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
-    'gemini-3.6-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.5-pro',
   ];
 
   for (const model of modelCandidates) {
@@ -448,7 +500,7 @@ ${transcriptOrText.slice(0, 16000)}`;
           contents: [{ parts: [{ text: userPrompt }] }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 3000,
+            maxOutputTokens: 4000,
           },
         }),
       });
@@ -749,39 +801,99 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
         } catch {}
       }
     } else if (platform === 'instagram') {
-      try {
-        const oembedRes = await fetch(
-          `https://api.instagram.com/oembed/?url=${encodeURIComponent(inputUrl)}`,
-          {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(5000),
-          }
-        );
-        if (oembedRes.ok) {
-          const data = await oembedRes.json();
-          displayName = data.author_name ? `@${data.author_name}` : 'Instagram';
-          username = data.author_name || 'instagram_user';
-          avatarUrl = `https://unavatar.io/instagram/${username}`;
-          if (data.title) {
-            text = data.title.trim();
-            title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
-          }
-          if (data.thumbnail_url) {
-            imageUrl = data.thumbnail_url;
+      // 1. Scrape public Instagram captioned embed (Works without Meta API tokens or login)
+      const igCodeMatch = inputUrl.match(/\/(?:reel|reels|p|tv)\/([a-zA-Z0-9_-]+)/i);
+      const shortcode = igCodeMatch ? igCodeMatch[1] : '';
+
+      if (shortcode) {
+        const candidateEmbedUrls = [
+          `https://www.instagram.com/reel/${shortcode}/embed/captioned/`,
+          `https://www.instagram.com/p/${shortcode}/embed/captioned/`
+        ];
+
+        for (const embedUrl of candidateEmbedUrls) {
+          try {
+            const embedRes = await fetch(embedUrl, {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+              },
+              signal: AbortSignal.timeout(6000),
+            });
+
+            if (embedRes.ok) {
+              const html = await embedRes.text();
+              const $ = cheerio.load(html);
+
+              const captionEl = $('.Caption');
+              const rawCaption = captionEl.text().trim();
+              const author = $('.CaptionUsername').first().text().trim() || $('.UsernameText').first().text().trim();
+              const avatar = $('.Avatar img').attr('src') || $('img.AvatarImage').attr('src');
+              const mediaImg = $('.EmbeddedMediaImage').attr('src') || $('img[src*="cdninstagram"]').attr('src') || $('img[src*="fbcdn"]').attr('src');
+
+              if (rawCaption && rawCaption.length > 5) {
+                text = rawCaption;
+                title = rawCaption.length > 80 ? `${rawCaption.slice(0, 80)}...` : rawCaption;
+              }
+
+              if (author) {
+                const cleanUser = author.replace(/^@/, '').trim();
+                if (cleanUser) {
+                  username = cleanUser;
+                  displayName = `@${cleanUser}`;
+                }
+              }
+
+              if (avatar && !avatarUrl) avatarUrl = avatar;
+              if (mediaImg && !imageUrl) imageUrl = mediaImg;
+
+              if (text && text.length > 20) {
+                break;
+              }
+            }
+          } catch (embedErr) {
+            console.warn('[Instagram Scraper] Embed fetch error:', embedErr);
           }
         }
-      } catch (igErr) {
-        console.warn('Instagram oembed fallback:', igErr);
       }
 
-      // If text/caption exists, summarize reel content with Gemini AI
-      if (text && text.length > 25) {
+      // 2. Instagram oEmbed fallback
+      if (!text) {
+        try {
+          const oembedRes = await fetch(
+            `https://api.instagram.com/oembed/?url=${encodeURIComponent(inputUrl)}`,
+            {
+              headers: { 'User-Agent': 'Mozilla/5.0' },
+              signal: AbortSignal.timeout(5000),
+            }
+          );
+          if (oembedRes.ok) {
+            const data = await oembedRes.json();
+            displayName = data.author_name ? `@${data.author_name}` : displayName || 'Instagram';
+            username = data.author_name || username || 'instagram_user';
+            avatarUrl = avatarUrl || `https://unavatar.io/instagram/${username}`;
+            if (data.title) {
+              text = data.title.trim();
+              title = text.length > 80 ? `${text.slice(0, 80)}...` : text;
+            }
+            if (data.thumbnail_url && !imageUrl) {
+              imageUrl = data.thumbnail_url;
+            }
+          }
+        } catch (igErr) {
+          console.warn('Instagram oembed fallback:', igErr);
+        }
+      }
+
+      // If text/caption exists, synthesize rich breakdown with Gemini AI
+      if (text && text.length > 15) {
         try {
           const summary = await generateMediaSummary({
             platform: 'instagram',
             title: title || text.slice(0, 80),
             transcriptOrText: text,
-            creator: username,
+            creator: displayName || username,
           });
           if (summary) {
             text = summary;
@@ -1053,9 +1165,10 @@ Platform: ${platform}
 Content/Description: ${cleanContent.slice(0, 3000)}`;
 
   const modelCandidates = [
-    'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
-    'gemini-3.6-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.5-pro',
   ];
 
   try {

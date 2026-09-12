@@ -122,40 +122,35 @@ function mapAppBookmarkToDb(item: BookmarkItem, userId?: string | null): DbBookm
   };
 }
 
+// Fast timeout helper so slow DB responses never freeze the UI
+async function withTimeout<T>(promise: PromiseLike<T>, ms: number = 3500): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Supabase query timed out')), ms);
+  });
+  return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 export async function fetchBookmarksFromDb(userId?: string | null): Promise<BookmarkItem[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
-    let query = supabase.from('bookmarks').select('*').order('created_at_ms', { ascending: false });
+    let query = supabase.from('bookmarks').select('*').order('created_at_ms', { ascending: false }).limit(250);
     
     const validUserId = sanitizeUuid(userId);
     if (validUserId) {
       query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 4000);
 
     if (error) {
-      console.error('Error fetching bookmarks from Supabase:', error);
+      console.warn('Error fetching bookmarks from Supabase:', error.message || error);
       return null;
     }
 
-    return (data as DbBookmark[]).map((row) => {
-      const appBookmark = mapDbBookmarkToApp(row);
-      const originalNames = (row.tags || []).map((t) => t?.name).filter(Boolean).join(',');
-      const normalizedNames = appBookmark.tags.map((t) => t.name).join(',');
-      // Auto-migrate legacy long tags (e.g. 'large language models' -> 'llm') in database
-      if (originalNames && originalNames !== normalizedNames && supabase) {
-        Promise.resolve(
-          supabase
-            .from('bookmarks')
-            .update({ tags: appBookmark.tags })
-            .eq('id', row.id)
-        ).catch(() => {});
-      }
-      return appBookmark;
-    });
-  } catch (err) {
-    console.error('Failed to fetch from Supabase:', err);
+    return (data as DbBookmark[]).map((row) => mapDbBookmarkToApp(row));
+  } catch (err: any) {
+    console.warn('Supabase fetch bypassed (using fast local cache):', err?.message || err);
     return null;
   }
 }
@@ -170,10 +165,10 @@ export async function fetchCollectionsFromDb(userId?: string | null): Promise<Co
       query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 3000);
 
     if (error) {
-      console.error('Error fetching collections from Supabase:', error);
+      console.warn('Error fetching collections from Supabase:', error.message || error);
       return null;
     }
     return (data as DbCollection[]).map(c => ({
@@ -181,8 +176,8 @@ export async function fetchCollectionsFromDb(userId?: string | null): Promise<Co
       name: c.name,
       icon: c.icon || undefined,
     }));
-  } catch (err) {
-    console.error('Failed to fetch collections from Supabase:', err);
+  } catch (err: any) {
+    console.warn('Supabase collections bypassed (using local cache):', err?.message || err);
     return null;
   }
 }
@@ -197,10 +192,10 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
       query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query, 3000);
 
     if (error) {
-      console.error('Error fetching tags from Supabase:', error);
+      console.warn('Error fetching tags from Supabase:', error.message || error);
       return null;
     }
 
@@ -211,8 +206,8 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
     }));
 
     return normalizeTagCollection(rawTags) as Tag[];
-  } catch (err) {
-    console.error('Failed to fetch tags from Supabase:', err);
+  } catch (err: any) {
+    console.warn('Supabase tags bypassed (using local cache):', err?.message || err);
     return null;
   }
 }

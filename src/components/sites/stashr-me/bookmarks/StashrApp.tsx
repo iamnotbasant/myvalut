@@ -793,6 +793,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     setSummarizingIds(prev => new Set(prev).add(bookmark.id));
 
     try {
+      const savedApiKey = typeof window !== 'undefined' ? (localStorage.getItem('gemini_api_key') || undefined) : undefined;
       const response = await fetch('/api/ai/summarize', {
         method: 'POST',
         headers: {
@@ -806,6 +807,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           platform: bookmark.platform || 'web',
           displayName: bookmark.displayName || '',
           username: bookmark.username || '',
+          apiKey: savedApiKey,
           userId: user?.id,
         }),
       });
@@ -871,6 +873,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
           displayName: bookmark.displayName || '',
           username: bookmark.username || '',
           userId: user?.id,
+          apiKey: typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') || undefined : undefined,
         }),
       });
 
@@ -937,6 +940,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     soundFx.playSaveSound();
     const created: BookmarkItem = {
       ...newBm,
+      collectionId: newBm.collectionId || filterState.collectionId || undefined,
       id: `b_${Date.now()}`,
       date: 'Just now',
       createdAt: Date.now()
@@ -1282,15 +1286,22 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         if (b.isArchived) return false;
       }
 
+      // 1b. Collection filtering
+      if (filterState.collectionId) {
+        if (b.collectionId !== filterState.collectionId) return false;
+      }
+
       // 2. Search query substring matching
       if (filterState.query.trim()) {
         const q = filterState.query.toLowerCase();
-        const matchesText = b.text.toLowerCase().includes(q);
-        const matchesAuthor = b.displayName.toLowerCase().includes(q);
-        const matchesUsername = b.username.toLowerCase().includes(q);
+        const matchesTitle = b.title ? b.title.toLowerCase().includes(q) : false;
+        const matchesText = b.text ? b.text.toLowerCase().includes(q) : false;
+        const matchesUrl = b.url ? b.url.toLowerCase().includes(q) : false;
+        const matchesAuthor = b.displayName ? b.displayName.toLowerCase().includes(q) : false;
+        const matchesUsername = b.username ? b.username.toLowerCase().includes(q) : false;
         const matchesTags = (b.tags || []).some(t => t.name.toLowerCase().includes(q));
-        const matchesNote = b.note?.toLowerCase().includes(q);
-        if (!matchesText && !matchesAuthor && !matchesUsername && !matchesTags && !matchesNote) {
+        const matchesNote = b.note ? b.note.toLowerCase().includes(q) : false;
+        if (!matchesTitle && !matchesText && !matchesUrl && !matchesAuthor && !matchesUsername && !matchesTags && !matchesNote) {
           return false;
         }
       }
@@ -1568,7 +1579,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
               bookmarks={bookmarks}
               onSelectCreator={username => {
                 soundFx.playClickSound();
-                setFilterState({
+                handleFilterChange({
                   query: username,
                   activeNav: 'bookmarks',
                   platforms: [],

@@ -698,7 +698,7 @@ export function ConnectionsView({ bookmarks = [], onOpenExtensionGuide }: Connec
       name: 'Instagram',
       url: 'instagram.com',
       platform: 'instagram' as PlatformType,
-      enabled: false,
+      enabled: true,
       description:
         'Captures posts and reels as you save them on Instagram, plus a full import of your saved collection.',
       action: 'Install extension',
@@ -749,7 +749,7 @@ export function ConnectionsView({ bookmarks = [], onOpenExtensionGuide }: Connec
     {
       id: 'threads',
       name: 'Threads',
-      url: 'threads.com',
+      url: 'threads.net',
       platform: 'threads' as PlatformType,
       enabled: false,
       description:

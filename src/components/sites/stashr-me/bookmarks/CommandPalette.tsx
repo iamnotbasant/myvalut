@@ -71,7 +71,9 @@ export function CommandPalette({
 
   const filteredBookmarks = query.trim()
     ? bookmarks.filter(b =>
+        (b.title && b.title.toLowerCase().includes(query.toLowerCase())) ||
         b.text.toLowerCase().includes(query.toLowerCase()) ||
+        (b.url && b.url.toLowerCase().includes(query.toLowerCase())) ||
         b.displayName.toLowerCase().includes(query.toLowerCase()) ||
         b.username.toLowerCase().includes(query.toLowerCase())
       )

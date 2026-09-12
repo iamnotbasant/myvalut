@@ -133,14 +133,33 @@ export function BookmarksContainer({
     );
   }
 
+  // Progressive rendering: initial paint is instant (first 28 items), rest load smoothly
+  const [renderLimit, setRenderLimit] = React.useState(28);
+
+  React.useEffect(() => {
+    setRenderLimit(28);
+  }, [bookmarks.length, viewMode]);
+
+  React.useEffect(() => {
+    if (renderLimit < bookmarks.length) {
+      const timer = setTimeout(() => {
+        setRenderLimit(prev => Math.min(prev + 28, bookmarks.length));
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [renderLimit, bookmarks.length]);
+
+  const displayedBookmarks = React.useMemo(() => {
+    return bookmarks.slice(0, renderLimit);
+  }, [bookmarks, renderLimit]);
+
   return (
     <div className={`flex-1 min-w-0 w-full max-w-full overflow-y-auto ${viewMode === 'mosaic' ? 'p-2 sm:p-2.5 pt-2' : 'p-2.5 sm:p-4'}`}>
       <div className="relative flex min-h-full flex-col min-w-0 w-full">
       {/* 1. ROW VIEW (Vertical list) */}
-      {/* 1. ROW VIEW (Vertical list) */}
       {viewMode === 'row' && (
         <div className="flex flex-col gap-3 sm:gap-3.5 max-w-4xl mx-auto w-full min-w-0">
-          {bookmarks.map(bm => (
+          {displayedBookmarks.map(bm => (
             <BookmarkCard
               key={bm.id}
               bookmark={bm}
@@ -168,7 +187,7 @@ export function BookmarksContainer({
       {/* 2. TIMELINE VIEW (Vertical feed) */}
       {viewMode === 'timeline' && (
         <div className="flex flex-col gap-4 sm:gap-5 max-w-2xl mx-auto w-full min-w-0">
-          {bookmarks.map(bm => (
+          {displayedBookmarks.map(bm => (
             <BookmarkCard
               key={bm.id}
               bookmark={bm}
@@ -195,7 +214,7 @@ export function BookmarksContainer({
 
       {/* 3. MOSAIC VIEW (Media Wall - Distributed Columns) */}
       {viewMode === 'mosaic' && (() => {
-        const mediaBookmarks = bookmarks.filter(bm => Boolean(bm.imageUrl));
+        const mediaBookmarks = displayedBookmarks.filter(bm => Boolean(bm.imageUrl));
         
         if (mediaBookmarks.length === 0) {
           return (
@@ -247,7 +266,7 @@ export function BookmarksContainer({
       {viewMode === 'grid' && (
         <div className="flex gap-2.5 sm:gap-4 items-start w-full min-w-0">
           {Array.from({ length: effectiveColumns }).map((_, colIndex) => {
-            const columnBookmarks = bookmarks.filter((_, idx) => idx % effectiveColumns === colIndex);
+            const columnBookmarks = displayedBookmarks.filter((_, idx) => idx % effectiveColumns === colIndex);
             if (columnBookmarks.length === 0) return null;
             return (
               <div key={colIndex} className="flex-1 flex flex-col gap-2.5 sm:gap-4 min-w-0">

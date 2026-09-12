@@ -65,26 +65,13 @@ export function AccountSettings() {
         console.warn('Direct DB wipe fallback:', dbErr);
       }
 
-      // 3. Clear ALL localStorage items completely
+      // 3. Clear ALL vault data from localStorage while preserving user credentials & theme
       if (typeof window !== 'undefined') {
-        const allVaultKeys = [
-          'stashr_bookmarks_v3',
-          'stashr_collections_v3',
-          'stashr_tags_v3',
-          'stashr_pinned_creators_v1',
-          'stashr_custom_tags_v1',
-          'stashr_system_logs_v1',
-          'stashr_bookmarks',
-          'stashr_collections',
-          'stashr_tags',
-          'stashr_pinned_creators',
-          'stashr_filter_state',
-          'stashr_view_mode',
-          'stashr_grid_columns',
-          'stashr_mosaic_columns'
-        ];
-        allVaultKeys.forEach(k => localStorage.removeItem(k));
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        const savedTheme = localStorage.getItem('stashr_theme');
         localStorage.clear();
+        if (savedApiKey) localStorage.setItem('gemini_api_key', savedApiKey);
+        if (savedTheme) localStorage.setItem('stashr_theme', savedTheme);
       }
 
       setResetSuccess(true);

@@ -46,11 +46,17 @@ import { TagColor } from '@/types/stashr';
 
 function getCleanImageUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  const clean = url.trim();
+  let clean = url.trim();
   if (!clean) return undefined;
   if (clean.includes('google.com/s2/favicons')) return undefined;
   if (clean.includes('default') && (clean.includes('thumbs') || clean.includes('reddit'))) return undefined;
   if (clean.includes('profile_images') || clean.includes('avatar')) return undefined;
+
+  // Optimize card thumbnails: use fast ~35KB hqdefault instead of heavy ~3MB maxresdefault
+  if (clean.includes('maxresdefault.jpg')) {
+    clean = clean.replace('maxresdefault.jpg', 'hqdefault.jpg');
+  }
+
   return clean;
 }
 
@@ -249,6 +255,7 @@ export function BookmarkCard({
   const [copied, setCopied] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
+  const [hasAvatarError, setHasAvatarError] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -306,7 +313,9 @@ export function BookmarkCard({
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
     if (target.src.includes('maxresdefault.jpg')) {
-      target.src = target.src.replace('maxresdefault.jpg', 'mqdefault.jpg');
+      target.src = target.src.replace('maxresdefault.jpg', 'hqdefault.jpg');
+    } else if (target.src.includes('hqdefault.jpg')) {
+      target.src = target.src.replace('hqdefault.jpg', 'mqdefault.jpg');
     } else {
       setHasImageError(true);
     }
@@ -442,7 +451,7 @@ export function BookmarkCard({
               <div className="relative size-8 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-1 ring-white/20 bg-black text-white">
                 <GitHubIcon className="size-4.5 text-white" />
               </div>
-            ) : bookmark.avatarUrl && isSocialPlatform ? (
+            ) : bookmark.avatarUrl && isSocialPlatform && !hasAvatarError ? (
               <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20 bg-muted">
                 <Image
                   src={bookmark.avatarUrl}
@@ -450,6 +459,7 @@ export function BookmarkCard({
                   fill
                   className="object-cover"
                   unoptimized
+                  onError={() => setHasAvatarError(true)}
                 />
               </div>
             ) : bookmark.platform === 'reddit' ? (
@@ -621,7 +631,7 @@ export function BookmarkCard({
               <div className="relative size-8.5 sm:size-10 shrink-0 flex items-center justify-center overflow-hidden rounded-full ring-2 ring-white/20 bg-black text-white shadow-sm">
                 <GitHubIcon className="size-4.5 sm:size-5.5 text-white" />
               </div>
-            ) : bookmark.avatarUrl && isSocialPlatform ? (
+            ) : bookmark.avatarUrl && isSocialPlatform && !hasAvatarError ? (
               <div className="relative size-8.5 sm:size-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/20 bg-muted">
                 <Image
                   src={bookmark.avatarUrl}
@@ -629,6 +639,7 @@ export function BookmarkCard({
                   fill
                   className="object-cover"
                   unoptimized
+                  onError={() => setHasAvatarError(true)}
                 />
               </div>
             ) : bookmark.platform === 'reddit' ? (
@@ -1124,7 +1135,7 @@ export function BookmarkCard({
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-black text-white shadow-sm">
             <GitHubIcon className="size-5.5 text-white" />
           </div>
-        ) : bookmark.avatarUrl && isSocialPlatform ? (
+        ) : bookmark.avatarUrl && isSocialPlatform && !hasAvatarError ? (
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-10 ring-2 ring-white/20 bg-muted relative shadow-sm">
             <Image
               src={bookmark.avatarUrl}
@@ -1132,6 +1143,7 @@ export function BookmarkCard({
               fill
               className="object-cover"
               unoptimized
+              onError={() => setHasAvatarError(true)}
             />
           </div>
         ) : bookmark.platform === 'reddit' ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkItem } from '@/types/stashr';
 import { TagDot, PlatformIcon, RedditIcon, GitHubIcon, ExternalLink, Sparkles } from '@/components/icons';
@@ -30,6 +30,14 @@ export function BookmarkDetailModal({
   onSummarize,
   onOpenImage
 }: BookmarkDetailModalProps) {
+  const [hasAvatarError, setHasAvatarError] = useState(false);
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasAvatarError(false);
+    setHasImageError(false);
+  }, [bookmark?.id]);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -90,6 +98,22 @@ export function BookmarkDetailModal({
         {/* Top Right Action Bar: Open Original Post Button + Close Button */}
         <div className="sticky top-0 z-20 -mt-1 flex items-center justify-end gap-2 pointer-events-none">
           <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto bg-[#0e0e0e]/85 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
+            {onSummarize && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFx.playClickSound();
+                  onSummarize(bookmark);
+                }}
+                disabled={isSummarizing}
+                title="Generate in-depth AI summary and extract tools mentioned"
+                className="flex items-center gap-1.5 rounded-lg border border-purple-500/35 bg-purple-950/50 hover:bg-purple-900/60 px-2.5 py-1 text-xs text-purple-200 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+              >
+                <Sparkles className={`size-3 text-purple-400 ${isSummarizing ? 'animate-spin' : ''}`} />
+                <span>{isSummarizing ? 'Synthesizing...' : 'AI Summary'}</span>
+              </button>
+            )}
+
             {bookmark.url && (
               <button
                 type="button"
@@ -124,7 +148,7 @@ export function BookmarkDetailModal({
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-black text-white shadow-md">
               <GitHubIcon className="size-6 text-white" />
             </div>
-          ) : bookmark.avatarUrl && isSocialPlatform ? (
+          ) : bookmark.avatarUrl && isSocialPlatform && !hasAvatarError ? (
             <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full size-11 ring-2 ring-white/20 bg-muted relative shadow-md">
               <Image
                 src={bookmark.avatarUrl}
@@ -132,6 +156,7 @@ export function BookmarkDetailModal({
                 fill
                 className="object-cover"
                 unoptimized
+                onError={() => setHasAvatarError(true)}
               />
             </div>
           ) : bookmark.platform === 'reddit' ? (
@@ -200,7 +225,7 @@ export function BookmarkDetailModal({
         ) : null}
 
         {/* Media / Video Preview (100% Full Uncropped Original Display with Smooth Scroll) */}
-        {cleanImageUrl && (
+        {cleanImageUrl && !hasImageError && (
           <div
             onDoubleClick={handleOpenOriginalPost}
             title="Double-click to open original post | Click to enlarge"
@@ -211,6 +236,16 @@ export function BookmarkDetailModal({
               src={cleanImageUrl}
               alt={bookmark.displayName}
               onClick={() => onOpenImage?.(cleanImageUrl)}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src.includes('maxresdefault.jpg')) {
+                  target.src = target.src.replace('maxresdefault.jpg', 'hqdefault.jpg');
+                } else if (target.src.includes('hqdefault.jpg')) {
+                  target.src = target.src.replace('hqdefault.jpg', 'mqdefault.jpg');
+                } else {
+                  setHasImageError(true);
+                }
+              }}
               className="w-full object-contain max-h-[65vh] rounded-lg transition-transform group-hover/media:scale-[1.005]"
               loading="lazy"
             />

@@ -287,6 +287,9 @@ export function Sidebar({
                           onClick={(e) => {
                             e.preventDefault();
                             soundFx.playClickSound();
+                            if (pathname.startsWith('/settings')) {
+                              router.push('/bookmarks');
+                            }
                             onFilterChange({ collectionId: isActive ? null : col.id, activeNav: 'bookmarks' });
                             onCloseMobile?.();
                           }}

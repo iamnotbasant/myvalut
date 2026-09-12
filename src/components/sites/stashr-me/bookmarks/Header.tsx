@@ -93,6 +93,8 @@ export function Header({
     if (filterState.activeNav === 'archived') return 'Archived';
     if (filterState.activeNav === 'creators') return 'Creators';
     if (filterState.activeNav === 'connections') return 'Connections';
+    if (filterState.activeNav === 'tags') return 'Tags';
+    if (filterState.activeNav === 'logs') return 'System Logs';
     return 'Bookmarks';
   };
 

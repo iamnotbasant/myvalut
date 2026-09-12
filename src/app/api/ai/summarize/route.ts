@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       if (vidMatch) {
         try {
           const fetched = await fetchYouTubeTranscript(vidMatch[1]);
-          if (fetched && fetched.length > 30) {
+          if (fetched && fetched.length > 25) {
             transcriptOrText = fetched;
           }
         } catch (ytErr) {
@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!transcriptOrText || transcriptOrText.trim().length < 15) {
+    const contentToSummarize = (transcriptOrText && transcriptOrText.trim().length >= 10)
+      ? transcriptOrText.trim()
+      : (title ? `${title}: ${text || ''}` : text).trim();
+
+    if (!contentToSummarize || contentToSummarize.length < 8) {
       return NextResponse.json(
         { error: 'Not enough context or transcript to generate an AI summary' },
         { status: 400 }
@@ -65,12 +69,12 @@ export async function POST(req: NextRequest) {
     const summary = await generateMediaSummary({
       platform,
       title: title || '',
-      transcriptOrText,
+      transcriptOrText: contentToSummarize,
       creator: displayName || username || 'Creator',
       apiKey,
     });
 
-    if (!summary || summary.length < 40) {
+    if (!summary || summary.length < 30) {
       return NextResponse.json(
         { error: 'Failed to generate comprehensive summary from AI' },
         { status: 502 }

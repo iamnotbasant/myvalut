@@ -27,56 +27,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ping Gemini endpoint with gemini-3.6-flash
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${keyToTest}`;
+    let lastErrorMessage = 'Invalid API key or quota exceeded';
+    // Try valid Google Gemini models: gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash
+    const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'];
+    for (const model of testModels) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Respond with JSON: {"status":"ok"}' }] }],
+            generationConfig: { responseMimeType: 'application/json' },
+          }),
+        });
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Respond with JSON: {"status":"ok"}' }] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-    });
-
-    if (res.ok) {
-      return NextResponse.json({
-        success: true,
-        message: 'Gemini API Key is valid and connected!',
-        model: 'gemini-3.6-flash',
-      });
-    }
-
-    // Try gemini-3.5-flash
-    const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${keyToTest}`;
-    const fallbackRes = await fetch(fallbackEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Respond with JSON: {"status":"ok"}' }] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-    });
-
-    if (fallbackRes.ok) {
-      return NextResponse.json({
-        success: true,
-        message: 'Gemini API Key is valid and connected!',
-        model: 'gemini-3.5-flash',
-      });
-    }
-
-    const errText = await fallbackRes.text();
-    let parsedErr = 'Invalid API key or quota exceeded';
-    try {
-      const errJson = JSON.parse(errText);
-      if (errJson.error?.message) {
-        parsedErr = errJson.error.message;
+        if (res.ok) {
+          return NextResponse.json({
+            success: true,
+            message: 'Gemini API Key is valid and connected!',
+            model,
+          });
+        } else {
+          const errData = await res.json().catch(() => null);
+          if (errData?.error?.message) {
+            lastErrorMessage = errData.error.message;
+          }
+        }
+      } catch (err: any) {
+        lastErrorMessage = err.message || lastErrorMessage;
       }
-    } catch {}
+    }
 
     return NextResponse.json(
-      { success: false, error: parsedErr },
+      { success: false, error: lastErrorMessage },
       { status: 401 }
     );
   } catch (error: any) {
