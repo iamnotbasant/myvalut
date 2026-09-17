@@ -142,9 +142,7 @@ export async function fetchBookmarksFromDb(userId?: string | null, limit: number
       .limit(limit);
     
     if (validUserId) {
-      query = query.eq('user_id', validUserId);
-    } else {
-      query = query.is('user_id', null);
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await withTimeout(query, 5000);
@@ -168,9 +166,7 @@ export async function fetchCollectionsFromDb(userId?: string | null): Promise<Co
     let query = supabase.from('collections').select('*').order('name', { ascending: true });
     
     if (validUserId) {
-      query = query.eq('user_id', validUserId);
-    } else {
-      query = query.is('user_id', null);
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await withTimeout(query, 4000);
@@ -197,9 +193,7 @@ export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | n
     let query = supabase.from('tags').select('*').order('name', { ascending: true });
     
     if (validUserId) {
-      query = query.eq('user_id', validUserId);
-    } else {
-      query = query.is('user_id', null);
+      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
     }
 
     const { data, error } = await withTimeout(query, 4000);
