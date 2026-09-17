@@ -93,46 +93,6 @@ export function BookmarksContainer({
     return () => window.removeEventListener('resize', updateColumns);
   }, [columns]);
 
-  // Empty State
-  if (bookmarks.length === 0) {
-    const isArchivedView = allBookmarksCount === 0 && bookmarks.length === 0;
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center py-20 px-4 text-center">
-        <div className="flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/40 text-muted-foreground shadow-xs">
-          <Bookmark className="size-6 opacity-60" />
-        </div>
-        <h3 className="mt-4 font-semibold text-strong text-base tracking-tight">
-          {allBookmarksCount === 0 ? 'No bookmarks found' : 'No matching bookmarks'}
-        </h3>
-        <p className="mt-1.5 max-w-sm text-xs text-muted-foreground leading-relaxed">
-          {allBookmarksCount === 0
-            ? isArchivedView
-              ? 'Your archived vault is empty.'
-              : 'Start your collection by adding your first bookmark or using our Chrome extension.'
-            : 'Try adjusting your search query, clearing your tag filters, or selecting a different platform.'}
-        </p>
-        <div className="mt-6 flex items-center gap-3">
-          {allBookmarksCount === 0 ? (
-            <button
-              onClick={onOpenAddBookmark}
-              className="inline-flex h-8.5 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              <Plus className="size-3.5" />
-              <span>Add Bookmark</span>
-            </button>
-          ) : (
-            <button
-              onClick={onResetFilters}
-              className="h-8 rounded-lg border border-border bg-background px-3.5 text-xs font-medium text-foreground hover:bg-accent transition-colors cursor-pointer"
-            >
-              Reset Filters
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // Progressive rendering: initial paint is instant (first 28 items), rest load smoothly
   const [renderLimit, setRenderLimit] = React.useState(28);
 
@@ -152,6 +112,46 @@ export function BookmarksContainer({
   const displayedBookmarks = React.useMemo(() => {
     return bookmarks.slice(0, renderLimit);
   }, [bookmarks, renderLimit]);
+
+  // Empty State (rendered only when no bookmarks match query or filter)
+  if (bookmarks.length === 0) {
+    const isVaultEmpty = allBookmarksCount === 0;
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/40 text-muted-foreground shadow-xs">
+          <Bookmark className="size-6 opacity-60" />
+        </div>
+        <h3 className="mt-4 font-semibold text-strong text-base tracking-tight">
+          {isVaultEmpty ? 'No bookmarks found' : 'No matching bookmarks'}
+        </h3>
+        <p className="mt-1.5 max-w-sm text-xs text-muted-foreground leading-relaxed">
+          {isVaultEmpty
+            ? isArchivedView
+              ? 'Your archived vault is empty.'
+              : 'Start your collection by adding your first bookmark or using our Chrome extension.'
+            : 'Try adjusting your search query, clearing your tag filters, or selecting a different platform.'}
+        </p>
+        <div className="mt-6 flex items-center gap-3">
+          {isVaultEmpty ? (
+            <button
+              onClick={onOpenAddBookmark}
+              className="inline-flex h-8.5 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Add Bookmark</span>
+            </button>
+          ) : (
+            <button
+              onClick={onResetFilters}
+              className="h-8 rounded-lg border border-border bg-background px-3.5 text-xs font-medium text-foreground hover:bg-accent transition-colors cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex-1 min-w-0 w-full max-w-full overflow-y-auto ${viewMode === 'mosaic' ? 'p-2 sm:p-2.5 pt-2' : 'p-2.5 sm:p-4'}`}>
