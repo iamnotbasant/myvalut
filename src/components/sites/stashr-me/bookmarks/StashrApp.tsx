@@ -34,7 +34,7 @@ import { BookmarkDetailModal } from './BookmarkDetailModal';
 import { ImportExportModal } from './ImportExportModal';
 import { ExtensionGuideModal } from './ExtensionGuideModal';
 import { ShortcutsModal } from './ShortcutsModal';
-import { RotateCcw, X } from 'lucide-react';
+import { RotateCcw, X, Sparkles } from 'lucide-react';
 import { safeLocalStorageSet, flushOfflineQueue, queueOfflineMutation } from '@/lib/offline-sync';
 import {
   fetchBookmarksFromDb,
@@ -166,6 +166,20 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     onUndo: () => void;
   } | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [actionToast, setActionToast] = useState<{
+    message: string;
+    type?: 'success' | 'error';
+  } | null>(null);
+  const actionToastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showActionToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    if (actionToastTimeoutRef.current) clearTimeout(actionToastTimeoutRef.current);
+    setActionToast({ message, type });
+    actionToastTimeoutRef.current = setTimeout(() => {
+      setActionToast(null);
+    }, 4500);
+  }, []);
 
   // Save manual/edited tags for a bookmark
   const handleSaveBookmarkTags = useCallback(async (bookmarkId: string, updatedTags: Array<{ name: string; color: any }>) => {
@@ -882,6 +896,9 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         const newTags = Array.isArray(result.tags) ? result.tags : [];
 
         if (newTags.length > 0) {
+          soundFx.playAiSuccessSound();
+          showActionToast(`Generated ${newTags.length} AI tags!`, 'success');
+
           // Update ONLY tags in local state (text is completely untouched!)
           setBookmarks(prev =>
             prev.map(b => {
@@ -923,10 +940,16 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
 
           // Save bookmark tags update to Supabase
           updateBookmarkInDb(bookmark.id, { tags: newTags });
+        } else {
+          showActionToast(result.error || 'No tags generated for this item.', 'error');
         }
+      } else {
+        const errData = await response.json().catch(() => null);
+        showActionToast(errData?.error || 'AI tagging failed. Check Gemini API key in Settings.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Auto-tagging error for bookmark:', bookmark.id, err);
+      showActionToast(err?.message || 'Network error while generating tags', 'error');
     } finally {
       setGeneratingTagIds(prev => {
         const next = new Set(prev);
@@ -934,7 +957,7 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         return next;
       });
     }
-  }, [generatingTagIds, user]);
+  }, [generatingTagIds, showActionToast, user]);
 
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
     soundFx.playSaveSound();
@@ -1861,6 +1884,29 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
               setUndoToast(null);
             }}
             className="text-neutral-400 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer shrink-0"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 6b. Action Toast Notification (AI tags / alerts) */}
+      {actionToast && !undoToast && (
+        <div
+          className={`fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl border px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 text-white max-w-[calc(100vw-24px)] ${
+            actionToast.type === 'error'
+              ? 'border-rose-500/30 bg-rose-950/90 text-rose-200'
+              : 'border-emerald-500/30 bg-emerald-950/90 text-emerald-200'
+          }`}
+        >
+          <Sparkles className="size-3.5 shrink-0" />
+          <span className="text-xs font-medium truncate">{actionToast.message}</span>
+          <button
+            onClick={() => {
+              if (actionToastTimeoutRef.current) clearTimeout(actionToastTimeoutRef.current);
+              setActionToast(null);
+            }}
+            className="text-white/60 hover:text-white p-0.5 rounded-md transition-colors cursor-pointer shrink-0"
           >
             <X className="size-3.5" />
           </button>

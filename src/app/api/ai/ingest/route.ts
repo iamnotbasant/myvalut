@@ -47,7 +47,9 @@ export async function POST(req: NextRequest) {
         ...metadata,
         tags: tagResult.tags,
         aiDetails: tagResult.rawDetails,
+        tagError: tagResult.error || null,
       },
+      tagError: tagResult.error || null,
     });
   } catch (error: any) {
     console.error('API /api/ai/ingest error:', error);

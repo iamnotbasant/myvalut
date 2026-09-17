@@ -87,17 +87,24 @@ export function AddBookmarkModal({
 
         if (Array.isArray(item.tags) && item.tags.length > 0) {
           setSelectedTags(item.tags);
+          soundFx.playAiSuccessSound();
+          setIngestStatus('Auto-tagged & metadata extracted!');
+          setTimeout(() => setIngestStatus(null), 3000);
+        } else if (item.tagError || data.tagError) {
+          setIngestStatus(`Tag error: ${item.tagError || data.tagError}`);
+          setTimeout(() => setIngestStatus(null), 6000);
+        } else {
+          setIngestStatus('Metadata fetched (no tags generated)');
+          setTimeout(() => setIngestStatus(null), 3000);
         }
-
-        soundFx.playAiSuccessSound();
-        setIngestStatus('Auto-tagged & metadata extracted!');
-        setTimeout(() => setIngestStatus(null), 3000);
       } else {
-        setIngestStatus(null);
+        setIngestStatus(`Error: ${data.error || 'Failed to fetch link metadata'}`);
+        setTimeout(() => setIngestStatus(null), 5000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Ingest error:', err);
-      setIngestStatus(null);
+      setIngestStatus(`Error: ${err?.message || 'Failed to connect to AI'}`);
+      setTimeout(() => setIngestStatus(null), 5000);
     } finally {
       setIsIngesting(false);
     }
@@ -149,14 +156,27 @@ export function AddBookmarkModal({
       });
 
       const data = await res.json();
-      if (data.tags && Array.isArray(data.tags)) {
-        soundFx.playAiSuccessSound();
-        setSelectedTags(data.tags);
-        setIngestStatus('AI Tags updated!');
-        setTimeout(() => setIngestStatus(null), 2500);
+      if (!res.ok || data.error) {
+        setIngestStatus(`Tag error: ${data.error || 'Failed to generate AI tags'}`);
+        setTimeout(() => setIngestStatus(null), 6000);
+        return;
       }
-    } catch (e) {
+
+      if (data.tags && Array.isArray(data.tags)) {
+        if (data.tags.length > 0) {
+          soundFx.playAiSuccessSound();
+          setSelectedTags(data.tags);
+          setIngestStatus('AI Tags updated!');
+          setTimeout(() => setIngestStatus(null), 2500);
+        } else {
+          setIngestStatus('No tags generated for this text');
+          setTimeout(() => setIngestStatus(null), 3500);
+        }
+      }
+    } catch (e: any) {
       console.error('AI Tag error:', e);
+      setIngestStatus(`Error: ${e?.message || 'Tag generation failed'}`);
+      setTimeout(() => setIngestStatus(null), 5000);
     } finally {
       setIsIngesting(false);
     }
@@ -291,8 +311,12 @@ export function AddBookmarkModal({
               </div>
             </div>
             {ingestStatus && (
-              <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 animate-in fade-in">
-                <Sparkles className="size-3" />
+              <p className={`text-[11px] mt-1 flex items-center gap-1 animate-in fade-in ${
+                ingestStatus.toLowerCase().includes('error') || ingestStatus.toLowerCase().includes('fail')
+                  ? 'text-rose-400 font-medium'
+                  : 'text-emerald-400'
+              }`}>
+                <Sparkles className="size-3 shrink-0" />
                 <span>{ingestStatus}</span>
               </p>
             )}

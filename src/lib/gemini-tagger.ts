@@ -481,10 +481,13 @@ Content / Transcript:
 ${transcriptOrText.slice(0, 25000)}`;
 
   const modelCandidates = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
     'gemini-2.5-flash',
-    'gemini-2.0-flash',
     'gemini-1.5-flash',
-    'gemini-2.5-pro',
   ];
 
   for (const model of modelCandidates) {
@@ -1118,6 +1121,7 @@ export async function generateGeminiTags(params: {
 }): Promise<{
   tags: Array<{ name: string; color: TagColor }>;
   rawDetails: GeminiTagResponse | null;
+  error?: string | null;
 }> {
   const { platform, title, text, displayName, author, username, apiKey: providedKey } = params;
 
@@ -1165,14 +1169,18 @@ Platform: ${platform}
 Content/Description: ${cleanContent.slice(0, 3000)}`;
 
   const modelCandidates = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
     'gemini-2.5-flash',
-    'gemini-2.0-flash',
     'gemini-1.5-flash',
-    'gemini-2.5-pro',
   ];
 
   try {
     let rawJsonText = '';
+    let lastError = '';
 
     for (const model of modelCandidates) {
       try {
@@ -1207,19 +1215,23 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
             break;
           }
         } else {
-          const errBody = await res.text().catch(() => '');
-          console.warn(`[Valut AI] Model ${model} returned HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+          const errData = await res.json().catch(() => null);
+          const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+          lastError = errMsg;
+          console.warn(`[Valut AI] Model ${model} returned HTTP ${res.status}: ${errMsg.slice(0, 200)}`);
         }
-      } catch (innerErr) {
+      } catch (innerErr: any) {
+        lastError = innerErr?.message || String(innerErr);
         console.warn(`[Valut AI] Model ${model} attempt failed:`, innerErr);
       }
     }
 
     if (!rawJsonText) {
-      console.warn('[Valut AI] All Gemini model endpoints failed. No tags generated.');
+      console.warn('[Valut AI] All Gemini model endpoints failed. No tags generated. Last error:', lastError);
       return {
         tags: [],
         rawDetails: null,
+        error: lastError || 'All Gemini model endpoints failed. Please check your Gemini API key in Settings.',
       };
     }
 
@@ -1232,12 +1244,14 @@ Content/Description: ${cleanContent.slice(0, 3000)}`;
     return {
       tags: cleanTags,
       rawDetails: parsed,
+      error: null,
     };
   } catch (err: any) {
     console.error('[Valut AI] Gemini tag generation error:', err.message || err);
     return {
       tags: [],
       rawDetails: null,
+      error: err.message || 'Gemini tag generation failed',
     };
   }
 }

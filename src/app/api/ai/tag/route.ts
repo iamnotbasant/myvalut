@@ -48,6 +48,19 @@ export async function POST(req: NextRequest) {
 
     const tags = result.tags || [];
 
+    if (result.error && tags.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.error,
+          tags: [],
+          bookmarkId: id,
+          savedToDatabase: false,
+        },
+        { status: 400 }
+      );
+    }
+
     // If bookmark ID provided, update ONLY the tags in the database (never touch text!)
     let savedToDatabase = false;
     if (id && isSupabaseConfigured && supabase) {
@@ -89,6 +102,7 @@ export async function POST(req: NextRequest) {
       bookmarkId: id,
       savedToDatabase,
       details: result.rawDetails,
+      error: result.error || null,
     });
   } catch (error: any) {
     console.error('API /api/ai/tag error:', error);

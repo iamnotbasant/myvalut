@@ -28,8 +28,16 @@ export async function POST(req: NextRequest) {
     }
 
     let lastErrorMessage = 'Invalid API key or quota exceeded';
-    // Try valid Google Gemini models: gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash
-    const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'];
+    // Prioritize active flash models: gemini-3.6-flash, gemini-3.5-flash, gemini-flash-latest, etc.
+    const testModels = [
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.7-flash',
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+    ];
     for (const model of testModels) {
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
