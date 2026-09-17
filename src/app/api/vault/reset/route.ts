@@ -6,22 +6,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { userId } = body;
 
-    if (isSupabaseConfigured && supabase) {
-      if (userId && typeof userId === 'string') {
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(userId)) {
-          await supabase.from('bookmarks').delete().eq('user_id', userId);
-          await supabase.from('collections').delete().eq('user_id', userId);
-          await supabase.from('tags').delete().eq('user_id', userId);
-        }
-      }
-      // Wipe all remaining tags, collections, and bookmarks
-      await supabase.from('bookmarks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (!userId || typeof userId !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Valid authenticated userId is required to reset vault data' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ success: true, message: 'Vault data reset successfully' });
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid user ID format' },
+        { status: 400 }
+      );
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      // Strictly delete ONLY this user's data
+      await supabase.from('bookmarks').delete().eq('user_id', userId);
+      await supabase.from('collections').delete().eq('user_id', userId);
+      await supabase.from('tags').delete().eq('user_id', userId);
+    }
+
+    return NextResponse.json({ success: true, message: 'Your vault data was reset successfully' });
   } catch (err: any) {
     console.error('API vault reset error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

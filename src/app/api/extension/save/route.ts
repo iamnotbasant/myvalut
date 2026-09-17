@@ -44,9 +44,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Clean fragmented URLs from incoming text & title
-    if (text) text = repairFragmentedUrls(text);
-    if (title) title = repairFragmentedUrls(title);
+    if (url && typeof url === 'string' && url.trim().startsWith('http')) {
+      try {
+        new URL(url.trim());
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid URL format provided' },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+    }
+
+    // Clean fragmented URLs and enforce sensible length guardrails
+    if (text) text = repairFragmentedUrls(String(text)).slice(0, 15000);
+    if (title) title = repairFragmentedUrls(String(title)).slice(0, 500);
+    const safeNote = note ? String(note).slice(0, 2000) : undefined;
 
     // 1. Auto-detect platform
     const detectedPlatform = url ? detectPlatformFromUrl(url) : ((platform || 'web') as PlatformType);

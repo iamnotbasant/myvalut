@@ -5,6 +5,7 @@ import { BookmarkItem, Collection, Tag } from '@/types/stashr';
 import {
   exportVaultToJson,
   exportVaultToMarkdown,
+  exportVaultToNetscapeHtml,
   downloadFile,
   copyToClipboard,
   parseAndValidateImport,
@@ -18,6 +19,7 @@ import {
   Upload,
   FileText,
   FileCode,
+  Globe,
   ShieldCheck,
   AlertCircle,
   Folder,
@@ -49,7 +51,7 @@ export function ImportExportModal({
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
 
   // Export State
-  const [exportFormat, setExportFormat] = useState<'json' | 'markdown'>('json');
+  const [exportFormat, setExportFormat] = useState<'json' | 'html' | 'markdown'>('json');
   const [isCopied, setIsCopied] = useState(false);
 
   // Import State
@@ -76,6 +78,9 @@ export function ImportExportModal({
     if (exportFormat === 'json') {
       const jsonContent = exportVaultToJson(bookmarks, collections, tags);
       downloadFile(`valut-backup-${dateStr}.json`, jsonContent, 'application/json');
+    } else if (exportFormat === 'html') {
+      const htmlContent = exportVaultToNetscapeHtml(bookmarks);
+      downloadFile(`valut-bookmarks-${dateStr}.html`, htmlContent, 'text/html');
     } else {
       const mdContent = exportVaultToMarkdown(bookmarks);
       downloadFile(`valut-knowledge-export-${dateStr}.md`, mdContent, 'text/markdown');
@@ -88,6 +93,8 @@ export function ImportExportModal({
     const content =
       exportFormat === 'json'
         ? exportVaultToJson(bookmarks, collections, tags)
+        : exportFormat === 'html'
+        ? exportVaultToNetscapeHtml(bookmarks)
         : exportVaultToMarkdown(bookmarks);
 
     const ok = await copyToClipboard(content);
@@ -246,7 +253,7 @@ export function ImportExportModal({
             {/* Format Selection Cards */}
             <div>
               <label className="text-xs font-medium text-zinc-300 mb-2 block">Choose Format</label>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -264,7 +271,28 @@ export function ImportExportModal({
                     <span>JSON Backup</span>
                   </div>
                   <p className="mt-1 text-[11px] text-zinc-400 leading-normal">
-                    Complete backup with metadata, tags & collections.
+                    Full backup with tags, collections & metadata.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClickSound();
+                    setExportFormat('html');
+                  }}
+                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    exportFormat === 'html'
+                      ? 'border-blue-500/60 bg-blue-500/10 text-white'
+                      : 'border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-xs text-white">
+                    <Globe className="size-4 text-emerald-400" />
+                    <span>HTML Bookmarks</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-zinc-400 leading-normal">
+                    Standard format for Chrome, Safari, Firefox & Raindrop.
                   </p>
                 </button>
 
@@ -341,7 +369,7 @@ export function ImportExportModal({
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept=".json"
+              accept=".json,.html,.htm"
               className="hidden"
             />
 
@@ -353,9 +381,9 @@ export function ImportExportModal({
                 <Upload className="size-5" />
               </div>
               <p className="text-xs font-medium text-white">
-                {importFile ? importFile.name : 'Click to select Valut backup file (.json)'}
+                {importFile ? importFile.name : 'Click to select Valut backup (.json) or Browser Bookmarks (.html)'}
               </p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">Supports Valut JSON backup exports</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Supports Valut JSON exports & standard Chrome / Safari / Firefox HTML bookmarks</p>
             </div>
 
             {/* Error Message */}

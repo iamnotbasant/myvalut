@@ -12,6 +12,166 @@ export interface ValutExportData {
 }
 
 /**
+ * Generate standard Netscape Bookmark HTML export (Chrome, Firefox, Safari, Edge, Raindrop format)
+ */
+export function exportVaultToNetscapeHtml(bookmarks: BookmarkItem[]): string {
+  const escapeHtml = (str: string) =>
+    str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const lines: string[] = [
+    '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+    '<!-- This is an automatically generated file.',
+    '     It will be read and overwritten.',
+    '     DO NOT EDIT! -->',
+    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+    '<TITLE>Bookmarks</TITLE>',
+    '<H1>Bookmarks</H1>',
+    '<DL><p>',
+    '    <DT><H3 ADD_DATE="' + Math.floor(Date.now() / 1000) + '">Valut Bookmarks</H3>',
+    '    <DL><p>',
+  ];
+
+  for (const bm of bookmarks) {
+    if (!bm.url) continue;
+    const addDate = Math.floor((bm.createdAt || Date.now()) / 1000);
+    const tagList = (bm.tags || []).map(t => t.name).join(',');
+    const title = escapeHtml(bm.title || bm.text.slice(0, 80) || bm.url);
+    const note = bm.note ? escapeHtml(bm.note) : '';
+
+    const tagAttr = tagList ? ` TAGS="${escapeHtml(tagList)}"` : '';
+    lines.push(`        <DT><A HREF="${escapeHtml(bm.url)}" ADD_DATE="${addDate}"${tagAttr}>${title}</A>`);
+    if (note) {
+      lines.push(`        <DD>${note}`);
+    }
+  }
+
+  lines.push('    </DL><p>');
+  lines.push('</DL><p>');
+
+  return lines.join('\n');
+}
+
+/**
+ * Parse Netscape Bookmarks HTML format into BookmarkItem[]
+ */
+export function parseNetscapeBookmarksHtml(htmlString: string): BookmarkItem[] {
+  const bookmarks: BookmarkItem[] = [];
+  const now = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Browser DOMParser approach if available
+  if (typeof window !== 'undefined' && typeof DOMParser !== 'undefined') {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlString, 'text/html');
+      const links = Array.from(doc.querySelectorAll('a'));
+
+      for (const a of links) {
+        const href = a.getAttribute('href')?.trim();
+        if (!href || (!href.startsWith('http://') && !href.startsWith('https://'))) continue;
+
+        const title = a.textContent?.trim() || href;
+        const addDateAttr = a.getAttribute('add_date');
+        const timestamp = addDateAttr ? Number(addDateAttr) * 1000 : Date.now();
+        const tagsAttr = a.getAttribute('tags') || '';
+        const rawTags = tagsAttr.split(',').map(t => t.trim()).filter(Boolean);
+
+        let note = '';
+        const nextElem = a.parentElement?.nextElementSibling || a.nextElementSibling;
+        if (nextElem && nextElem.tagName.toLowerCase() === 'dd') {
+          note = nextElem.textContent?.trim() || '';
+        }
+
+        let platform: any = 'web';
+        const lowerUrl = href.toLowerCase();
+        if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) platform = 'youtube';
+        else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) platform = 'twitter';
+        else if (lowerUrl.includes('reddit.com')) platform = 'reddit';
+        else if (lowerUrl.includes('github.com')) platform = 'github';
+        else if (lowerUrl.includes('instagram.com')) platform = 'instagram';
+
+        let domain = 'Web';
+        try {
+          domain = new URL(href).hostname.replace(/^www\./, '');
+        } catch {}
+
+        bookmarks.push({
+          id: `bm_html_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          url: href,
+          title,
+          text: title,
+          platform,
+          displayName: domain,
+          username: domain.toLowerCase(),
+          date: new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) || now,
+          createdAt: timestamp,
+          tags: normalizeTagCollection(rawTags),
+          note: note || undefined,
+          isFavorite: false,
+          isArchived: false,
+        });
+      }
+
+      if (bookmarks.length > 0) return bookmarks;
+    } catch {
+      // Fall back to regex
+    }
+  }
+
+  // Fallback regex parser
+  const regex = /<A\s+([^>]*?)>([^<]*?)<\/A>/gi;
+  let match;
+  while ((match = regex.exec(htmlString)) !== null) {
+    const attrsStr = match[1];
+    const textContent = match[2].trim();
+
+    const hrefMatch = /HREF="([^"]*)"/i.exec(attrsStr);
+    if (!hrefMatch || !hrefMatch[1]) continue;
+    const href = hrefMatch[1].trim();
+    if (!href.startsWith('http://') && !href.startsWith('https://')) continue;
+
+    const tagsMatch = /TAGS="([^"]*)"/i.exec(attrsStr);
+    const rawTags = tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    const dateMatch = /ADD_DATE="([^"]*)"/i.exec(attrsStr);
+    const timestamp = dateMatch ? Number(dateMatch[1]) * 1000 : Date.now();
+
+    let platform: any = 'web';
+    const lowerUrl = href.toLowerCase();
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) platform = 'youtube';
+    else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) platform = 'twitter';
+    else if (lowerUrl.includes('reddit.com')) platform = 'reddit';
+    else if (lowerUrl.includes('github.com')) platform = 'github';
+    else if (lowerUrl.includes('instagram.com')) platform = 'instagram';
+
+    let domain = 'Web';
+    try {
+      domain = new URL(href).hostname.replace(/^www\./, '');
+    } catch {}
+
+    bookmarks.push({
+      id: `bm_html_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      url: href,
+      title: textContent || href,
+      text: textContent || href,
+      platform,
+      displayName: domain,
+      username: domain.toLowerCase(),
+      date: new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) || now,
+      createdAt: timestamp,
+      tags: normalizeTagCollection(rawTags),
+      isFavorite: false,
+      isArchived: false,
+    });
+  }
+
+  return bookmarks;
+}
+
+/**
  * Generate full-fidelity JSON export
  */
 export function exportVaultToJson(
@@ -175,9 +335,9 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
- * Parse and safely validate imported JSON backup
+ * Parse and safely validate imported JSON or Netscape HTML bookmark backups
  */
-export function parseAndValidateImport(jsonString: string): {
+export function parseAndValidateImport(fileContent: string): {
   success: boolean;
   data?: {
     bookmarks: BookmarkItem[];
@@ -186,8 +346,36 @@ export function parseAndValidateImport(jsonString: string): {
   };
   error?: string;
 } {
+  const trimmed = fileContent.trim();
+
+  // 1. Check if input is standard Netscape HTML format (Chrome, Safari, Firefox, Edge, Raindrop)
+  if (
+    trimmed.toLowerCase().includes('<!doctype netscape') ||
+    trimmed.toLowerCase().includes('<meta http-equiv="content-type"') ||
+    trimmed.toLowerCase().includes('<dl><p>') ||
+    (trimmed.includes('<A HREF=') || trimmed.includes('<a href='))
+  ) {
+    try {
+      const htmlBookmarks = parseNetscapeBookmarksHtml(fileContent);
+      if (htmlBookmarks.length === 0) {
+        return { success: false, error: 'No bookmarks could be extracted from this HTML file.' };
+      }
+      return {
+        success: true,
+        data: {
+          bookmarks: htmlBookmarks,
+          collections: [],
+          tags: [],
+        },
+      };
+    } catch (e: any) {
+      return { success: false, error: `Failed to parse HTML bookmarks: ${e.message}` };
+    }
+  }
+
+  // 2. Otherwise parse as JSON backup
   try {
-    const parsed = JSON.parse(jsonString);
+    const parsed = JSON.parse(fileContent);
 
     let rawBookmarks: any[] = [];
     let rawCollections: any[] = [];

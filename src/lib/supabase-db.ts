@@ -131,17 +131,23 @@ async function withTimeout<T>(promise: PromiseLike<T>, ms: number = 3500): Promi
   return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
-export async function fetchBookmarksFromDb(userId?: string | null): Promise<BookmarkItem[] | null> {
+export async function fetchBookmarksFromDb(userId?: string | null, limit: number = 1000): Promise<BookmarkItem[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
-    let query = supabase.from('bookmarks').select('*').order('created_at_ms', { ascending: false }).limit(250);
-    
     const validUserId = sanitizeUuid(userId);
+    let query = supabase
+      .from('bookmarks')
+      .select('*')
+      .order('created_at_ms', { ascending: false })
+      .limit(limit);
+    
     if (validUserId) {
-      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
+      query = query.eq('user_id', validUserId);
+    } else {
+      query = query.is('user_id', null);
     }
 
-    const { data, error } = await withTimeout(query, 4000);
+    const { data, error } = await withTimeout(query, 5000);
 
     if (error) {
       console.warn('Error fetching bookmarks from Supabase:', error.message || error);
@@ -158,14 +164,16 @@ export async function fetchBookmarksFromDb(userId?: string | null): Promise<Book
 export async function fetchCollectionsFromDb(userId?: string | null): Promise<Collection[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
+    const validUserId = sanitizeUuid(userId);
     let query = supabase.from('collections').select('*').order('name', { ascending: true });
     
-    const validUserId = sanitizeUuid(userId);
     if (validUserId) {
-      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
+      query = query.eq('user_id', validUserId);
+    } else {
+      query = query.is('user_id', null);
     }
 
-    const { data, error } = await withTimeout(query, 3000);
+    const { data, error } = await withTimeout(query, 4000);
 
     if (error) {
       console.warn('Error fetching collections from Supabase:', error.message || error);
@@ -185,14 +193,16 @@ export async function fetchCollectionsFromDb(userId?: string | null): Promise<Co
 export async function fetchTagsFromDb(userId?: string | null): Promise<Tag[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
+    const validUserId = sanitizeUuid(userId);
     let query = supabase.from('tags').select('*').order('name', { ascending: true });
     
-    const validUserId = sanitizeUuid(userId);
     if (validUserId) {
-      query = query.or(`user_id.eq.${validUserId},user_id.is.null`);
+      query = query.eq('user_id', validUserId);
+    } else {
+      query = query.is('user_id', null);
     }
 
-    const { data, error } = await withTimeout(query, 3000);
+    const { data, error } = await withTimeout(query, 4000);
 
     if (error) {
       console.warn('Error fetching tags from Supabase:', error.message || error);
@@ -448,12 +458,9 @@ export async function wipeAllVaultDataFromDb(userId?: string | null): Promise<bo
       await supabase.from('bookmarks').delete().eq('user_id', validUserId);
       await supabase.from('collections').delete().eq('user_id', validUserId);
       await supabase.from('tags').delete().eq('user_id', validUserId);
+      return true;
     }
-    // Delete all bookmarks, collections, and tags
-    await supabase.from('bookmarks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    return true;
+    return false;
   } catch (err) {
     console.error('Failed to wipe data from Supabase:', err);
     return false;

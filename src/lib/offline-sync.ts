@@ -60,10 +60,21 @@ export function queueOfflineMutation(mutation: Omit<OfflineMutation, 'timestamp'
     const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
     const list: OfflineMutation[] = raw ? JSON.parse(raw) : [];
     
+    // Sanitize heavy payloads (e.g. giant base64 data URIs) to conserve localStorage quota
+    let payload = mutation.payload;
+    if (payload && typeof payload === 'object') {
+      payload = {
+        ...payload,
+        imageUrl: payload.imageUrl?.startsWith('data:') ? undefined : payload.imageUrl,
+        avatarUrl: payload.avatarUrl?.startsWith('data:') ? undefined : payload.avatarUrl,
+      };
+    }
+
     // Deduplicate mutation for the same bookmark ID
     const filtered = list.filter(m => !(m.payload?.id === mutation.payload?.id && m.type === mutation.type));
     filtered.push({
       ...mutation,
+      payload,
       timestamp: Date.now(),
     });
 
@@ -97,8 +108,10 @@ export function clearOfflineQueue(): void {
   } catch {}
 }
 
+let isFlushingQueue = false;
+
 /**
- * Flush pending offline mutations to Supabase upon reconnect
+ * Flush pending offline mutations to Supabase upon reconnect with mutex locking
  */
 export async function flushOfflineQueue(handlers: {
   insertBookmark: (item: BookmarkItem, userId?: string | null) => Promise<boolean>;
@@ -106,41 +119,48 @@ export async function flushOfflineQueue(handlers: {
   deleteBookmark: (id: string) => Promise<boolean>;
   userId?: string | null;
 }): Promise<number> {
-  const pending = getPendingOfflineMutations();
-  if (pending.length === 0) return 0;
-
-  console.log(`[Valut Sync] Flushing ${pending.length} offline mutations to Supabase...`);
-  let syncedCount = 0;
-  const remaining: OfflineMutation[] = [];
-
-  for (const item of pending) {
-    try {
-      let ok = false;
-      if (item.type === 'insert_bookmark') {
-        ok = await handlers.insertBookmark(item.payload, handlers.userId);
-      } else if (item.type === 'update_bookmark') {
-        ok = await handlers.updateBookmark(item.id, item.payload);
-      } else if (item.type === 'delete_bookmark') {
-        ok = await handlers.deleteBookmark(item.id);
-      }
-
-      if (ok) {
-        syncedCount++;
-      } else {
-        remaining.push(item);
-      }
-    } catch {
-      remaining.push(item);
-    }
-  }
+  if (isFlushingQueue) return 0;
+  isFlushingQueue = true;
 
   try {
-    if (remaining.length === 0) {
-      clearOfflineQueue();
-    } else {
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
-    }
-  } catch {}
+    const pending = getPendingOfflineMutations();
+    if (pending.length === 0) return 0;
 
-  return syncedCount;
+    console.log(`[Valut Sync] Flushing ${pending.length} offline mutations to Supabase...`);
+    let syncedCount = 0;
+    const remaining: OfflineMutation[] = [];
+
+    for (const item of pending) {
+      try {
+        let ok = false;
+        if (item.type === 'insert_bookmark') {
+          ok = await handlers.insertBookmark(item.payload, handlers.userId);
+        } else if (item.type === 'update_bookmark') {
+          ok = await handlers.updateBookmark(item.id, item.payload);
+        } else if (item.type === 'delete_bookmark') {
+          ok = await handlers.deleteBookmark(item.id);
+        }
+
+        if (ok) {
+          syncedCount++;
+        } else {
+          remaining.push(item);
+        }
+      } catch {
+        remaining.push(item);
+      }
+    }
+
+    try {
+      if (remaining.length === 0) {
+        clearOfflineQueue();
+      } else {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+      }
+    } catch {}
+
+    return syncedCount;
+  } finally {
+    isFlushingQueue = false;
+  }
 }

@@ -420,18 +420,50 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     };
   }, [bookmarks, collections, tags, isLoaded]);
 
-  // Global keyboard shortcuts for Quick Add (+ or n)
+  // Global keyboard shortcuts: Search (/), Quick Add (+ or n), Cheatsheet (?), Escape, Selection (s)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (
+      const isInput =
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
+        target.isContentEditable;
+
+      if (isInput) {
+        if (e.key === 'Escape') {
+          target.blur();
+        }
         return;
       }
 
+      // Escape: clear selection mode or search query
+      if (e.key === 'Escape') {
+        if (isSelectionMode) {
+          soundFx.playClickSound();
+          setIsSelectionMode(false);
+          setSelectedIds(new Set());
+          return;
+        }
+        if (filterState.query) {
+          soundFx.playClickSound();
+          setFilterState(prev => ({ ...prev, query: '' }));
+          return;
+        }
+      }
+
+      // / : Quick focus search input
+      if (e.key === '/' && !e.shiftKey) {
+        e.preventDefault();
+        const searchInput = (document.getElementById('stashr-search-input') ||
+          document.querySelector('input[placeholder*="Search bookmarks"]')) as HTMLInputElement | null;
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+        return;
+      }
+
+      // ? : Cheatsheet modal
       if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
         e.preventDefault();
         soundFx.playClickSound();
@@ -439,16 +471,26 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         return;
       }
 
+      // + or = or N: Create bookmark modal
       if (e.key === '+' || e.key === '=' || (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
         soundFx.playClickSound();
         setIsAddBookmarkOpen(true);
+        return;
+      }
+
+      // S: Toggle selection mode
+      if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        soundFx.playClickSound();
+        setIsSelectionMode(prev => !prev);
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isSelectionMode, filterState.query]);
 
   useEffect(() => {
     if (initialNav && filterState.activeNav !== initialNav) {
@@ -960,6 +1002,34 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
   }, [generatingTagIds, showActionToast, user]);
 
   const handleAddBookmark = (newBm: Omit<BookmarkItem, 'id' | 'date'>) => {
+    // 1. Check for duplicate URL in vault
+    if (newBm.url && newBm.url.trim().startsWith('http')) {
+      const cleanUrl = newBm.url.trim().toLowerCase();
+      const existing = bookmarks.find(b => b.url && b.url.trim().toLowerCase() === cleanUrl);
+      if (existing) {
+        soundFx.playSaveSound();
+        showActionToast('Link already in your vault! Merged new tags into it.', 'success');
+
+        // Merge any new tags into existing bookmark
+        const existingTagNames = new Set((existing.tags || []).map(t => t.name.toLowerCase()));
+        const mergedTags = [...(existing.tags || [])];
+        for (const t of newBm.tags || []) {
+          if (!existingTagNames.has(t.name.toLowerCase())) {
+            mergedTags.push(t);
+            existingTagNames.add(t.name.toLowerCase());
+          }
+        }
+
+        const updatedNote = newBm.note ? (existing.note ? `${existing.note}\n${newBm.note}` : newBm.note) : existing.note;
+
+        setBookmarks(prev =>
+          prev.map(b => (b.id === existing.id ? { ...b, tags: mergedTags, note: updatedNote } : b))
+        );
+        updateBookmarkInDb(existing.id, { tags: mergedTags, note: updatedNote });
+        return;
+      }
+    }
+
     soundFx.playSaveSound();
     const created: BookmarkItem = {
       ...newBm,
@@ -1299,6 +1369,69 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
     }, 5000);
   };
 
+  const handleBulkAddTag = (tagName: string) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0 || !tagName.trim()) return;
+    soundFx.playTagSound();
+
+    const cleanName = tagName.trim();
+    const existingTag = tags.find(t => t.name.toLowerCase() === cleanName.toLowerCase());
+    const tagToAdd: { name: string; color: TagColor } = {
+      name: cleanName,
+      color: existingTag ? existingTag.color : 'indigo',
+    };
+
+    setBookmarks(prev =>
+      prev.map(b => {
+        if (!selectedIds.has(b.id)) return b;
+        const existingTagNames = new Set((b.tags || []).map(t => t.name.toLowerCase()));
+        if (existingTagNames.has(cleanName.toLowerCase())) return b;
+        const updatedTags = [...(b.tags || []), tagToAdd];
+        updateBookmarkInDb(b.id, { tags: updatedTags });
+        return { ...b, tags: updatedTags };
+      })
+    );
+
+    if (!existingTag) {
+      const newGlobalTag: Tag = {
+        id: `tag_${Date.now()}`,
+        name: cleanName,
+        color: 'indigo',
+        count: ids.length,
+      };
+      setTags(prev => [...prev, newGlobalTag]);
+      if (isSupabaseConfigured) {
+        insertTagToDb(newGlobalTag, user?.id).catch(() => {});
+      }
+    }
+
+    showActionToast(`Added #${cleanName} to ${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'}`, 'success');
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleBulkMoveToCollection = (collectionId: string | null) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    soundFx.playSaveSound();
+
+    const targetCol = collections.find(c => c.id === collectionId);
+    const colName = targetCol ? targetCol.name : 'Unassigned';
+
+    setBookmarks(prev =>
+      prev.map(b => {
+        if (!selectedIds.has(b.id)) return b;
+        const updatedCollectionId = collectionId || undefined;
+        updateBookmarkInDb(b.id, { collectionId: updatedCollectionId });
+        return { ...b, collectionId: updatedCollectionId };
+      })
+    );
+
+    showActionToast(`Moved ${ids.length} ${ids.length === 1 ? 'bookmark' : 'bookmarks'} to ${colName}`, 'success');
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  };
+
   // Filtered bookmarks computation
   const filteredBookmarks = useMemo(() => {
     const list = bookmarks.filter(b => {
@@ -1314,17 +1447,22 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
         if (b.collectionId !== filterState.collectionId) return false;
       }
 
-      // 2. Search query substring matching
+      // 2. Multi-token intelligent search matching (matches all typed keywords)
       if (filterState.query.trim()) {
-        const q = filterState.query.toLowerCase();
-        const matchesTitle = b.title ? b.title.toLowerCase().includes(q) : false;
-        const matchesText = b.text ? b.text.toLowerCase().includes(q) : false;
-        const matchesUrl = b.url ? b.url.toLowerCase().includes(q) : false;
-        const matchesAuthor = b.displayName ? b.displayName.toLowerCase().includes(q) : false;
-        const matchesUsername = b.username ? b.username.toLowerCase().includes(q) : false;
-        const matchesTags = (b.tags || []).some(t => t.name.toLowerCase().includes(q));
-        const matchesNote = b.note ? b.note.toLowerCase().includes(q) : false;
-        if (!matchesTitle && !matchesText && !matchesUrl && !matchesAuthor && !matchesUsername && !matchesTags && !matchesNote) {
+        const tokens = filterState.query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const searchableText = [
+          b.title || '',
+          b.text || '',
+          b.url || '',
+          b.displayName || '',
+          b.username || '',
+          b.platform || '',
+          b.note || '',
+          ...(b.tags || []).map(t => t.name)
+        ].join(' ').toLowerCase();
+
+        const allTokensMatch = tokens.every(token => searchableText.includes(token));
+        if (!allTokensMatch) {
           return false;
         }
       }
@@ -1706,6 +1844,10 @@ export function StashrApp({ initialNav = 'bookmarks' }: StashrAppProps) {
                 onArchiveSelected={handleArchiveSelected}
                 onDeleteSelected={handleDeleteSelected}
                 onRestoreSelected={handleRestoreSelected}
+                collections={collections}
+                tags={allAvailableTags}
+                onBulkAddTag={handleBulkAddTag}
+                onBulkMoveToCollection={handleBulkMoveToCollection}
                 onResetFilters={() => {
                   soundFx.playClickSound();
                   setFilterState({
