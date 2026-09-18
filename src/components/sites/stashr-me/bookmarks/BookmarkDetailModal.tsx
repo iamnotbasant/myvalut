@@ -107,10 +107,10 @@ export function BookmarkDetailModal({
                 }}
                 disabled={isSummarizing}
                 title="Generate in-depth AI summary and extract tools mentioned"
-                className="flex items-center gap-1.5 rounded-lg border border-purple-500/35 bg-purple-950/50 hover:bg-purple-900/60 px-2.5 py-1 text-xs text-purple-200 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
               >
-                <Sparkles className={`size-3 text-purple-400 ${isSummarizing ? 'animate-spin' : ''}`} />
-                <span>{isSummarizing ? 'Synthesizing...' : 'AI Summary'}</span>
+                <Sparkles className={`size-3 text-neutral-400 ${isSummarizing ? 'animate-spin' : ''}`} />
+                <span>{isSummarizing ? 'Generating...' : 'AI Summary'}</span>
               </button>
             )}
 
@@ -192,11 +192,11 @@ export function BookmarkDetailModal({
                 type="button"
                 onClick={() => onSummarize(bookmark)}
                 disabled={isSummarizing}
-                className="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-950/30 hover:bg-purple-900/40 text-xs text-purple-200 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
-                title="Regenerate in-depth AI breakdown without touching tags"
+                className="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Regenerate summary without touching tags"
               >
-                <Sparkles className={`size-3 text-purple-400 ${isSummarizing ? 'animate-spin' : ''}`} />
-                <span>{isSummarizing ? 'Synthesizing...' : 'Regenerate Summary'}</span>
+                <Sparkles className={`size-3 text-neutral-400 ${isSummarizing ? 'animate-spin' : ''}`} />
+                <span>{isSummarizing ? 'Generating...' : 'Regenerate Summary'}</span>
               </button>
             )}
           </div>
@@ -204,18 +204,17 @@ export function BookmarkDetailModal({
 
         {/* Post Text or Live AI Synthesis Skeleton */}
         {isSummarizing ? (
-          <div className="relative overflow-hidden rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/30 via-[#13111c] to-indigo-950/20 p-4 shadow-inner space-y-3 animate-in fade-in-50 duration-300">
-            <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
-            <div className="flex items-center gap-2 text-purple-300 font-medium text-xs animate-pulse">
-              <Sparkles className="size-3.5 text-purple-400 animate-spin" />
-              <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
-                Synthesizing Deep Breakdown & Key Takeaways...
+          <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4 shadow-inner space-y-3 animate-in fade-in-50 duration-300">
+            <div className="flex items-center gap-2 text-neutral-300 font-medium text-xs animate-pulse">
+              <Sparkles className="size-3.5 text-neutral-400 animate-spin" />
+              <span className="text-neutral-300 font-medium text-xs tracking-wide">
+                Generating summary...
               </span>
             </div>
             <div className="space-y-2">
-              <div className="h-3 w-full bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" />
-              <div className="h-3 w-11/12 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '150ms' }} />
-              <div className="h-3 w-4/5 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+              <div className="h-3 w-full bg-white/10 rounded animate-pulse" />
+              <div className="h-3 w-11/12 bg-white/[0.07] rounded animate-pulse" style={{ animationDelay: '150ms' }} />
+              <div className="h-3 w-4/5 bg-white/[0.05] rounded animate-pulse" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         ) : showText && displayText ? (

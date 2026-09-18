@@ -349,8 +349,8 @@ export function BookmarkCard({
     },
     ...((bookmark.platform === 'youtube' || bookmark.platform === 'instagram') ? [{
       id: 'ai-summary',
-      label: isSummarizing ? 'Synthesizing Breakdown...' : '✦ Regenerate AI Summary',
-      icon: <Sparkles className="size-3.5 text-purple-400" />,
+      label: isSummarizing ? 'Generating Summary...' : 'Regenerate Summary',
+      icon: <Sparkles className="size-3.5 text-neutral-400" />,
       onClick: () => onSummarize?.(bookmark)
     }] : []),
     {
@@ -520,16 +520,15 @@ export function BookmarkCard({
               </h3>
             )}
             {isSummarizing ? (
-              <div className="relative overflow-hidden rounded-lg border border-purple-500/25 bg-purple-950/25 p-2 space-y-1.5 animate-pulse">
-                <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
-                <div className="flex items-center gap-1.5 text-[11px] font-medium text-purple-300">
-                  <Sparkles className="size-3 animate-spin text-purple-400" />
-                  <span>AI Synthesizing Deep Breakdown...</span>
+              <div className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-2 space-y-1.5 animate-pulse">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-300">
+                  <Sparkles className="size-3 animate-spin text-neutral-400" />
+                  <span>Generating summary...</span>
                 </div>
                 <div className="space-y-1">
-                  <div className="h-1.5 w-3/4 rounded bg-purple-400/20" />
-                  <div className="h-1.5 w-full rounded bg-purple-400/15" />
-                  <div className="h-1.5 w-1/2 rounded bg-purple-400/10" />
+                  <div className="h-1.5 w-3/4 rounded bg-white/10" />
+                  <div className="h-1.5 w-full rounded bg-white/[0.07]" />
+                  <div className="h-1.5 w-1/2 rounded bg-white/[0.05]" />
                 </div>
               </div>
             ) : showText && displayText && (
@@ -689,16 +688,15 @@ export function BookmarkCard({
 
         {/* Content text */}
         {isSummarizing ? (
-          <div className="relative z-10 overflow-hidden rounded-xl border border-purple-500/25 bg-purple-950/25 p-3.5 space-y-2 animate-pulse">
-            <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
-            <div className="flex items-center gap-2 text-xs font-medium text-purple-300">
-              <Sparkles className="size-3.5 animate-spin text-purple-400" />
-              <span>AI Synthesizing Deep Breakdown & Executive Insights...</span>
+          <div className="relative z-10 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-3.5 space-y-2 animate-pulse">
+            <div className="flex items-center gap-2 text-xs font-medium text-neutral-300">
+              <Sparkles className="size-3.5 animate-spin text-neutral-400" />
+              <span>Generating summary...</span>
             </div>
             <div className="space-y-1.5">
-              <div className="h-2 w-3/4 rounded bg-purple-400/20" />
-              <div className="h-2 w-full rounded bg-purple-400/15" />
-              <div className="h-2 w-2/3 rounded bg-purple-400/10" />
+              <div className="h-2 w-3/4 rounded bg-white/10" />
+              <div className="h-2 w-full rounded bg-white/[0.07]" />
+              <div className="h-2 w-2/3 rounded bg-white/[0.05]" />
             </div>
           </div>
         ) : showText && displayText && (
@@ -1040,8 +1038,8 @@ export function BookmarkCard({
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                   >
-                    <Sparkles className="size-3.5 text-purple-400" />
-                    <span>{isSummarizing ? 'Synthesizing Breakdown...' : '✦ Regenerate AI Summary'}</span>
+                    <Sparkles className="size-3.5 text-neutral-400" />
+                    <span>{isSummarizing ? 'Generating Summary...' : 'Regenerate Summary'}</span>
                   </button>
                 )}
                 <button
@@ -1190,18 +1188,17 @@ export function BookmarkCard({
 
       {/* Post Text or Live AI Synthesis Skeleton */}
       {isSummarizing ? (
-        <div className="relative z-10 rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/30 via-[#13111c] to-indigo-950/20 p-3 shadow-inner overflow-hidden animate-in fade-in-50 duration-300">
-          <div className="pointer-events-none absolute inset-0 -translate-x-full animate-tag-shimmer bg-gradient-to-r from-transparent via-purple-400/10 to-transparent" />
-          <div className="flex items-center gap-2 text-purple-300 font-medium text-xs mb-2 animate-pulse">
-            <Sparkles className="size-3.5 text-purple-400 animate-spin" />
-            <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent font-medium text-xs tracking-wide">
-              Synthesizing Deep Breakdown & Key Takeaways...
+        <div className="relative z-10 rounded-xl border border-white/10 bg-white/[0.03] p-3 shadow-inner overflow-hidden animate-in fade-in-50 duration-300">
+          <div className="flex items-center gap-2 text-neutral-300 font-medium text-xs mb-2 animate-pulse">
+            <Sparkles className="size-3.5 text-neutral-400 animate-spin" />
+            <span className="text-neutral-300 font-medium text-xs tracking-wide">
+              Generating summary...
             </span>
           </div>
           <div className="space-y-1.5">
-            <div className="h-2.5 w-full bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" />
-            <div className="h-2.5 w-5/6 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '150ms' }} />
-            <div className="h-2.5 w-3/4 bg-gradient-to-r from-purple-500/15 via-indigo-400/20 to-purple-500/15 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+            <div className="h-2.5 w-full bg-white/10 rounded animate-pulse" />
+            <div className="h-2.5 w-5/6 bg-white/[0.07] rounded animate-pulse" style={{ animationDelay: '150ms' }} />
+            <div className="h-2.5 w-3/4 bg-white/[0.05] rounded animate-pulse" style={{ animationDelay: '300ms' }} />
           </div>
         </div>
       ) : showText && displayText ? (

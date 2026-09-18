@@ -173,7 +173,7 @@ export function FormattedPostText({
           return (
             <h3
               key={lineIdx}
-              className="text-[13.5px] font-semibold text-purple-300 pt-2 pb-0.5 tracking-wide flex items-center gap-1.5"
+              className="text-[13.5px] font-semibold text-neutral-200 pt-2.5 pb-0.5 tracking-wide flex items-center gap-1.5 border-l-2 border-neutral-600 pl-2"
             >
               {renderFormattedTokens(subText, lineIdx)}
             </h3>
@@ -185,7 +185,7 @@ export function FormattedPostText({
           const bulletContent = trimmed.replace(/^[•\-\*]\s+/, '');
           return (
             <div key={lineIdx} className="flex items-start gap-2 pl-1 leading-relaxed">
-              <span className="select-none mt-2 size-1.5 rounded-full bg-purple-400 shrink-0" />
+              <span className="select-none mt-2 size-1.5 rounded-full bg-neutral-400 shrink-0" />
               <div className="flex-1 min-w-0">{renderFormattedTokens(bulletContent, lineIdx)}</div>
             </div>
           );

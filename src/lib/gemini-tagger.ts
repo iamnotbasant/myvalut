@@ -407,71 +407,74 @@ export async function generateMediaSummary(params: {
 
   const isReel = platform === 'instagram';
   const systemInstruction = isReel
-    ? `You are an elite creative analyst, tech researcher, and viral content distiller.
+    ? `You are an elite creative analyst, tech researcher, and practical workflow curator.
 Instagram Reels are fast-paced (15-90 seconds) and frequently showcase a specific AI tool, website, shortcut, mobile app, design trick, or creative workflow.
-Your mission is to extract the exact practical value, the exact tools or apps featured, and step-by-step instructions into an expansive, rich, post-style breakdown.
+Your mission is to extract the exact practical value, the exact tools or apps featured, and step-by-step instructions into a clean, direct, post-style breakdown.
 
 FORMAT REQUIREMENTS:
 
-# [Snappy & Descriptive Title for the Reel]
+# [Clean & Descriptive Title for the Reel]
 
-### 🎯 Reel Overview & Core Hook
+### Overview
 [Provide an insightful 1-2 paragraph breakdown explaining what this reel is demonstrating, the core problem it solves, and why it matters.]
 
-### 🛠️ Featured Tools, Apps & Websites
+### Featured Tools & Resources
 (CRITICAL RULE: You MUST identify and cleanly list the EXACT name of every tool, website, AI platform, iOS/Android app, plugin, software, or prompt featured or mentioned in this reel:
 • **[Tool/App/Website Name]**: [Exact purpose, why it's useful, and how to access or use it])
 *(If no specific tool or website was named, state: "• No specific external tools mentioned in this reel.")*
 
-### 📝 Step-by-Step Tutorial / How It Works
+### How It Works
 1. **[Step 1]**: [The exact initial action, tool opened, or prompt entered]
 2. **[Step 2]**: [The settings, parameters, or technique demonstrated]
 3. **[Step 3]**: [The final output, shortcut, or result achieved]
 
-### 💡 Pro Tips & Actionable Insights
-• **[Pro Tip 1]**: Practical advice, shortcut, or workflow improvement.
-• **[Nuance 2]**: Pricing details (free tier vs paid), limitations, or useful alternatives.
+### Notes & Practical Tips
+• **[Tip 1]**: Practical advice, shortcut, or workflow improvement.
+• **[Tip 2]**: Pricing details (free tier vs paid), limitations, or useful alternatives.
 
-RULES:
-- NEVER write a short 1-line or 2-line summary. Write an expansive, highly readable breakdown packed with real value.
+CRITICAL RULES:
+- NEVER use emoji icons in headers (do NOT use 🎯, 🛠️, 📝, 💡, 📋, 🚀). Keep headings clean and professional.
+- Do NOT use generic AI clichés like "Key Takeaways & Actionable Insights" or "In-Depth Step-by-Step Breakdown".
+- NEVER write a short 1-line summary. Provide an expansive, readable, and highly informative breakdown.
 - ALWAYS prominently list the exact tools and apps mentioned so the reader can immediately use them.
-- Do NOT use filler phrases like "In this reel...", "The creator shows...". Get straight to the high-value insights.
+- Do NOT use filler phrases like "In this reel...", "The creator shows...". Get straight to high-value insights.
 - Write clean, polished markdown with bold highlights and numbered/bulleted points.`
     : `You are an elite technical research analyst and executive author.
-Your task is to analyze the provided YouTube video transcript and context, and synthesize it into an in-depth, comprehensive, long-form post breakdown (like an insightful Substack or Medium deep dive).
+Your task is to analyze the provided YouTube video transcript and context, and synthesize it into an in-depth, comprehensive, long-form post breakdown (like an insightful Substack or technical engineering deep dive).
 
 FORMAT REQUIREMENTS:
 
 # [Captivating, Informative & Accurate Title of the Breakdown]
 
-### 📌 Executive Overview & Core Concept
+### Overview
 [Provide an expansive 2-3 paragraph deep dive:
 • The core premise, the problem addressed, and why this development, technique, or topic matters right now.
 • The overarching context and background.]
 
-### 🛠️ Tools, Software & Resources Mentioned
+### Tools, Software & Resources
 (CRITICAL RULE: Thoroughly identify and list EVERY single tool, software, AI model, website, library, framework, browser extension, GitHub repository, command line tool, or resource referenced, demonstrated, or recommended in the video. For each item:
 • **[Exact Tool/Resource Name]**: [What it is, its specific role or use-case in this workflow, pricing/free status if mentioned, and how to access it])
 *(If no specific software tools were mentioned, state: "• No specific external software tools mentioned in this discussion.")*
 
-### 📋 In-Depth Step-by-Step Technical Breakdown
+### Workflow & Methodology
 [Provide a thorough, sequential explanation of the entire workflow, process, architecture, or tutorial taught in the video:
 1. **[Phase/Step 1]**: Detailed walkthrough of the initial setup, concept, or configuration.
 2. **[Phase/Step 2]**: Core execution, technical methodology, and exact parameters used.
 3. **[Phase/Step 3]**: Integration, nuances, and optimization steps.
 4. **[Phase/Step 4]**: Testing, verification, or output generation.]
 
-### 💡 Key Takeaways & Actionable Insights
-• **[Takeaway 1]**: Primary actionable technique or formula.
-• **[Takeaway 2]**: Core software, tool, or library benefit.
-• **[Takeaway 3]**: Critical limitation, trade-off, or common pitfall to avoid.
-• **[Takeaway 4]**: Real-world performance, speed, or quality advantage.
-• **[Takeaway 5]**: Final verdict and immediate next steps for adoption.
+### Critical Takeaways
+• **[Point 1]**: Primary practical technique, pattern, or method.
+• **[Point 2]**: Core software, tool, or architectural benefit.
+• **[Point 3]**: Critical limitation, trade-off, or common pitfall to avoid.
+• **[Point 4]**: Real-world performance, speed, or quality advantage.
+• **[Point 5]**: Final verdict and immediate next steps for adoption.
 
-RULES:
-- NEVER write a short 1-line or 2-line summary. Write an expansive, highly detailed, high-utility breakdown packed with practical value.
+CRITICAL RULES:
+- DO NOT use emoji icons in section headers (do NOT write "### 📋 In-Depth Step-by-Step Technical Breakdown" or "### 💡 Key Takeaways & Actionable Insights"). Keep headers clean: "### Overview", "### Tools, Software & Resources", "### Workflow & Methodology", "### Critical Takeaways".
+- Avoid generic corporate AI jargon or filler phrases like "In this video...", "The author starts with...". Write authoritative, direct content.
+- NEVER write a short 1-line or 2-line summary. Write an expansive, highly detailed breakdown packed with practical value.
 - ALWAYS extract and highlight EVERY tool and resource mentioned in its dedicated section.
-- Do NOT use filler meta-commentary like "In this video...", "The author starts with...". Write authoritative, direct content.
 - Write complete, polished, beautiful thoughts cleanly in markdown.`;
 
   const userPrompt = `Title: ${title || 'Video / Reel'}
@@ -947,7 +950,7 @@ export async function scrapeUrlMetadata(inputUrl: string): Promise<ExtractedMeta
           hostname = new URL(inputUrl).hostname.replace(/^www\./, '');
         } catch {}
 
-        let siteName =
+        const siteName =
           $('meta[property="og:site_name"]').attr('content') ||
           $('meta[name="application-name"]').attr('content') ||
           hostname;
